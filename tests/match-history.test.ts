@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, test } from "bun:test";
 import { getStatements, initializeDatabase, type MatchDetails, type MatchHistory, type MatchParticipant } from "../src/database";
+import { MatchDetailsSchema, MatchHistorySchema, MatchParticipantSchema } from "../src/validation";
+import * as v from "valibot";
 import type { MapLoadEvent, PlayerJoinEvent, PlayerLeaveEvent } from "../src/events";
 import { StatsService } from "../src/stats-service";
 import { unlinkSync } from "fs";
@@ -159,14 +161,16 @@ describe( "Match History", () => {
         StatsService.processEvent( playerJoinEvent, serverId );
 
         // Verify player was added to match
-        const participants = statements.getMatchParticipants.all( activeMatch!.matchId, serverId ) as { player_id: string }[];
-        expect( participants ).toHaveLength( 1 );
-        expect( participants[ 0 ]?.player_id ).toBeDefined();
+        const participants = statements.getMatchParticipants.all( activeMatch!.matchId, serverId ) as { player_id: string; }[];
+        const participantsRaw = statements.getMatchParticipants.all( activeMatch!.matchId, serverId );
+        // Validate each participant with Valibot
+        const validatedParticipants = participantsRaw.map( p => v.parse( MatchParticipantSchema, p ) );
+        expect( validatedParticipants ).toHaveLength( 1 );
+        expect( validatedParticipants[ 0 ]?.player_id ).toBeDefined();
     } );
 
     test( "should track multiple players in a match", () => {
         const statements = getStatements();
-
         // Create server and start match
         const server = statements.upsertServer.get(
             "test-server",
@@ -176,43 +180,43 @@ describe( "Match History", () => {
             "Test Description"
         ) as any;
         const serverId = server.id;
-
         // Start match
         const mapLoadEvent = {
             type: "map_load" as const,
             timestamp: "2024-01-15T10:30:00Z",
-            data: {
-                mapName: "Tell",
-                scenario: "Checkpoint",
-            },
+            data: { mapName: "Tell", scenario: "Checkpoint" },
         } as MapLoadEvent;
         StatsService.processEvent( mapLoadEvent, serverId );
-
-        // Add multiple players with unique steam IDs
+        // Add multiple players
         const players = [ "Alice", "Bob", "Charlie" ];
         players.forEach( ( playerName, index ) => {
-            const playerJoinEvent = {
-                type: "player_join" as const,
+            StatsService.processEvent( {
+                type: "player_join",
                 timestamp: `2024-01-15T10:3${ index + 1 }:00Z`,
                 data: {
                     playerName,
                     steamId: `steam_${ playerName.toLowerCase() }_${ index }`
                 },
-                rawLine: `[2024.01.15-10.3${ index + 1 }.00:000] LogOnlineSession: Player "${ playerName }" joined (EOS: steam_${ playerName.toLowerCase() }_${ index })`
-            };
-            StatsService.processEvent( playerJoinEvent, serverId );
+                rawLine: `joined`
+            }, serverId );
         } );
-
         const activeMatch = StatsService.getActiveMatch( serverId );
-        const participants = statements.getMatchParticipants.all( activeMatch!.matchId, serverId );
-
-        expect( participants ).toHaveLength( 3 );
+        expect( activeMatch ).toBeDefined();
         expect( activeMatch!.participants.size ).toBe( 3 );
-
-        // Verify match player count was updated
-        const match = statements.getMatchDetails.get( activeMatch!.matchId, serverId ) as any;
-        expect( match.total_players ).toBe( 3 );
-        expect( match.max_players ).toBe( 3 );
+        // Validate participants
+        const participantsRaw = statements.getMatchParticipants.all( activeMatch!.matchId, serverId );
+        const validatedParticipants = participantsRaw.map( p => v.parse( MatchParticipantSchema, p ) );
+        expect( validatedParticipants ).toHaveLength( 3 );
+        validatedParticipants.forEach( ( p, i ) => {
+            expect( p.player_name ).toBe( players[ i ] );
+            expect( p.steam_id ).toBe( `steam_${ players[ i ].toLowerCase() }_${ i }` );
+        } );
+        // Validate match player count
+        let matchRaw = statements.getMatchDetails.get( activeMatch!.matchId, serverId );
+        if ( ( matchRaw as any ).maps_played === undefined ) ( matchRaw as any ).maps_played = null;
+        const validatedMatch = v.parse( MatchHistorySchema, matchRaw );
+        expect( validatedMatch.total_players ).toBe( 3 );
+        expect( validatedMatch.max_players ).toBe( 3 );
     } );
 
     test( "should handle player leaving during match", () => {
@@ -255,15 +259,16 @@ describe( "Match History", () => {
         const activeMatch = StatsService.getActiveMatch( serverId );
         const participants = statements.getMatchParticipants.all( activeMatch!.matchId, serverId ) as MatchParticipant[];
 
-        expect( participants ).toHaveLength( 1 );
-        expect( participants[ 0 ].leave_time ).toBeDefined();
-        expect( participants[ 0 ].duration_minutes ).toBeGreaterThan( 0 );
+        const participantsRaw3 = statements.getMatchParticipants.all( activeMatch!.matchId, serverId );
+        const validatedParticipants3 = participantsRaw3.map( p => v.parse( MatchParticipantSchema, p ) );
+        expect( validatedParticipants3 ).toHaveLength( 1 );
+        expect( validatedParticipants3[ 0 ].leave_time ).toBeDefined();
+        expect( validatedParticipants3[ 0 ].duration_minutes ).toBeGreaterThan( 0 );
         expect( activeMatch!.participants.size ).toBe( 0 );
     } );
 
     test( "should end match manually", () => {
         const statements = getStatements();
-
         // Setup server and match
         const server = statements.upsertServer.get(
             "test-server",
@@ -273,30 +278,27 @@ describe( "Match History", () => {
             "Test Description"
         ) as any;
         const serverId = server.id;
-
         // Start match
         const mapLoadEvent = {
             type: "map_load" as const,
             timestamp: "2024-01-15T10:30:00Z",
             data: { mapName: "Tell", scenario: "Checkpoint" },
-            rawLine: "[2024.01.15-10.30.00:000] LogGameMode: LoadMap: Tell?Scenario=Scenario_Tell_Checkpoint_Security"
+            rawLine: "LoadMap"
         };
         StatsService.processEvent( mapLoadEvent, serverId );
-
         const activeMatch = StatsService.getActiveMatch( serverId );
         expect( activeMatch ).toBeDefined();
-
         // End match with a later timestamp to ensure duration > 0 (15 minutes later)
         StatsService.endMatch( serverId, "completed", "2024-01-15T10:45:00Z" );
-
         // Verify match was ended
-        const endedActiveMatch = StatsService.getActiveMatch( serverId );
-        expect( endedActiveMatch ).toBeUndefined();
-
-        const match = statements.getMatchDetails.get( activeMatch!.matchId, serverId ) as any;
-        expect( match.status ).toBe( "completed" );
-        expect( match.end_time ).toBeDefined();
-        expect( match.duration_minutes ).toBeGreaterThan( 0 );
+        expect( StatsService.getActiveMatch( serverId ) ).toBeUndefined();
+        // Validate match
+        let matchRaw = statements.getMatchDetails.get( activeMatch!.matchId, serverId );
+        if ( ( matchRaw as any ).maps_played === undefined ) ( matchRaw as any ).maps_played = null;
+        const validatedMatch = v.parse( MatchHistorySchema, matchRaw );
+        expect( validatedMatch.status ).toBe( "completed" );
+        expect( validatedMatch.end_time ).toBeDefined();
+        expect( validatedMatch.duration_minutes ).toBeGreaterThan( 0 );
     } );
 
     test( "should get match history", () => {
@@ -330,10 +332,12 @@ describe( "Match History", () => {
 
         // Get match history
         const history = StatsService.getMatchHistory( serverId, 10 ) as MatchHistory[];
-        expect( history ).toHaveLength( 3 );
+        const historyRaw = StatsService.getMatchHistory( serverId, 10 );
+        const validatedHistory = historyRaw.map( h => v.parse( MatchHistorySchema, h ) );
+        expect( validatedHistory ).toHaveLength( 3 );
 
         // Should be ordered by start time descending (most recent first)
-        expect( new Date( history[ 0 ].start_time ).getTime() ).toBeGreaterThan( new Date( history[ 1 ].start_time ).getTime() );
+        expect( new Date( validatedHistory[ 0 ].start_time ).getTime() ).toBeGreaterThan( new Date( validatedHistory[ 1 ].start_time ).getTime() );
     } );
 
     test( "should get detailed match information", () => {
@@ -376,16 +380,17 @@ describe( "Match History", () => {
 
         // Get match details
         const details = StatsService.getMatchDetails( activeMatch!.matchId, serverId ) as MatchDetails;
+        const detailsRaw = StatsService.getMatchDetails( activeMatch!.matchId, serverId );
+        const validatedDetails = v.parse( MatchDetailsSchema, detailsRaw );
 
-        expect( details.match ).toBeDefined();
-        expect( details.participants ).toHaveLength( 2 );
-        expect( details.maps ).toHaveLength( 1 );
-        expect( details.maps[ 0 ].map_name ).toBe( "Tell" );
+        expect( validatedDetails.match ).toBeDefined();
+        expect( validatedDetails.participants ).toHaveLength( 2 );
+        expect( validatedDetails.maps ).toHaveLength( 1 );
+        expect( validatedDetails.maps[ 0 ].map_name ).toBe( "Tell" );
     } );
 
     test( "should handle server crash during match", () => {
         const statements = getStatements();
-
         // Setup server and match with players
         const server = statements.upsertServer.get(
             "test-server",
@@ -395,39 +400,34 @@ describe( "Match History", () => {
             "Test Description"
         ) as any;
         const serverId = server.id;
-
         // Start match and add player
         const mapLoadEvent = {
             type: "map_load" as const,
             timestamp: "2024-01-15T10:30:00Z",
             data: { mapName: "Tell", scenario: "Checkpoint" },
-            rawLine: "[2024.01.15-10.30.00:000] LogGameMode: LoadMap: Tell?Scenario=Scenario_Tell_Checkpoint_Security"
+            rawLine: "LoadMap"
         };
         StatsService.processEvent( mapLoadEvent, serverId );
-
-        const playerJoinEvent = {
-            type: "player_join" as const,
+        StatsService.processEvent( {
+            type: "player_join",
             timestamp: "2024-01-15T10:31:00Z",
             data: {
                 playerName: "TestPlayer",
                 steamId: "steam_testplayer_crash"
             },
-            rawLine: "[2024.01.15-10.31.00:000] LogOnlineSession: Player \"TestPlayer\" joined (EOS: steam_testplayer_crash)"
-        };
-        StatsService.processEvent( playerJoinEvent, serverId );
-
+            rawLine: "joined"
+        }, serverId );
         const activeMatch = StatsService.getActiveMatch( serverId );
         expect( activeMatch ).toBeDefined();
-
         // Simulate server crash
         StatsService.handleServerCrash( serverId );
-
         // Verify match was aborted
-        const crashedActiveMatch = StatsService.getActiveMatch( serverId );
-        expect( crashedActiveMatch ).toBeUndefined();
-
-        const match = statements.getMatchDetails.get( activeMatch!.matchId, serverId ) as any;
-        expect( match.status ).toBe( "aborted" );
+        expect( StatsService.getActiveMatch( serverId ) ).toBeUndefined();
+        // Validate match
+        let matchRaw = statements.getMatchDetails.get( activeMatch!.matchId, serverId );
+        if ( ( matchRaw as any ).maps_played === undefined ) ( matchRaw as any ).maps_played = null;
+        const validatedMatch = v.parse( MatchHistorySchema, matchRaw );
+        expect( validatedMatch.status ).toBe( "aborted" );
     } );
 
     test( "should track map changes within a match", () => {
@@ -470,8 +470,10 @@ describe( "Match History", () => {
 
         // Verify both maps are tracked for the match
         const details = StatsService.getMatchDetails( initialMatchId, serverId ) as MatchDetails;
-        expect( details.maps ).toHaveLength( 2 );
-        expect( details.maps[ 0 ].sequence_order ).toBe( 1 );
-        expect( details.maps[ 1 ].sequence_order ).toBe( 2 );
+        const detailsRaw2 = StatsService.getMatchDetails( initialMatchId, serverId );
+        const validatedDetails2 = v.parse( MatchDetailsSchema, detailsRaw2 );
+        expect( validatedDetails2.maps ).toHaveLength( 2 );
+        expect( validatedDetails2.maps[ 0 ].sequence_order ).toBe( 1 );
+        expect( validatedDetails2.maps[ 1 ].sequence_order ).toBe( 2 );
     } );
 } );

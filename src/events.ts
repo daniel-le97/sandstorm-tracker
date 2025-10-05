@@ -449,6 +449,22 @@ export function parseLogEvent ( logLine: string ): GameEvent | null {
     return null;
 }
 
+// Optional helper that parses a single log line and validates it with Valibot
+export function parseAndValidateLogEvent ( logLine: string ) {
+    const event = parseLogEvent( logLine );
+    if ( !event ) return null;
+    try
+    {
+        // Lazy import to avoid circular dependency at module load
+        const { validateEvent } = require( './event-validation' );
+        return validateEvent( event );
+    } catch ( e )
+    {
+        // Re-throw so callers can handle validation errors if desired
+        throw e;
+    }
+}
+
 /**
  * Parses multiple log lines and returns an array of events
  * @param logContent - Multiple log lines (e.g., from tail command)
