@@ -33,7 +33,8 @@
     "clean:logs": "node -e \"const fs = require('fs'); const path = require('path'); const logsDir = path.join('.', 'logs'); if (fs.existsSync(logsDir)) { fs.rmSync(logsDir, { recursive: true, force: true }); console.log('Cleaned logs directory'); }\"",
     "setup": "bun run scripts/setup-dev-environment.ts",
     "setup:example": "node scripts/setup-example-config.js",
-    "validate:config": "bun run src/validate-config.ts"
+    "validate:config": "bun run src/validate-config.ts",
+    "cli": "bun run examples/cli.ts"
   },
   "keywords": [
     "insurgency",
