@@ -1,4 +1,4 @@
-import { test, expect, describe, beforeAll, afterAll, beforeEach } from 'bun:test';
+import { test, expect, describe, beforeAll, beforeEach } from 'bun:test';
 import { writeFileSync, unlinkSync } from 'fs';
 import { Database } from 'bun:sqlite';
 import { parseLogEvents } from '../events';
@@ -44,19 +44,6 @@ describe( 'Integration Tests', () => {
 
         // Clear active sessions
         StatsService.endAllSessions();
-    } );
-
-    afterAll( () => {
-        // Clean up test files
-        try
-        {
-            db?.close();
-            unlinkSync( 'test-sample.log' );
-            unlinkSync( testDbPath );
-        } catch ( e )
-        {
-            // Ignore cleanup errors
-        }
     } );
 
     test( 'Complete log processing pipeline works end-to-end', () => {

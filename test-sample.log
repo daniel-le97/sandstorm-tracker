@@ -1,0 +1,9 @@
+[2025.10.05-12.00.00:000][001]LogNet: Join succeeded: Alice
+[2025.10.05-12.00.30:000][002]LogNet: Join succeeded: Bob  
+[2025.10.05-12.01.00:000][003]LogGameplayEvents: Display: Alice[76561198000000001, team 0] killed Bob[76561198000000002, team 1] with BP_Firearm_M16A4_C_2147481419
+[2025.10.05-12.01.15:000][004]LogGameplayEvents: Display: Bob[76561198000000002, team 1] killed Alice[76561198000000001, team 0] with BP_Firearm_AK74_C_2147481420
+[2025.10.05-12.01.30:000][005]LogChat: Display: Alice(76561198000000001) Global Chat: !stats
+[2025.10.05-12.01.35:000][006]LogChat: Display: Bob(76561198000000002) Global Chat: !kdr
+[2025.10.05-12.01.40:000][007]LogChat: Display: Alice(76561198000000001) Global Chat: !top
+[2025.10.05-12.01.45:000][008]LogChat: Display: Bob(76561198000000002) Global Chat: !guns
+[2025.10.05-12.02.00:000][009]LogGameplayEvents: Display: Alice[76561198000000001, team 0] killed Bob[76561198000000002, team 1] with BP_Firearm_M16A4_C_2147481419

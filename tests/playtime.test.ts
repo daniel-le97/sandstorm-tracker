@@ -1,4 +1,4 @@
-import { test, expect, describe, beforeAll, afterAll, beforeEach } from 'bun:test';
+import { test, expect, describe, beforeAll, beforeEach } from 'bun:test';
 import { Database } from 'bun:sqlite';
 import { unlinkSync } from 'fs';
 
@@ -41,18 +41,6 @@ describe( 'Playtime Tracking', () => {
 
         // Clear active sessions
         StatsService.endAllSessions();
-    } );
-
-    afterAll( () => {
-        // Clean up test database
-        try
-        {
-            db?.close();
-            unlinkSync( testDbPath );
-        } catch ( e )
-        {
-            // Ignore cleanup errors
-        }
     } );
 
     test( 'Player join starts session tracking', () => {

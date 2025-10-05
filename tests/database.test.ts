@@ -1,4 +1,4 @@
-import { test, expect, describe, beforeAll, afterAll, beforeEach } from 'bun:test';
+import { test, expect, describe, beforeAll, beforeEach } from 'bun:test';
 import { Database } from 'bun:sqlite';
 import { unlinkSync } from 'fs';
 
@@ -37,18 +37,6 @@ describe( 'Database Operations', () => {
         db.run( 'DELETE FROM players' );
         db.run( 'DELETE FROM map_rounds' );
         db.run( 'DELETE FROM maps' );
-    } );
-
-    afterAll( () => {
-        // Clean up test database
-        try
-        {
-            db?.close();
-            unlinkSync( testDbPath );
-        } catch ( e )
-        {
-            // Ignore cleanup errors
-        }
     } );
 
     test( 'Database initializes correctly', () => {

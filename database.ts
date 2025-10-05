@@ -1,21 +1,63 @@
 import { Database } from "bun:sqlite";
+import { mkdirSync } from "fs";
+import { dirname } from "path";
 
 let db: Database | null = null;
+let currentDbPath: string | null = null;
 
 // Get or create database connection
 function getDatabase (): Database {
+    let dbPath = process.env.TEST_DB_PATH || "sandstorm_stats.db";
+
+    // If it's a test database, ensure it goes in ./tests/databases directory
+    if ( process.env.TEST_DB_PATH )
+    {
+        dbPath = `tests/databases/${ process.env.TEST_DB_PATH }`;
+
+        // Create the tests/databases directory if it doesn't exist
+        try
+        {
+            mkdirSync( dirname( dbPath ), { recursive: true } );
+        } catch ( e )
+        {
+            // Directory might already exist, ignore error
+        }
+    }
+
+    // Reset connection if the database path has changed (for test isolation)
+    if ( db && currentDbPath !== dbPath )
+    {
+        try
+        {
+            db.close();
+        } catch ( e )
+        {
+            // Ignore close errors
+        }
+        db = null;
+        currentDbPath = null;
+    }
+
     if ( !db )
     {
-        const dbPath = process.env.TEST_DB_PATH || "sandstorm_stats.db";
         db = new Database( dbPath );
-        // Enable foreign key constraints
+        currentDbPath = dbPath;
+
+        // Configure database for optimal performance and concurrency
         db.run( "PRAGMA foreign_keys = ON;" );
+        db.run( "PRAGMA journal_mode = WAL;" );
+        db.run( "PRAGMA synchronous = NORMAL;" );
+        db.run( "PRAGMA cache_size = 1000;" );
+        db.run( "PRAGMA temp_store = memory;" );
+
+        // Initialize tables for the new database
+        createTables();
     }
     return db;
 }
 
-// Create tables for tracking player statistics
-export function initializeDatabase () {
+// Create database tables
+function createTables () {
     const database = getDatabase();
     console.log( "🗄️  Initializing database tables..." );
 
@@ -152,6 +194,11 @@ export function initializeDatabase () {
     database.run( `CREATE INDEX IF NOT EXISTS idx_player_round_stats_round_id ON player_round_stats(round_id)` );
 
     console.log( "✅ Database tables created successfully!" );
+}
+
+// Public function for manual database initialization
+export function initializeDatabase () {
+    createTables();
 }
 
 // Prepared statements for better performance
@@ -318,12 +365,23 @@ function createStatements () {
 }
 
 let statements: ReturnType<typeof createStatements> | null = null;
+let statementsDbPath: string | null = null;
 
 // Get statements, creating them if needed
 export function getStatements () {
+    const dbPath = process.env.TEST_DB_PATH || "sandstorm_stats.db";
+
+    // Reset statements if the database path has changed
+    if ( statements && statementsDbPath !== dbPath )
+    {
+        statements = null;
+        statementsDbPath = null;
+    }
+
     if ( !statements )
     {
         statements = createStatements();
+        statementsDbPath = dbPath;
     }
     return statements;
 }

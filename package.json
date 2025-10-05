@@ -10,7 +10,8 @@
     "typescript": "^5"
   },
   "scripts": {
-    "test": "bun run test-runner.ts", 
-    "dev": "bun run index.ts"
+    "test": "bun test && bun run test:cleanup",
+    "dev": "bun run index.ts",
+    "test:cleanup": "bun run scripts/cleanup-test-databases.ts"
   }
 }
