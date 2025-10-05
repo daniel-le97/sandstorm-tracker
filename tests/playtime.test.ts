@@ -21,7 +21,7 @@ describe( 'Playtime Tracking', () => {
         process.env.TEST_DB_PATH = testDbPath;
 
         // Import modules
-        const dbModule = await import( '../database' );
+        const dbModule = await import( '../database.ts' );
         StatsService = ( await import( '../stats-service' ) ).default;
         db = dbModule.default();
     } );

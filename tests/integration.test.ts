@@ -23,7 +23,7 @@ describe( 'Integration Tests', () => {
         process.env.TEST_DB_PATH = testDbPath;
 
         // Import modules
-        const dbModule = await import( '../database' );
+        const dbModule = await import( '../database.ts' );
         StatsService = ( await import( '../stats-service' ) ).default;
         CommandHandler = ( await import( '../command-handler' ) ).default;
         db = dbModule.default();

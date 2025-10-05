@@ -9,7 +9,7 @@ describe( 'Chat Commands', () => {
         process.env.TEST_DB_PATH = 'test_commands.db';
 
         // Import modules
-        await import( '../database' );
+        await import( '../database.ts' );
         StatsService = ( await import( '../stats-service' ) ).default;
         CommandHandler = ( await import( '../command-handler' ) ).default;
 

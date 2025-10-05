@@ -23,7 +23,7 @@ describe( 'Database Operations', () => {
         process.env.TEST_DB_PATH = testDbPath;
 
         // Import modules after setting test path
-        const dbModule = await import( '../database' );
+        const dbModule = await import( '../database.ts' );
         StatsService = ( await import( '../stats-service' ) ).default;
 
         db = dbModule.default();
