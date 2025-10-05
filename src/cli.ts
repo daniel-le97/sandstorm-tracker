@@ -1,7 +1,8 @@
 #!/usr/bin/env bun
-import { Command } from '../src/cli/command';
+import { Command } from './cli/command';
+import { initializeApplication, startWatching } from './app';
 
-const root = new Command( {
+export const root = new Command( {
     name: 'sandstorm',
     description: 'Sandstorm tracker CLI',
 } );
@@ -17,9 +18,13 @@ const serve = new Command( {
         port: { type: 'string', alias: 'p', description: 'Port to listen on', default: '3000' },
     },
     action: async ( { flags, args } ) => {
-        console.log( 'Starting server on port', flags.port );
+        // start the actual application (initialize + start watchers)
         if ( flags.verbose ) console.log( 'verbose enabled' );
         if ( args.length ) console.log( 'extra args:', args );
+
+        await initializeApplication();
+        // startWatching will block (it awaits the watcher promises)
+        await startWatching();
     },
 } );
 
@@ -33,5 +38,3 @@ root.action = ( { flags } ) => {
     if ( flags.verbose ) console.log( 'root verbose' );
     console.log( 'Run with `serve` or `version`. Use --help for details' );
 };
-
-await root.run();

@@ -1,6 +1,7 @@
-import { initializeApplication, startWatching, stopApp } from "./src/app";
+import { root } from './src/cli';
+import { stopApp } from './src/app';
 
-// Thin launcher: import and call the main application
+// Thin launcher: delegate to CLI (root command) while retaining graceful shutdown
 async function main (): Promise<void> {
     process.on( 'SIGINT', async () => {
         console.log( 'Received SIGINT' );
@@ -15,11 +16,8 @@ async function main (): Promise<void> {
 
     try
     {
-        await initializeApplication();
-        // install graceful shutdown handlers
-
-
-        await startWatching();
+        // Delegate startup to the CLI root command (it will call initialize/startWatching when appropriate)
+        await root.run();
     } catch ( error )
     {
         console.error( "❌ Failed to start multi-server tracker:", error );
