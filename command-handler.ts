@@ -1,0 +1,166 @@
+import StatsService from './stats-service';
+import type { ChatEvent } from './events';
+
+// Type definitions for database results
+interface PlayerStats {
+    player_name: string;
+    steam_id: string;
+    total_playtime_minutes: number;
+    total_kills: number;
+    total_deaths: number;
+    team_kills: number;
+    suicides: number;
+    kdr: number;
+}
+
+interface TopPlayer {
+    player_name: string;
+    total_kills: number;
+    total_deaths: number;
+    kdr: number;
+}
+
+interface WeaponStat {
+    weapon_name: string;
+    kills: number;
+    deaths: number;
+    team_kills: number;
+    suicides: number;
+}
+
+export class CommandHandler {
+
+    /**
+     * Process a chat command and return response (if any)
+     */
+    static handleCommand ( event: ChatEvent ): string | null {
+        const { command, args, playerName, steamId } = event.data;
+
+        try
+        {
+            switch ( command.toLowerCase() )
+            {
+                case '!stats':
+                    return this.handleStatsCommand( steamId, playerName, args );
+
+                case '!kdr':
+                    return this.handleKdrCommand( steamId, playerName );
+
+                case '!top':
+                    return this.handleTopCommand( args );
+
+                case '!guns':
+                case '!weapons':
+                    return this.handleWeaponsCommand( steamId, playerName );
+
+                default:
+                    return null; // Unknown command
+            }
+        } catch ( error )
+        {
+            console.error( `Error handling command ${ command }:`, error );
+            return `Error processing command ${ command }`;
+        }
+    }
+
+    /**
+     * Handle !stats command - show player stats (self or another player)
+     */
+    private static handleStatsCommand ( steamId: string, playerName: string, args?: string[] ): string {
+        let targetSteamId = steamId;
+        let targetName = playerName;
+
+        // If a player name is provided, try to find that player
+        if ( args && args.length > 0 )
+        {
+            const searchName = args.join( ' ' ).toLowerCase();
+            // TODO: Implement player search by partial name
+            // For now, just show requesting player's stats
+            targetName = searchName;
+        }
+
+        const stats = StatsService.getPlayerStats( targetSteamId ) as PlayerStats | null;
+
+        if ( !stats )
+        {
+            return `Stats not found for ${ targetName }`;
+        }
+
+        const playtimeHours = Math.round( ( stats.total_playtime_minutes || 0 ) / 60 * 10 ) / 10;
+        const scorePerMin = stats.total_playtime_minutes > 0
+            ? Math.round( ( stats.total_kills || 0 ) / ( stats.total_playtime_minutes || 1 ) * 60 * 100 ) / 100
+            : 0;
+
+        return `📊 ${ stats.player_name }: ${ stats.total_kills } kills, ${ stats.total_deaths } deaths, K/D: ${ stats.kdr }, Score/min: ${ scorePerMin }, Playtime: ${ playtimeHours }h`;
+    }
+
+    /**
+     * Handle !kdr command - show kill/death ratio
+     */
+    private static handleKdrCommand ( steamId: string, playerName: string ): string {
+        const stats = StatsService.getPlayerStats( steamId ) as PlayerStats | null;
+
+        if ( !stats )
+        {
+            return `Stats not found for ${ playerName }`;
+        }
+
+        return `💀 ${ stats.player_name }: ${ stats.total_kills } kills, ${ stats.total_deaths } deaths, K/D ratio: ${ stats.kdr }`;
+    }
+
+    /**
+     * Handle !top command - show top players
+     */
+    private static handleTopCommand ( args?: string[] ): string {
+        const limit = args && args[ 0 ] ? Math.min( parseInt( args[ 0 ] ) || 3, 10 ) : 3;
+        const topPlayers = StatsService.getTopPlayers( limit ) as TopPlayer[];
+
+        if ( !topPlayers || topPlayers.length === 0 )
+        {
+            return "No player statistics available yet";
+        }
+
+        let response = `🏆 Top ${ limit } Players:\n`;
+        topPlayers.forEach( ( player, index: number ) => {
+            response += `${ index + 1 }. ${ player.player_name }: ${ player.total_kills } kills (K/D: ${ player.kdr })\n`;
+        } );
+
+        return response.trim();
+    }
+
+    /**
+     * Handle !guns/!weapons command - show player's weapon stats
+     */
+    private static handleWeaponsCommand ( steamId: string, playerName: string ): string {
+        const weapons = StatsService.getPlayerWeapons( steamId, 3 ) as WeaponStat[];
+
+        if ( !weapons || weapons.length === 0 )
+        {
+            return `No weapon stats found for ${ playerName }`;
+        }
+
+        let response = `🔫 ${ playerName }'s Top Weapons:\n`;
+        weapons.forEach( ( weapon, index: number ) => {
+            response += `${ index + 1 }. ${ weapon.weapon_name }: ${ weapon.kills } kills`;
+            if ( weapon.deaths > 0 )
+            {
+                response += ` (${ weapon.deaths } deaths)`;
+            }
+            response += '\n';
+        } );
+
+        return response.trim();
+    }
+
+    /**
+     * Search for players by partial name match
+     * Returns the best match or null if not found
+     */
+    private static findPlayerByName ( searchName: string ): { steamId: string, playerName: string; } | null {
+        // TODO: Implement database query to search players by partial name
+        // This would require adding a method to StatsService
+        return null;
+    }
+}
+
+export default CommandHandler;
