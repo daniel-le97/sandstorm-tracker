@@ -9,9 +9,9 @@ describe( 'Chat Commands', () => {
         process.env.TEST_DB_PATH = 'test_commands.db';
 
         // Import modules
-        await import( '../database.ts' );
-        StatsService = ( await import( '../stats-service' ) ).default;
-        CommandHandler = ( await import( '../command-handler' ) ).default;
+        await import( '../src/database.ts' );
+        StatsService = ( await import( '../src/stats-service' ) ).default;
+        CommandHandler = ( await import( '../src/command-handler' ) ).default;
 
         // Set up test data
         StatsService.processEvent( {

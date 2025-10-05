@@ -1,7 +1,7 @@
 import { test, expect, describe, beforeAll, beforeEach } from 'bun:test';
 import { writeFileSync, unlinkSync } from 'fs';
 import { Database } from 'bun:sqlite';
-import { parseLogEvents } from '../events';
+import { parseLogEvents } from '../src/events';
 
 describe( 'Integration Tests', () => {
     let StatsService: any;
@@ -23,15 +23,15 @@ describe( 'Integration Tests', () => {
         process.env.TEST_DB_PATH = testDbPath;
 
         // Import modules
-        const dbModule = await import( '../database.ts' );
-        StatsService = ( await import( '../stats-service' ) ).default;
-        CommandHandler = ( await import( '../command-handler' ) ).default;
+        const dbModule = await import( '../src/database.ts' );
+        StatsService = ( await import( '../src/stats-service' ) ).default;
+        CommandHandler = ( await import( '../src/command-handler' ) ).default;
         db = dbModule.default();
     } );
 
     beforeEach( () => {
         // Get a fresh database connection for each test
-        const dbModule = require( '../database' );
+        const dbModule = require( '../src/database' );
         db = dbModule.default();
 
         // Clear all data before each test

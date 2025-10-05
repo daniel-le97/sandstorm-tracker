@@ -1,5 +1,5 @@
 import { test, expect, describe } from 'bun:test';
-import { parseLogEvent, parseLogEvents, type GameEvent, type PlayerKillEvent, type PlayerJoinEvent, type PlayerLeaveEvent, type ChatEvent, type RoundOverEvent, type MapLoadEvent, type DifficultyEvent } from '../events';
+import { parseLogEvent, parseLogEvents, type GameEvent, type PlayerKillEvent, type PlayerJoinEvent, type PlayerLeaveEvent, type ChatEvent, type RoundOverEvent, type MapLoadEvent, type DifficultyEvent } from '../src/events';
 
 describe( 'Event Parsing', () => {
     test( 'Game Over Event', () => {

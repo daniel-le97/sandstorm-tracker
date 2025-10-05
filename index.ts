@@ -1,8 +1,8 @@
 import { watch } from "fs/promises";
-import { parseLogEvents } from './events';
-import type { GameEvent, ChatEvent } from './events';
-import StatsService from './stats-service';
-import CommandHandler from './command-handler';
+import { parseLogEvents } from './src/events';
+import type { GameEvent, ChatEvent } from './src/events';
+import StatsService from './src/stats-service';
+import CommandHandler from './src/command-handler';
 
 const path = "C:\\Users\\danie\\code\\sandstorm-admin-wrapper\\sandstorm-server\\Insurgency\\Saved\\Logs";
 const serverId = "60844f66-b93b-4fe1-afc4-a0a91b493865";

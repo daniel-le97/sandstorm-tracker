@@ -1,2 +1,0 @@
-log=9fa1f292-8394-401f-986f-26207fb9f9e8.log
-Base Directory: C:/SAW_1.0.4/sandstorm-server/Insurgency/Binaries/Win64/

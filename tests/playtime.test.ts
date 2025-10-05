@@ -21,14 +21,14 @@ describe( 'Playtime Tracking', () => {
         process.env.TEST_DB_PATH = testDbPath;
 
         // Import modules
-        const dbModule = await import( '../database.ts' );
-        StatsService = ( await import( '../stats-service' ) ).default;
+        const dbModule = await import( '../src/database.ts' );
+        StatsService = ( await import( '../src/stats-service' ) ).default;
         db = dbModule.default();
     } );
 
     beforeEach( () => {
         // Get a fresh database connection for each test
-        const dbModule = require( '../database' );
+        const dbModule = require( '../src/database' );
         db = dbModule.default();
 
         // Clear all data before each test
