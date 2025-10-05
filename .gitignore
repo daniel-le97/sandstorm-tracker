@@ -1,37 +1,107 @@
-# dependencies (bun install)
-node_modules
+# Dependencies (bun install)
+node_modules/
+jspm_packages/
+.bun/
+bun.lockb
 
-# output
-out
-dist
+# Build output
+out/
+dist/
+build/
 *.tgz
 
-# code coverage
-coverage
+# Code coverage
+coverage/
 *.lcov
+.nyc_output/
 
-# logs
-logs
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
 _.log
 report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 
-# dotenv environment variable files
+# Environment variable files
 .env
+.env.*
+!.env.example
 .env.development.local
 .env.test.local
 .env.production.local
 .env.local
 
-# caches
+# Caches
 .eslintcache
-.cache
+.stylelintcache
+.cache/
+.parcel-cache/
 *.tsbuildinfo
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
 
-# IntelliJ based IDEs
-.idea
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+sandstorm_stats.db*
+multi_server_sandstorm_stats.db*
 
-# Finder (MacOS) folder config
+# Test databases
+tests/databases/
+tests/test-*.db
+
+# IDE files
+.idea/
+.vscode/settings.json
+.vscode/launch.json
+.vscode/tasks.json
+*.swp
+*.swo
+*~
+
+# OS generated files
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
 
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
 
-tests/databases
+# Temporary files
+temp/
+tmp/
+*.tmp
+*.temp
+
+# Application specific
+config/local.json
+config/production.json
+config/development.json
+
+# Backup files
+*.backup
+*.bak
+*.old
+
+# Lock files (keep bun.lock for consistency)
+package-lock.json
+yarn.lock
+
+# Runtime directories
+runtime/
+run/

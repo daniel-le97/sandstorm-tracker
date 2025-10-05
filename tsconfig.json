@@ -14,16 +14,26 @@
     "verbatimModuleSyntax": true,
     "noEmit": true,
 
+    // Additional options for better development experience
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+
     // Best practices
     "strict": true,
     "skipLibCheck": true,
     "noFallthroughCasesInSwitch": true,
-    "noUncheckedIndexedAccess": true,
+    "noUncheckedIndexedAccess": false,
     "noImplicitOverride": true,
+    "noImplicitReturns": true,
 
     // Some stricter flags (disabled by default)
     "noUnusedLocals": false,
     "noUnusedParameters": false,
-    "noPropertyAccessFromIndexSignature": false
-  }
+    "noPropertyAccessFromIndexSignature": false,
+    "useUnknownInCatchVariables": true
+  },
+  "include": ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx", "src/**/*", "tests/**/*", "scripts/**/*", "examples/**/*"],
+  "exclude": ["node_modules", "dist", "build", "out", ".bun", "coverage", "tests/databases", "**/*.test.db"]
 }

@@ -1,0 +1,45 @@
+{
+  "recommendations": [
+    // Essential for TypeScript development
+    "ms-vscode.vscode-typescript-next",
+
+    // Code formatting and linting
+    "esbenp.prettier-vscode",
+    "ms-vscode.vscode-json",
+
+    // EditorConfig support
+    "editorconfig.editorconfig",
+
+    // Git integration
+    "mhutchie.git-graph",
+    "eamodio.gitlens",
+
+    // Database tools for SQLite
+    "qwtel.sqlite-viewer",
+    "alexcvzz.vscode-sqlite",
+
+    // Bun support
+    "oven.bun-vscode",
+
+    // Markdown support for documentation
+    "yzhang.markdown-all-in-one",
+
+    // Path autocomplete
+    "christian-kohler.path-intellisense",
+
+    // Bracket colorization
+    "coenraads.bracket-pair-colorizer-2",
+
+    // Better comments
+    "aaron-bond.better-comments",
+
+    // File utils
+    "sleistner.vscode-fileutils",
+
+    // Environment file support
+    "mikestead.dotenv",
+
+    // Error lens for better error visibility
+    "usernamehw.errorlens"
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "servers": [
+    {
+      "id": "server-1",
+      "name": "Main Server",
+      "logPath": "/opt/sandstorm/Insurgency/Saved/Logs",
+      "serverId": "60844f66-b93b-4fe1-afc4-a0a91b493865",
+      "enabled": true,
+      "description": "Primary Sandstorm server"
+    },
+    {
+      "id": "server-2",
+      "name": "Secondary Server",
+      "logPath": "/opt/sandstorm2/Insurgency/Saved/Logs",
+      "serverId": "a1b2c3d4-e5f6-4890-8123-ef1234567890",
+      "enabled": false,
+      "description": "Backup server for testing"
+    }
+  ],
+  "database": {
+    "path": "sandstorm_stats.db",
+    "enableWAL": true,
+    "cacheSize": 2000
+  },
+  "logging": {
+    "level": "info",
+    "enableServerLogs": true
+  },
+  "performance": {
+    "debounceDelay": 150,
+    "maxConcurrentWatchers": 5
+  }
+}

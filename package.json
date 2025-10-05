@@ -1,17 +1,51 @@
 {
-  "name": "sandstorm-wrapper",
+  "name": "sandstorm-multi-server-tracker",
+  "version": "2.0.0",
+  "description": "Multi-server tracker for Insurgency: Sandstorm with real-time statistics and chat commands",
   "module": "index.ts",
   "type": "module",
   "private": true,
+  "engines": {
+    "bun": ">=1.0.0"
+  },
+  "os": [
+    "win32",
+    "darwin",
+    "linux"
+  ],
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "1.2.23"
   },
   "peerDependencies": {
     "typescript": "^5"
   },
   "scripts": {
-    "test": "bun test && bun run test:cleanup",
+    "start": "bun run index.ts",
     "dev": "bun run index.ts",
-    "test:cleanup": "bun run scripts/cleanup-test-databases.ts"
+    "dev:watch": "bun --watch index.ts",
+    "test": "bun test",
+    "test:watch": "bun test --watch",
+    "test:cleanup": "bun run scripts/cleanup-test-databases.ts",
+    "test:full": "bun test && bun run test:cleanup",
+    "build": "bun build index.ts --outdir ./dist --target bun",
+    "clean": "bun run test:cleanup && bun run clean:logs",
+    "clean:logs": "node -e \"const fs = require('fs'); const path = require('path'); const logsDir = path.join('.', 'logs'); if (fs.existsSync(logsDir)) { fs.rmSync(logsDir, { recursive: true, force: true }); console.log('Cleaned logs directory'); }\"",
+    "setup": "bun run scripts/setup-dev-environment.ts",
+    "setup:example": "node scripts/setup-example-config.js",
+    "validate:config": "bun run src/validate-config.ts"
+  },
+  "keywords": [
+    "insurgency",
+    "sandstorm",
+    "game-server",
+    "statistics",
+    "tracker",
+    "multi-server"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/daniel-le97/sandstorm-tracker"
   }
 }
