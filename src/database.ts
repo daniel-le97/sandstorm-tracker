@@ -522,7 +522,7 @@ export class DatabaseService {
         // If it's a test database, ensure it goes in ./tests/databases directory
         if ( process.env.TEST_DB_PATH )
         {
-            dbPath = `tests/databases/${ process.env.TEST_DB_PATH }`;
+            dbPath = `${ process.env.TEST_DB_PATH }`;
 
             // Create the tests/databases directory if it doesn't exist
             try
