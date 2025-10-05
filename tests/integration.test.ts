@@ -11,9 +11,11 @@ describe( 'Integration Tests', () => {
 
     beforeAll( async () => {
         // Clean up any existing test database
-        try {
+        try
+        {
             unlinkSync( testDbPath );
-        } catch ( e ) {
+        } catch ( e )
+        {
             // File doesn't exist, that's fine
         }
 
@@ -31,7 +33,7 @@ describe( 'Integration Tests', () => {
         // Get a fresh database connection for each test
         const dbModule = require( '../database' );
         db = dbModule.default();
-        
+
         // Clear all data before each test
         db.run( 'DELETE FROM chat_commands' );
         db.run( 'DELETE FROM kills' );
@@ -39,7 +41,7 @@ describe( 'Integration Tests', () => {
         db.run( 'DELETE FROM players' );
         db.run( 'DELETE FROM map_rounds' );
         db.run( 'DELETE FROM maps' );
-        
+
         // Clear active sessions
         StatsService.endAllSessions();
     } );

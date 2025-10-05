@@ -3,12 +3,13 @@ import { Database } from "bun:sqlite";
 let db: Database | null = null;
 
 // Get or create database connection
-function getDatabase(): Database {
-    if (!db) {
+function getDatabase (): Database {
+    if ( !db )
+    {
         const dbPath = process.env.TEST_DB_PATH || "sandstorm_stats.db";
-        db = new Database(dbPath);
+        db = new Database( dbPath );
         // Enable foreign key constraints
-        db.run("PRAGMA foreign_keys = ON;");
+        db.run( "PRAGMA foreign_keys = ON;" );
     }
     return db;
 }
@@ -319,8 +320,9 @@ function createStatements () {
 let statements: ReturnType<typeof createStatements> | null = null;
 
 // Get statements, creating them if needed
-export function getStatements() {
-    if (!statements) {
+export function getStatements () {
+    if ( !statements )
+    {
         statements = createStatements();
     }
     return statements;
@@ -330,6 +332,6 @@ export function getStatements() {
 initializeDatabase();
 
 // Export function to get database instance for direct queries in tests
-export default function getDefaultDatabase() {
+export default function getDefaultDatabase () {
     return getDatabase();
 }

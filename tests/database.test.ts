@@ -278,8 +278,8 @@ describe( 'Database Operations', () => {
                     killer: 'KillTypeTest',
                     killerSteamId: '76561198000000200',
                     killerTeam: 0,
-                    victim: `Enemy${i}`,
-                    victimSteamId: `7656119800000021${i}`,
+                    victim: `Enemy${ i }`,
+                    victimSteamId: `7656119800000021${ i }`,
                     victimTeam: 1,
                     weapon: 'M16A4'
                 },
