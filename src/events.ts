@@ -3,7 +3,7 @@
  * @param weaponBlueprintName - Full blueprint weapon name from logs
  * @returns Clean weapon name
  */
-function getCleanWeaponName(weaponBlueprintName: string): string {
+function getCleanWeaponName ( weaponBlueprintName: string ): string {
     // Common weapon mappings
     const weaponMap: Record<string, string> = {
         // Assault Rifles
@@ -57,16 +57,9 @@ function getCleanWeaponName(weaponBlueprintName: string): string {
         BP_Firearm_AT4: "AT4",
         BP_Firearm_M3MAAWS: "M3 MAAWS",
 
-        // Explosives and Special
-        BP_Projectile_Molotov: "Molotov Cocktail",
-        BP_Projectile_Grenade_Frag: "Frag Grenade",
-        BP_Projectile_Grenade_Smoke: "Smoke Grenade",
-        BP_Projectile_IED: "IED",
-        BP_Character_Player: "Fall Damage",
-        BP_Projectile_Rocket: "Rocket",
-        BP_Projectile_40mm: "40mm Grenade",
-
-        // Commander Fire Support
+        // Commander Fire Support (put specific patterns first)
+        BP_Projectile_Rocket_155mm: "155mm Artillery",
+        BP_Projectile_Rocket_120mm: "120mm Mortar",
         BP_Projectile_Mortar_HE: "Mortar Strike",
         BP_Projectile_Mortar_Smoke: "Mortar Smoke",
         BP_Projectile_Artillery_HE: "Artillery Strike",
@@ -75,8 +68,15 @@ function getCleanWeaponName(weaponBlueprintName: string): string {
         BP_Projectile_Hellfire: "Hellfire Missile",
         BP_Projectile_Airstrike: "Air Strike",
         BP_Projectile_Strafe: "Strafing Run",
-        BP_Projectile_Rocket_155mm: "155mm Artillery",
-        BP_Projectile_Rocket_120mm: "120mm Mortar",
+
+        // Explosives and Special
+        BP_Projectile_Molotov: "Molotov Cocktail",
+        BP_Projectile_Grenade_Frag: "Frag Grenade",
+        BP_Projectile_Grenade_Smoke: "Smoke Grenade",
+        BP_Projectile_IED: "IED",
+        BP_Character_Player: "Fall Damage",
+        BP_Projectile_Rocket: "Rocket", // Keep generic rocket last
+        BP_Projectile_40mm: "40mm Grenade",
 
         // Melee
         BP_Melee_Knife: "Combat Knife",
@@ -85,8 +85,10 @@ function getCleanWeaponName(weaponBlueprintName: string): string {
     };
 
     // First try to find exact match
-    for (const [blueprint, cleanName] of Object.entries(weaponMap)) {
-        if (weaponBlueprintName.includes(blueprint)) {
+    for ( const [ blueprint, cleanName ] of Object.entries( weaponMap ) )
+    {
+        if ( weaponBlueprintName.includes( blueprint ) )
+        {
             return cleanName;
         }
     }
@@ -94,21 +96,22 @@ function getCleanWeaponName(weaponBlueprintName: string): string {
     // If no match found, try to extract a reasonable name from the blueprint
     // Remove BP_Firearm_, BP_Projectile_, BP_Melee_ prefixes and suffixes
     let cleanName = weaponBlueprintName
-        .replace(/^BP_Firearm_/, "")
-        .replace(/^BP_Projectile_/, "")
-        .replace(/^BP_Melee_/, "")
-        .replace(/^BP_Character_/, "")
-        .replace(/_C_\d+$/, "") // Remove _C_numbers at the end
-        .replace(/_\d+$/, "") // Remove _numbers at the end
-        .replace(/_/g, " ") // Replace underscores with spaces
+        .replace( /^BP_Firearm_/, "" )
+        .replace( /^BP_Projectile_/, "" )
+        .replace( /^BP_Melee_/, "" )
+        .replace( /^BP_Character_/, "" )
+        .replace( /_C_\d+$/, "" ) // Remove _C_numbers at the end
+        .replace( /_\d+$/, "" ) // Remove _numbers at the end
+        .replace( /_/g, " " ) // Replace underscores with spaces
         .trim();
 
     // If we still have a reasonable name, return it capitalized
-    if (cleanName && cleanName.length > 0) {
+    if ( cleanName && cleanName.length > 0 )
+    {
         return cleanName
-            .split(" ")
-            .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-            .join(" ");
+            .split( " " )
+            .map( ( word ) => word.charAt( 0 ).toUpperCase() + word.slice( 1 ).toLowerCase() )
+            .join( " " );
     }
 
     // Last resort: return the original name
@@ -197,17 +200,18 @@ export interface DifficultyEvent extends GameEvent {
  * @param logLine - Raw log line from the game server
  * @returns GameEvent object or null if no pattern matches
  */
-export function parseLogEvent(logLine: string): GameEvent | null {
+export function parseLogEvent ( logLine: string ): GameEvent | null {
     const trimmedLine = logLine.trim();
-    if (!trimmedLine) return null;
+    if ( !trimmedLine ) return null;
 
     // console.log(trimmedLine);
     // Extract timestamp from the log line
-    const timestampMatch = trimmedLine.match(/^\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{3})\]/);
-    const timestamp = timestampMatch?.[1] ?? "";
+    const timestampMatch = trimmedLine.match( /^\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{3})\]/ );
+    const timestamp = timestampMatch?.[ 1 ] ?? "";
 
     // Game Over
-    if (trimmedLine.includes("LogGameplayEvents: Display: Game over")) {
+    if ( trimmedLine.includes( "LogGameplayEvents: Display: Game over" ) )
+    {
         return {
             type: "game_over",
             timestamp,
@@ -217,39 +221,66 @@ export function parseLogEvent(logLine: string): GameEvent | null {
     }
 
     // Player Join
-    const joinMatch = trimmedLine.match(/LogNet: Join succeeded: (.+)$/);
-    if (joinMatch?.[1]) {
+    const joinMatch = trimmedLine.match( /LogNet: Join succeeded: (.+)$/ );
+    if ( joinMatch?.[ 1 ] )
+    {
         return {
             type: "player_join",
             timestamp,
             data: {
-                playerName: joinMatch[1],
+                playerName: joinMatch[ 1 ],
             },
             rawLine: trimmedLine,
         };
     }
 
     // Player Leave (RCON message)
-    const leaveMatch = trimmedLine.match(/LogRcon: .+ << say See you later, (.+)!$/);
-    if (leaveMatch?.[1]) {
+    const leaveMatch = trimmedLine.match( /LogRcon: .+ << say See you later, (.+)!$/ );
+    if ( leaveMatch?.[ 1 ] )
+    {
         return {
             type: "player_leave",
             timestamp,
             data: {
-                playerName: leaveMatch[1],
+                playerName: leaveMatch[ 1 ],
             },
             rawLine: trimmedLine,
         };
     }
 
     // Player Disconnect (EOS Anti-Cheat)
-    const disconnectMatch = trimmedLine.match(/LogEOSAntiCheat: Display: ServerUnregisterClient: UserId \((\d+)\)/);
-    if (disconnectMatch?.[1]) {
+    const disconnectMatch = trimmedLine.match( /LogEOSAntiCheat: Display: ServerUnregisterClient: UserId \((\d+)\)/ );
+    if ( disconnectMatch?.[ 1 ] )
+    {
         return {
             type: "player_disconnect",
             timestamp,
             data: {
-                steamId: disconnectMatch[1],
+                steamId: disconnectMatch[ 1 ],
+            },
+            rawLine: trimmedLine,
+        };
+    }
+
+    // AI Bot Kills (special case where killer is "?")
+    const aiBotKillMatch = trimmedLine.match(
+        /LogGameplayEvents: Display: \? killed (.+?)\[(\d+|INVALID), team (\d+)\] with (.+)$/
+    );
+    if ( aiBotKillMatch && aiBotKillMatch[ 1 ] && aiBotKillMatch[ 2 ] && aiBotKillMatch[ 3 ] && aiBotKillMatch[ 4 ] )
+    {
+        const [ , victim, victimSteamId, victimTeam, weapon ] = aiBotKillMatch;
+
+        return {
+            type: "player_kill",
+            timestamp,
+            data: {
+                killer: "AI Bot",
+                killerSteamId: "AI",
+                killerTeam: "999", // Special team for AI
+                victim,
+                victimSteamId,
+                victimTeam,
+                weapon: getCleanWeaponName( weapon ),
             },
             rawLine: trimmedLine,
         };
@@ -261,24 +292,27 @@ export function parseLogEvent(logLine: string): GameEvent | null {
     );
     if (
         killMatch &&
-        killMatch[1] &&
-        killMatch[2] &&
-        killMatch[3] &&
-        killMatch[4] &&
-        killMatch[5] &&
-        killMatch[6] &&
-        killMatch[7]
-    ) {
-        const [, killer, killerSteamId, killerTeam, victim, victimSteamId, victimTeam, weapon] = killMatch;
+        killMatch[ 1 ] &&
+        killMatch[ 2 ] &&
+        killMatch[ 3 ] &&
+        killMatch[ 4 ] &&
+        killMatch[ 5 ] &&
+        killMatch[ 6 ] &&
+        killMatch[ 7 ]
+    )
+    {
+        const [ , killer, killerSteamId, killerTeam, victim, victimSteamId, victimTeam, weapon ] = killMatch;
 
         let eventType: "player_kill" | "team_kill" | "suicide" = "player_kill";
 
         // Check if it's a suicide (killer and victim are the same)
-        if (killer === victim && killerSteamId === victimSteamId) {
+        if ( killer === victim && killerSteamId === victimSteamId )
+        {
             eventType = "suicide";
         }
         // Check if it's a team kill (same team but different players)
-        else if (killerTeam === victimTeam && killer !== victim) {
+        else if ( killerTeam === victimTeam && killer !== victim )
+        {
             eventType = "team_kill";
         }
 
@@ -288,11 +322,11 @@ export function parseLogEvent(logLine: string): GameEvent | null {
             data: {
                 killer,
                 killerSteamId,
-                killerTeam: parseInt(killerTeam),
+                killerTeam: parseInt( killerTeam ),
                 victim,
                 victimSteamId,
-                victimTeam: parseInt(victimTeam),
-                weapon: getCleanWeaponName(weapon),
+                victimTeam: parseInt( victimTeam ),
+                weapon: getCleanWeaponName( weapon ),
             },
             rawLine: trimmedLine,
         };
@@ -302,14 +336,15 @@ export function parseLogEvent(logLine: string): GameEvent | null {
     const roundOverMatch = trimmedLine.match(
         /LogGameplayEvents: Display: Round (\d+) Over: Team (\d+) won \(win reason: (.+)\)$/
     );
-    if (roundOverMatch?.[1] && roundOverMatch?.[2] && roundOverMatch?.[3]) {
+    if ( roundOverMatch?.[ 1 ] && roundOverMatch?.[ 2 ] && roundOverMatch?.[ 3 ] )
+    {
         return {
             type: "round_over",
             timestamp,
             data: {
-                roundNumber: parseInt(roundOverMatch[1]),
-                winningTeam: parseInt(roundOverMatch[2]),
-                winReason: roundOverMatch[3],
+                roundNumber: parseInt( roundOverMatch[ 1 ] ),
+                winningTeam: parseInt( roundOverMatch[ 2 ] ),
+                winReason: roundOverMatch[ 3 ],
             },
             rawLine: trimmedLine,
         };
@@ -321,22 +356,23 @@ export function parseLogEvent(logLine: string): GameEvent | null {
     );
     if (
         mapLoadMatch &&
-        mapLoadMatch[1] &&
-        mapLoadMatch[3] &&
-        mapLoadMatch[4] &&
-        mapLoadMatch[5] &&
-        mapLoadMatch[6] &&
-        mapLoadMatch[7]
-    ) {
-        const [, mapFolder, , scenario, mode, team, maxPlayers, lighting] = mapLoadMatch;
+        mapLoadMatch[ 1 ] &&
+        mapLoadMatch[ 3 ] &&
+        mapLoadMatch[ 4 ] &&
+        mapLoadMatch[ 5 ] &&
+        mapLoadMatch[ 6 ] &&
+        mapLoadMatch[ 7 ]
+    )
+    {
+        const [ , mapFolder, , scenario, mode, team, maxPlayers, lighting ] = mapLoadMatch;
         return {
             type: "map_load",
             timestamp,
             data: {
                 mapName: mapFolder,
-                scenario: `${scenario}_${mode}`,
+                scenario: `${ scenario }_${ mode }`,
                 team,
-                maxPlayers: parseInt(maxPlayers),
+                maxPlayers: parseInt( maxPlayers ),
                 lighting,
             },
             rawLine: trimmedLine,
@@ -344,25 +380,27 @@ export function parseLogEvent(logLine: string): GameEvent | null {
     }
 
     // Difficulty Set
-    const difficultyMatch = trimmedLine.match(/LogAI: Warning: AI difficulty set to ([\d.]+)$/);
-    if (difficultyMatch?.[1]) {
+    const difficultyMatch = trimmedLine.match( /LogAI: Warning: AI difficulty set to ([\d.]+)$/ );
+    if ( difficultyMatch?.[ 1 ] )
+    {
         return {
             type: "difficulty_set",
             timestamp,
             data: {
-                difficulty: parseFloat(difficultyMatch[1]),
+                difficulty: parseFloat( difficultyMatch[ 1 ] ),
             },
             rawLine: trimmedLine,
         };
     }
 
     // Chat Commands
-    const chatMatch = trimmedLine.match(/LogChat: Display: (.+?)\((\d+)\) Global Chat: (!.+)$/);
-    if (chatMatch?.[1] && chatMatch?.[2] && chatMatch?.[3]) {
-        const [, playerName, steamId, message] = chatMatch;
-        const commandParts = message.split(" ");
-        const command = commandParts[0];
-        const args = commandParts.slice(1);
+    const chatMatch = trimmedLine.match( /LogChat: Display: (.+?)\((\d+)\) Global Chat: (!.+)$/ );
+    if ( chatMatch?.[ 1 ] && chatMatch?.[ 2 ] && chatMatch?.[ 3 ] )
+    {
+        const [ , playerName, steamId, message ] = chatMatch;
+        const commandParts = message.split( " " );
+        const command = commandParts[ 0 ];
+        const args = commandParts.slice( 1 );
 
         return {
             type: "chat_command",
@@ -378,14 +416,16 @@ export function parseLogEvent(logLine: string): GameEvent | null {
     }
 
     // Fall damage (can lead to suicide)
-    if (trimmedLine.includes("LogSoldier: Applying") && trimmedLine.includes("fall damage")) {
-        const fallDamageMatch = trimmedLine.match(/LogSoldier: Applying ([\d.]+) fall damage/);
-        if (fallDamageMatch?.[1]) {
+    if ( trimmedLine.includes( "LogSoldier: Applying" ) && trimmedLine.includes( "fall damage" ) )
+    {
+        const fallDamageMatch = trimmedLine.match( /LogSoldier: Applying ([\d.]+) fall damage/ );
+        if ( fallDamageMatch?.[ 1 ] )
+        {
             return {
                 type: "fall_damage",
                 timestamp,
                 data: {
-                    damage: parseFloat(fallDamageMatch[1]),
+                    damage: parseFloat( fallDamageMatch[ 1 ] ),
                 },
                 rawLine: trimmedLine,
             };
@@ -394,9 +434,10 @@ export function parseLogEvent(logLine: string): GameEvent | null {
 
     // Map Vote (start of voting)
     if (
-        trimmedLine.includes("LogMapVoteManager: Display: Existing Vote Options:") ||
-        trimmedLine.includes("LogMapVoteManager: Display: New Vote Options:")
-    ) {
+        trimmedLine.includes( "LogMapVoteManager: Display: Existing Vote Options:" ) ||
+        trimmedLine.includes( "LogMapVoteManager: Display: New Vote Options:" )
+    )
+    {
         return {
             type: "map_vote_start",
             timestamp,
@@ -413,14 +454,16 @@ export function parseLogEvent(logLine: string): GameEvent | null {
  * @param logContent - Multiple log lines (e.g., from tail command)
  * @returns Array of parsed GameEvent objects
  */
-export function parseLogEvents(logContent: string): GameEvent[] {
-    const lines = logContent.split("\n");
+export function parseLogEvents ( logContent: string ): GameEvent[] {
+    const lines = logContent.split( "\n" );
     const events: GameEvent[] = [];
 
-    for (const line of lines) {
-        const event = parseLogEvent(line);
-        if (event) {
-            events.push(event);
+    for ( const line of lines )
+    {
+        const event = parseLogEvent( line );
+        if ( event )
+        {
+            events.push( event );
         }
     }
 
@@ -433,8 +476,8 @@ export function parseLogEvents(logContent: string): GameEvent[] {
  * @param eventType - Type of event to filter for
  * @returns Filtered array of events
  */
-export function filterEventsByType<T extends GameEvent>(events: GameEvent[], eventType: string): T[] {
-    return events.filter((event) => event.type === eventType) as T[];
+export function filterEventsByType<T extends GameEvent> ( events: GameEvent[], eventType: string ): T[] {
+    return events.filter( ( event ) => event.type === eventType ) as T[];
 }
 
 /**
@@ -444,10 +487,10 @@ export function filterEventsByType<T extends GameEvent>(events: GameEvent[], eve
  * @param endTime - End timestamp (YYYY.MM.DD-HH.MM.SS:mmm format)
  * @returns Filtered array of events within the time range
  */
-export function filterEventsByTimeRange(events: GameEvent[], startTime: string, endTime: string): GameEvent[] {
-    return events.filter((event) => {
+export function filterEventsByTimeRange ( events: GameEvent[], startTime: string, endTime: string ): GameEvent[] {
+    return events.filter( ( event ) => {
         return event.timestamp >= startTime && event.timestamp <= endTime;
-    });
+    } );
 }
 
 /**
@@ -461,7 +504,7 @@ export function filterEventsByTimeRange(events: GameEvent[], startTime: string, 
  * console.log(result.serverId); // "server1"
  * console.log(result.events); // Array of GameEvent objects
  */
-export function parseLogEventsFromFile(
+export function parseLogEventsFromFile (
     logContent: string,
     logFilePath: string
 ): {
@@ -469,10 +512,10 @@ export function parseLogEventsFromFile(
     serverId: string | null;
 } {
     // Import PathUtils here to avoid circular dependencies
-    const { PathUtils } = require("./cross-platform-utils");
+    const { PathUtils } = require( "./cross-platform-utils" );
 
-    const serverId = PathUtils.extractServerIdFromLogPath(logFilePath);
-    const events = parseLogEvents(logContent);
+    const serverId = PathUtils.extractServerIdFromLogPath( logFilePath );
+    const events = parseLogEvents( logContent );
 
     return {
         events,

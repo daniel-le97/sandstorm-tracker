@@ -8,6 +8,7 @@ const testDbPath = 'test_sandstorm_stats.db';
 describe( 'Database Operations', () => {
     let db: Database;
     let StatsService: any;
+    let testServerId: number;
 
     beforeAll( async () => {
         // Clean up any existing test database
@@ -31,12 +32,23 @@ describe( 'Database Operations', () => {
 
     beforeEach( () => {
         // Clear all data before each test
-        db.run( 'DELETE FROM chat_commands' );
+
         db.run( 'DELETE FROM kills' );
         db.run( 'DELETE FROM player_sessions' );
         db.run( 'DELETE FROM players' );
         db.run( 'DELETE FROM map_rounds' );
         db.run( 'DELETE FROM maps' );
+        db.run( 'DELETE FROM servers' );
+
+        // Create a test server for each test
+        const { upsertServer } = require( '../src/database' );
+        testServerId = upsertServer(
+            'test-server-uuid',
+            'Test Server',
+            'test-config',
+            '/test/log/path',
+            'Test server for database tests'
+        );
     } );
 
     test( 'Database initializes correctly', () => {
@@ -50,7 +62,7 @@ describe( 'Database Operations', () => {
         expect( tableNames ).toContain( 'player_sessions' );
         expect( tableNames ).toContain( 'kills' );
         expect( tableNames ).toContain( 'weapon_stats' );
-        expect( tableNames ).toContain( 'chat_commands' );
+
     } );
 
     test( 'Player join creates session', () => {
@@ -61,7 +73,7 @@ describe( 'Database Operations', () => {
                 playerName: 'TestPlayer'
             },
             rawLine: '[2025.10.05-12.00.00:000][001]LogNet: Join succeeded: TestPlayer'
-        } );
+        }, testServerId );
 
         // Check player was created
         const player = db.prepare( 'SELECT * FROM players WHERE player_name = ?' ).get( 'TestPlayer' ) as any;
@@ -80,14 +92,14 @@ describe( 'Database Operations', () => {
             timestamp: '2025.10.05-12.00.00:000',
             data: { playerName: 'Killer' },
             rawLine: 'test'
-        } );
+        }, testServerId );
 
         StatsService.processEvent( {
             type: 'player_join',
             timestamp: '2025.10.05-12.00.00:000',
             data: { playerName: 'Victim' },
             rawLine: 'test'
-        } );
+        }, testServerId );
 
         // Record kill
         StatsService.processEvent( {
@@ -103,7 +115,7 @@ describe( 'Database Operations', () => {
                 weapon: 'M16A4'
             },
             rawLine: 'test kill event'
-        } );
+        }, testServerId );
 
         // Check kill was recorded
         const kills = db.prepare( 'SELECT * FROM kills' ).all() as any[];
@@ -126,9 +138,9 @@ describe( 'Database Operations', () => {
                 playerName: 'StatsTestPlayer'
             },
             rawLine: 'test join'
-        } );
+        }, testServerId );
 
-        const player = StatsService.getPlayerStatsByName( 'StatsTestPlayer' );
+        const player = StatsService.getPlayerStatsByName( 'StatsTestPlayer', testServerId );
         expect( player ).toBeDefined();
         expect( player?.player_name ).toBe( 'StatsTestPlayer' );
     } );
@@ -140,14 +152,14 @@ describe( 'Database Operations', () => {
             timestamp: '2025.10.05-12.00.00:000',
             data: { playerName: 'TopPlayer1' },
             rawLine: 'test'
-        } );
+        }, testServerId );
 
         StatsService.processEvent( {
             type: 'player_join',
             timestamp: '2025.10.05-12.00.00:000',
             data: { playerName: 'TopPlayer2' },
             rawLine: 'test'
-        } );
+        }, testServerId );
 
         // Add some kills to make them show up in top players
         StatsService.processEvent( {
@@ -163,9 +175,9 @@ describe( 'Database Operations', () => {
                 weapon: 'M16A4'
             },
             rawLine: 'test kill'
-        } );
+        }, testServerId );
 
-        const topPlayers = StatsService.getTopPlayers( 5 );
+        const topPlayers = StatsService.getTopPlayers( testServerId, 5 );
 
         expect( topPlayers ).toBeDefined();
         expect( Array.isArray( topPlayers ) ).toBe( true );
@@ -182,7 +194,7 @@ describe( 'Database Operations', () => {
     } );
 
     test( 'Player weapons query works', () => {
-        const weapons = StatsService.getPlayerWeapons( '76561198000000001', 5 );
+        const weapons = StatsService.getPlayerWeapons( '76561198000000001', testServerId, 5 );
 
         expect( weapons ).toBeDefined();
         expect( Array.isArray( weapons ) ).toBe( true );
@@ -195,24 +207,6 @@ describe( 'Database Operations', () => {
         }
     } );
 
-    test( 'Chat command logging works', () => {
-        StatsService.processEvent( {
-            type: 'chat_command',
-            timestamp: '2025.10.05-12.02.00:000',
-            data: {
-                playerName: 'TestPlayer',
-                steamId: '76561198000000001',
-                command: '!stats',
-                args: undefined
-            },
-            rawLine: 'test chat command'
-        } );
-
-        const commands = db.prepare( 'SELECT * FROM chat_commands WHERE command = ?' ).all( '!stats' ) as any[];
-        expect( commands.length ).toBeGreaterThan( 0 );
-        expect( commands[ 0 ].command ).toBe( '!stats' );
-    } );
-
     test( 'K/D ratio calculation is correct', () => {
         // Create a fresh player for K/D testing
         StatsService.processEvent( {
@@ -220,7 +214,7 @@ describe( 'Database Operations', () => {
             timestamp: '2025.10.05-12.00.00:000',
             data: { playerName: 'KDRTest' },
             rawLine: 'test'
-        } );
+        }, testServerId );
 
         // Record multiple kills, no deaths
         for ( let i = 0; i < 3; i++ )
@@ -238,10 +232,10 @@ describe( 'Database Operations', () => {
                     weapon: 'AK-74'
                 },
                 rawLine: 'test kill'
-            } );
+            }, testServerId );
         }
 
-        const stats = StatsService.getPlayerStats( '76561198000000099' );
+        const stats = StatsService.getPlayerStats( '76561198000000099', testServerId );
         expect( stats.total_kills ).toBe( 3 );
         expect( stats.total_deaths ).toBe( 0 );
         expect( stats.kdr ).toBe( 3 ); // Should be kills when no deaths
@@ -254,7 +248,7 @@ describe( 'Database Operations', () => {
             timestamp: '2025.10.05-12.00.00:000',
             data: { playerName: 'KillTypeTest' },
             rawLine: 'test'
-        } );
+        }, testServerId );
 
         // Record 2 legitimate player kills
         for ( let i = 0; i < 2; i++ )
@@ -272,7 +266,7 @@ describe( 'Database Operations', () => {
                     weapon: 'M16A4'
                 },
                 rawLine: 'test player kill'
-            } );
+            }, testServerId );
         }
 
         // Record a team kill (should NOT count as player kill)
@@ -289,7 +283,7 @@ describe( 'Database Operations', () => {
                 weapon: 'M16A4'
             },
             rawLine: 'test team kill'
-        } );
+        }, testServerId );
 
         // Record a suicide (should NOT count as player kill)
         StatsService.processEvent( {
@@ -305,10 +299,10 @@ describe( 'Database Operations', () => {
                 weapon: 'Fall Damage'
             },
             rawLine: 'test suicide'
-        } );
+        }, testServerId );
 
         // Verify stats: only player kills count toward total_kills
-        const stats = StatsService.getPlayerStats( '76561198000000200' );
+        const stats = StatsService.getPlayerStats( '76561198000000200', testServerId );
         expect( stats ).toBeDefined();
         expect( stats.total_kills ).toBe( 2 ); // Only the 2 player kills
         expect( stats.team_kills ).toBe( 1 ); // Team kill tracked separately

@@ -417,7 +417,7 @@ async function processLogFile(watcher: ServerWatcher, logLine: string): Promise<
         }
 
         // Update file activity timestamp
-        StatsService.updateActivity();
+        StatsService.updateActivity(watcher.serverId);
 
         events.forEach((event) => {
             // Process event in database with server context

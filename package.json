@@ -22,6 +22,7 @@
   "scripts": {
     "start": "bun run index.ts",
     "dev": "bun run index.ts",
+    "check": "bun tsc --noEmit",
     "dev:watch": "bun --watch index.ts",
     "test": "bun test",
     "test:watch": "bun test --watch",

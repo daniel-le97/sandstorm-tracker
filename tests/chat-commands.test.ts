@@ -1,18 +1,29 @@
 import { beforeAll, describe, expect, test } from "bun:test";
+import { unlinkSync } from "fs";
 
-describe("Chat Commands", () => {
+describe( "Chat Commands", () => {
     let StatsService: any;
     let CommandHandler: any;
     let testServerDbId: number;
+    const testDbPath = "tests/databases/test_commands.db";
 
-    beforeAll(async () => {
+    beforeAll( async () => {
+        // Clean up any existing test database
+        try
+        {
+            unlinkSync( testDbPath );
+        } catch ( e )
+        {
+            // File doesn't exist, that's fine
+        }
+
         // Set test environment
-        process.env.TEST_DB_PATH = "test_commands.db";
+        process.env.TEST_DB_PATH = testDbPath;
 
         // Import modules
-        const dbFunctions = await import("../src/database.ts");
-        StatsService = (await import("../src/stats-service")).default;
-        CommandHandler = (await import("../src/command-handler")).default;
+        const dbFunctions = await import( "../src/database.ts" );
+        StatsService = ( await import( "../src/stats-service" ) ).default;
+        CommandHandler = ( await import( "../src/command-handler" ) ).default;
 
         // Create test server first (required for foreign key constraints)
         testServerDbId = dbFunctions.upsertServer(
@@ -45,7 +56,8 @@ describe("Chat Commands", () => {
         );
 
         // Add some kills for Alice
-        for (let i = 0; i < 5; i++) {
+        for ( let i = 0; i < 5; i++ )
+        {
             StatsService.processEvent(
                 {
                     type: "player_kill",
@@ -64,9 +76,9 @@ describe("Chat Commands", () => {
                 testServerDbId
             );
         }
-    });
+    } );
 
-    test("!stats command returns player statistics", () => {
+    test( "!stats command returns player statistics", () => {
         const response = CommandHandler.handleCommand(
             {
                 type: "chat_command",
@@ -82,14 +94,14 @@ describe("Chat Commands", () => {
             testServerDbId
         );
 
-        expect(response).toBeTruthy();
-        expect(response).toContain("Alice");
-        expect(response).toContain("kills");
-        expect(response).toContain("deaths");
-        expect(response).toContain("K/D");
-    });
+        expect( response ).toBeTruthy();
+        expect( response ).toContain( "Alice" );
+        expect( response ).toContain( "kills" );
+        expect( response ).toContain( "deaths" );
+        expect( response ).toContain( "K/D" );
+    } );
 
-    test("!kdr command returns kill/death ratio", () => {
+    test( "!kdr command returns kill/death ratio", () => {
         const response = CommandHandler.handleCommand(
             {
                 type: "chat_command",
@@ -105,13 +117,13 @@ describe("Chat Commands", () => {
             testServerDbId
         );
 
-        expect(response).toBeTruthy();
-        expect(response).toContain("kills");
-        expect(response).toContain("Alice");
-        expect(response).toContain("K/D ratio");
-    });
+        expect( response ).toBeTruthy();
+        expect( response ).toContain( "kills" );
+        expect( response ).toContain( "Alice" );
+        expect( response ).toContain( "K/D ratio" );
+    } );
 
-    test("!top command returns leaderboard", () => {
+    test( "!top command returns leaderboard", () => {
         const response = CommandHandler.handleCommand(
             {
                 type: "chat_command",
@@ -127,13 +139,13 @@ describe("Chat Commands", () => {
             testServerDbId
         );
 
-        expect(response).toBeTruthy();
-        expect(response).toContain("Top");
-        expect(response).toContain("Top");
-        expect(response).toContain("Players");
-    });
+        expect( response ).toBeTruthy();
+        expect( response ).toContain( "Top" );
+        expect( response ).toContain( "Top" );
+        expect( response ).toContain( "Players" );
+    } );
 
-    test("!guns command returns weapon statistics", () => {
+    test( "!guns command returns weapon statistics", () => {
         const response = CommandHandler.handleCommand(
             {
                 type: "chat_command",
@@ -149,14 +161,14 @@ describe("Chat Commands", () => {
             testServerDbId
         );
 
-        expect(response).toBeTruthy();
-        expect(response).toContain("Weapons");
-        expect(response).toContain("Alice");
-        expect(response).toContain("Weapons");
-        expect(response).toMatch(/M16A4|AK-74/);
-    });
+        expect( response ).toBeTruthy();
+        expect( response ).toContain( "Weapons" );
+        expect( response ).toContain( "Alice" );
+        expect( response ).toContain( "Weapons" );
+        expect( response ).toMatch( /M16A4|AK-74/ );
+    } );
 
-    test("Unknown command returns null", () => {
+    test( "Unknown command returns null", () => {
         const response = CommandHandler.handleCommand(
             {
                 type: "chat_command",
@@ -172,14 +184,14 @@ describe("Chat Commands", () => {
             testServerDbId
         );
 
-        expect(response).toBeNull();
-    });
+        expect( response ).toBeNull();
+    } );
 
-    test("Command responses contain expected emojis and formatting", () => {
-        const commands = ["!stats", "!kdr", "!top", "!guns"];
-        const expectedTexts = ["kills", "deaths", "Top", "Weapons"];
+    test( "Command responses contain expected emojis and formatting", () => {
+        const commands = [ "!stats", "!kdr", "!top", "!guns" ];
+        const expectedTexts = [ "kills", "deaths", "Top", "Weapons" ];
 
-        commands.forEach((command, index) => {
+        commands.forEach( ( command, index ) => {
             const response = CommandHandler.handleCommand(
                 {
                     type: "chat_command",
@@ -195,13 +207,14 @@ describe("Chat Commands", () => {
                 testServerDbId
             );
 
-            if (response) {
-                expect(response).toContain(expectedTexts[index]);
+            if ( response )
+            {
+                expect( response ).toContain( expectedTexts[ index ] );
             }
-        });
-    });
+        } );
+    } );
 
-    test("Stats command shows correct format", () => {
+    test( "Stats command shows correct format", () => {
         const response = CommandHandler.handleCommand(
             {
                 type: "chat_command",
@@ -217,9 +230,9 @@ describe("Chat Commands", () => {
             testServerDbId
         );
 
-        expect(response).toMatch(/\d+ kills/);
-        expect(response).toMatch(/\d+ deaths/);
-        expect(response).toMatch(/K\/D: \d+(\.\d+)?/);
-        expect(response).toMatch(/Playtime: \d+h/);
-    });
-});
+        expect( response ).toMatch( /\d+ kills/ );
+        expect( response ).toMatch( /\d+ deaths/ );
+        expect( response ).toMatch( /K\/D: \d+(\.\d+)?/ );
+        expect( response ).toMatch( /Playtime: \d+h/ );
+    } );
+} );
