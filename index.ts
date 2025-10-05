@@ -114,7 +114,7 @@ async function initializeApplication(): Promise<void> {
 
     try {
         // Load and validate configuration
-        const config = await ConfigLoader.loadConfig();
+        await ConfigLoader.loadConfig();
         const enabledServers = ConfigLoader.getEnabledServers();
 
         if (enabledServers.length === 0) {
