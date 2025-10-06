@@ -196,6 +196,48 @@ missing_bracket = true`;
             const config = await ConfigLoader.loadConfig();
             expect( config.servers[ 0 ].id ).toBe( "test-server-1" );
         } );
+
+        test( "should require servers when no config file and no environment servers", async () => {
+            // Ensure no config path and no server env vars are present
+            delete process.env.SANDSTORM_CONFIG_PATH;
+            delete process.env.SANDSTORM_SERVER_1_ID;
+            delete process.env.SANDSTORM_SERVER_1_NAME;
+            delete process.env.SANDSTORM_SERVER_1_LOG_PATH;
+            delete process.env.SANDSTORM_SERVER_1_SERVER_ID;
+            delete process.env.SANDSTORM_SERVER_1_ENABLED;
+
+            // Do not remove any repo-level config files; tests must not delete
+            // user configuration present in the repository.
+
+            await expect( ConfigLoader.loadConfig() ).rejects.toThrow( "No configuration file found" );
+        } );
+
+        test( "should load servers from environment variables when provided", async () => {
+            // Provide a valid set of environment variables for one server
+            process.env.SANDSTORM_SERVER_1_ID = "env-server-1";
+            process.env.SANDSTORM_SERVER_1_NAME = "Env Server 1";
+            process.env.SANDSTORM_SERVER_1_LOG_PATH = testLogDir;
+            process.env.SANDSTORM_SERVER_1_SERVER_ID = "60844f66-b93b-4fe1-afc4-a0a91b493866";
+            process.env.SANDSTORM_SERVER_1_ENABLED = "true";
+
+            // Ensure no explicit config path is used
+            delete process.env.SANDSTORM_CONFIG_PATH;
+
+            // Do not remove any repo-level config files; tests must not delete
+            // user configuration present in the repository.
+
+            const config = await ConfigLoader.loadConfig();
+            expect( config ).toBeInstanceOf( AppConfig );
+            expect( config.servers ).toHaveLength( 1 );
+            expect( config.servers[ 0 ].id ).toBe( "env-server-1" );
+
+            // Clean up env vars for subsequent tests
+            delete process.env.SANDSTORM_SERVER_1_ID;
+            delete process.env.SANDSTORM_SERVER_1_NAME;
+            delete process.env.SANDSTORM_SERVER_1_LOG_PATH;
+            delete process.env.SANDSTORM_SERVER_1_SERVER_ID;
+            delete process.env.SANDSTORM_SERVER_1_ENABLED;
+        } );
     } );
 
     describe( "Configuration Validation", () => {

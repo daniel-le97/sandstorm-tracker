@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'bun:test';
-import { Command } from '../src/cli/command';
+import { Command } from '../src/cli/lib/command';
 
 async function captureAsync ( fn: () => Promise<void> ) {
     const logs: string[] = [];

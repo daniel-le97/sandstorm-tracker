@@ -218,6 +218,24 @@ export class DatabaseService {
         )
     `);
 
+        // Log files table - tracks individual log file instances (distinguished by open time)
+        this.db.run( `
+        CREATE TABLE IF NOT EXISTS log_files (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            server_id INTEGER NOT NULL,
+            log_path TEXT NOT NULL,
+            open_time DATETIME NOT NULL,
+            lines_processed INTEGER DEFAULT 0,
+            file_size_bytes INTEGER DEFAULT 0,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (server_id) REFERENCES servers(id) ON DELETE CASCADE,
+            UNIQUE(server_id, log_path, open_time)
+        )
+    `);
+        // Helpful index for frequent lookups (server_id, log_path)
+        this.db.run( `CREATE INDEX IF NOT EXISTS idx_log_files_server_path ON log_files(server_id, log_path)` );
+
         // Weapon statistics - tracks per-player weapon performance
         this.db.run( `
         CREATE TABLE IF NOT EXISTS weapon_stats (
@@ -589,6 +607,23 @@ export class DatabaseService {
             description = excluded.description,
             updated_at = CURRENT_TIMESTAMP
         RETURNING id
+    `),
+
+            // Log file tracking operations
+            upsertLogFile: database.prepare( `
+        INSERT INTO log_files (server_id, log_path, open_time, lines_processed, file_size_bytes)
+        VALUES (?, ?, ?, ?, ?)
+        ON CONFLICT(server_id, log_path, open_time) DO UPDATE SET
+            updated_at = CURRENT_TIMESTAMP
+        RETURNING id, lines_processed
+    `),
+            updateLogFileLines: database.prepare( `
+        UPDATE log_files
+        SET lines_processed = ?, file_size_bytes = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+    `),
+            getLogFileByKey: database.prepare( `
+        SELECT * FROM log_files WHERE server_id = ? AND log_path = ? AND open_time = ?
     `),
 
             // Player operations (now server-specific)

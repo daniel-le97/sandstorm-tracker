@@ -1,0 +1,12 @@
+{
+  "servers": [
+    {
+      "id": "server-1",
+      "name": "Main Server",
+      "logPath": "C:\\Users\\danie\\code\\sandstorm-admin-wrapper\\sandstorm-server\\Insurgency\\Saved\\Logs",
+      "serverId": "60844f66-b93b-4fe1-afc4-a0a91b493865",
+      "enabled": true,
+      "description": "Primary Sandstorm server"
+    }
+  ]
+}

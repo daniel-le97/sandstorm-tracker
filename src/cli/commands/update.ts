@@ -1,3 +1,76 @@
+import type { Action } from '../command';
+// import { checkForUpdates, downloadAndExtractLatestRelease, findExecutableInExtract, installExtractedBinary } from '../update';
+
+export const updateAction: Action = async ( { flags } ) => {
+    try
+    {
+        const repo = flags.repo;
+        const info = await checkForUpdates( undefined, repo );
+        console.log( `Latest: ${ info.latestTag } (${ info.latestVersion })  published: ${ info.published_at }` );
+        if ( !info.isNew )
+        {
+            console.log( 'You are running the latest version.' );
+            return;
+        }
+        console.log( `Update available: ${ info.latestVersion } -> ${ info.html_url }` );
+        if ( flags.download )
+        {
+            console.log( 'Downloading and extracting latest release...' );
+            const dest = await downloadAndExtractLatestRelease( flags.outDir, repo );
+            console.log( `Extracted to: ${ dest }` );
+            if ( flags.install )
+            {
+                const exe = await findExecutableInExtract( dest );
+                if ( !exe )
+                {
+                    console.error( 'Could not find an executable inside the extracted release. Aborting install.' );
+                    console.error( `You can inspect ${ dest } and install manually.` );
+                    return;
+                }
+                let target = flags.target;
+                if ( !target )
+                {
+                    if ( process.platform === 'win32' )
+                    {
+                        const pf = process.env[ 'ProgramFiles' ] || 'C:\\Program Files';
+                        target = `${ pf }\\sandstorm\\sandstorm.exe`;
+                    } else
+                    {
+                        target = '/usr/local/bin/sandstorm';
+                    }
+                }
+                if ( !flags.yes )
+                {
+                    console.log( `Install target: ${ target }` );
+                    console.log( `Run again with --yes to perform the install or install manually from ${ dest }` );
+                    return;
+                }
+                try
+                {
+                    await installExtractedBinary( exe, target );
+                    console.log( `Installed ${ exe } -> ${ target }` );
+                    if ( process.platform === 'win32' )
+                    {
+                        console.log( 'On Windows the replacement is scheduled; please exit this process to allow the installer to move the file.' );
+                    }
+                } catch ( err )
+                {
+                    console.error( 'Automatic install failed:', err );
+                    console.error( `Please install manually from: ${ dest }` );
+                }
+            }
+        } else
+        {
+            console.log( 'Run `sandstorm update --download` to fetch the latest release.' );
+        }
+    } catch ( error )
+    {
+        console.error( 'Update check/download failed:', error );
+        process.exitCode = 2;
+    }
+};
+
+
 /**
  * Helpers to check for updates on GitHub and download release assets.
  *
@@ -224,6 +297,8 @@ export async function downloadAndExtractLatestRelease ( outDir?: string, repo = 
     return dest;
 }
 
+import { readdir, stat as fsStat, rename as fsRename, chmod as fsChmod } from 'fs/promises';
+
 async function extractArchive ( archivePath: string, dest: string ): Promise<void> {
     const isZip = archivePath.endsWith( '.zip' );
     const isTarGz = archivePath.endsWith( '.tar.gz' ) || archivePath.endsWith( '.tgz' );
@@ -258,4 +333,126 @@ async function extractArchive ( archivePath: string, dest: string ): Promise<voi
     }
 
     throw new Error( `Unknown archive format for ${ archivePath }` );
+}
+
+/**
+ * Try to find a plausible executable inside the extracted directory.
+ * Heuristics:
+ * - file matching package.json `name`
+ * - any .exe on Windows
+ * - any file in top-level with executable bit (Unix)
+ */
+export async function findExecutableInExtract ( extractedDir: string ): Promise<string | null> {
+    try
+    {
+        // look for package.json name
+        const pkgPath = `${ extractedDir }/package.json`;
+        let name: string | null = null;
+        try
+        {
+            const txt = await Bun.file( pkgPath ).text();
+            const pkg = JSON.parse( txt );
+            name = pkg.name;
+        } catch ( e )
+        {
+            name = null;
+        }
+
+        const entries = await readdir( extractedDir );
+        for ( const filename of entries )
+        {
+            // direct name match
+            if ( name && filename === name ) return `${ extractedDir }/${ filename }`;
+            if ( process.platform === 'win32' && filename.toLowerCase().endsWith( '.exe' ) ) return `${ extractedDir }/${ filename }`;
+            // match repo binary names
+            if ( filename === 'sandstorm' || filename === 'sandstorm.exe' ) return `${ extractedDir }/${ filename }`;
+        }
+
+        // If nothing found, search recursively one level for executables
+        for ( const filename of entries )
+        {
+            const full = `${ extractedDir }/${ filename }`;
+            try
+            {
+                const s = await fsStat( full );
+                if ( s.isDirectory() )
+                {
+                    const subEntries = await readdir( full );
+                    for ( const sf of subEntries )
+                    {
+                        if ( process.platform === 'win32' && sf.toLowerCase().endsWith( '.exe' ) ) return `${ full }/${ sf }`;
+                        // on unix, check executable bit
+                        if ( process.platform !== 'win32' )
+                        {
+                            const subFull = `${ full }/${ sf }`;
+                            try
+                            {
+                                const st = await fsStat( subFull );
+                                // executable if owner has any execute bit
+                                if ( ( st.mode & 0o111 ) !== 0 ) return subFull;
+                            } catch { /* ignore */ }
+                        }
+                    }
+                }
+            } catch { /* ignore */ }
+        }
+    } catch ( error )
+    {
+        // ignore and return null
+    }
+    return null;
+}
+
+/**
+ * Install a binary file by replacing the target path atomically where possible.
+ * - On Unix: copy to temp then rename over target.
+ * - On Windows: copy to target.new and spawn a detached PowerShell process to move it after the current process exits.
+ */
+export async function installExtractedBinary ( sourcePath: string, targetPath: string, opts?: { auto?: boolean; } ): Promise<void> {
+    const target = targetPath;
+    const tmpTarget = `${ target }.new`;
+
+    // read source
+    const ab = await Bun.file( sourcePath ).arrayBuffer();
+    await Bun.file( tmpTarget ).write( new Uint8Array( ab ) );
+
+    if ( process.platform !== 'win32' )
+    {
+        // make executable
+        try { await fsChmod( tmpTarget, 0o755 ); } catch { /* best-effort */ }
+        // atomic replace
+        try
+        {
+            await fsRename( tmpTarget, target );
+            return;
+        } catch ( e )
+        {
+            // fallback to fs move via mv
+            await Bun.spawn( { cmd: [ 'mv', '-f', tmpTarget, target ] } ).exited;
+            return;
+        }
+    }
+
+    // Windows: cannot overwrite running exe. schedule replacement via detached PowerShell script
+    const psScript = `
+$tries = 0
+while ($tries -lt 60) {
+    try {
+        Move-Item -Force -LiteralPath '${ tmpTarget }' -Destination '${ target }'
+        break
+    } catch {
+        Start-Sleep -Seconds 1
+        $tries++
+    }
+}
+`;
+
+    // write temp ps1
+    const psPath = `${ tmpTarget }.ps1`;
+    await Bun.file( psPath ).write( psScript );
+
+    // spawn detached powershell to perform replacement
+    Bun.spawn( { cmd: [ 'powershell', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', psPath ], stdin: 'ignore', stdout: 'ignore', stderr: 'ignore' } );
+
+    // return quickly; caller should exit to allow replacement to happen
 }

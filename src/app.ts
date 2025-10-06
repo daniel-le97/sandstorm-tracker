@@ -6,6 +6,9 @@ import { upsertServer } from "./database";
 import type { ChatEvent, GameEvent } from "./events";
 import { parseLogEvents } from "./events";
 import StatsService from "./stats-service";
+import { info, debug, warn, error } from "./lib/logger";
+import { getStatements } from "./database";
+import { sep } from "path";
 
 // Server watcher state with health monitoring
 interface ServerWatcher {
@@ -19,6 +22,10 @@ interface ServerWatcher {
     lastHealthCheck: number;
     errorCount: number;
     lastError: Error | null;
+    logFileId?: number; // tracking row id in log_files
+    logOpenTime?: string; // parsed log open time (ISO)
+    linesProcessed: number; // number of lines processed for this log file
+    fileSizeBytes: number; // current file size snapshot
 }
 
 const serverWatchers = new Map<string, ServerWatcher>();
@@ -40,9 +47,9 @@ export async function retryWithBackoff<T> ( fn: () => Promise<T>, maxRetries: nu
         try
         {
             return await fn();
-        } catch ( error )
+        } catch ( err )
         {
-            lastError = error instanceof Error ? error : new Error( String( error ) );
+            lastError = err instanceof Error ? err : new Error( String( err ) );
 
             if ( attempt === maxRetries )
             {
@@ -50,7 +57,7 @@ export async function retryWithBackoff<T> ( fn: () => Promise<T>, maxRetries: nu
             }
 
             const delay = baseDelay * Math.pow( 2, attempt - 1 );
-            console.warn( `⏳ Retry attempt ${ attempt }/${ maxRetries } failed, waiting ${ delay }ms...` );
+            warn( `⏳ Retry attempt ${ attempt }/${ maxRetries } failed, waiting ${ delay }ms...` );
             await new Promise( ( resolve ) => setTimeout( resolve, delay ) );
         }
     }
@@ -63,13 +70,13 @@ export async function retryWithBackoff<T> ( fn: () => Promise<T>, maxRetries: nu
  */
 export function scheduleHealthChecks (): void {
     if ( healthCheckTimer ) return;
-    healthCheckTimer = setInterval( () => {
-        performHealthChecks().catch( ( error ) => {
-            console.error( "Health check failed:", error );
-        } );
-    }, HEALTH_CHECK_INTERVAL );
+    // healthCheckTimer = setInterval( () => {
+    //     performHealthChecks().catch( ( err ) => {
+    //         error( "Health check failed:", err );
+    //     } );
+    // }, HEALTH_CHECK_INTERVAL );
 
-    console.log( `Health checks scheduled every ${ HEALTH_CHECK_INTERVAL / 1000 }s` );
+    info( `Health checks scheduled every ${ HEALTH_CHECK_INTERVAL / 1000 }s` );
 }
 
 /**
@@ -95,19 +102,19 @@ export async function performHealthChecks (): Promise<void> {
 
             if ( !watcher.isHealthy && wasHealthy )
             {
-                console.warn( `Server "${ watcher.config.name }" marked as unhealthy (errors: ${ watcher.errorCount })` );
+                warn( `Server "${ watcher.config.name }" marked as unhealthy (errors: ${ watcher.errorCount })` );
                 unhealthyServers.push( watcher.config.name );
             } else if ( watcher.isHealthy && !wasHealthy )
             {
-                console.log( `Server "${ watcher.config.name }" recovered and marked as healthy` );
+                info( `Server "${ watcher.config.name }" recovered and marked as healthy` );
                 watcher.errorCount = 0;
                 watcher.lastError = null;
             }
-        } catch ( error )
+        } catch ( err )
         {
             watcher.isHealthy = false;
             watcher.errorCount++;
-            watcher.lastError = error instanceof Error ? error : new Error( String( error ) );
+            watcher.lastError = err instanceof Error ? err : new Error( String( err ) );
             watcher.lastHealthCheck = Date.now();
 
             if ( !unhealthyServers.includes( watcher.config.name ) )
@@ -119,13 +126,13 @@ export async function performHealthChecks (): Promise<void> {
 
     if ( unhealthyServers.length > 0 )
     {
-        console.warn( `Unhealthy servers detected: ${ unhealthyServers.join( ", " ) }` );
+        warn( `Unhealthy servers detected: ${ unhealthyServers.join( ", " ) }` );
     }
 }
 
 // Initialize multi-server application with comprehensive error handling
 export async function initializeApplication (): Promise<void> {
-    console.log( "Initializing Sandstorm Multi-Server Tracker..." );
+    info( "Initializing Sandstorm Multi-Server Tracker..." );
 
     // Load and validate configuration
     await ConfigLoader.loadConfig();
@@ -136,11 +143,11 @@ export async function initializeApplication (): Promise<void> {
         throw new Error( "No enabled servers found in configuration" );
     }
 
-    console.log( `Found ${ enabledServers.length } enabled server(s)` );
+    info( `Found ${ enabledServers.length } enabled server(s)` );
 
     // Initialize stats service with error handling
     StatsService.initialize();
-    console.log( "✓ Statistics service initialized" );
+    debug( "✓ Statistics service initialized" );
 
     // Set up each server watcher with individual error handling
     const setupPromises = enabledServers.map( async ( serverConfig ) => {
@@ -148,10 +155,10 @@ export async function initializeApplication (): Promise<void> {
         {
             await setupServerWatcher( serverConfig );
             return { server: serverConfig.name, success: true };
-        } catch ( error )
+        } catch ( err )
         {
-            console.error( `Failed to setup watcher for server "${ serverConfig.name }":`, error );
-            return { server: serverConfig.name, success: false, error };
+            error( `Failed to setup watcher for server "${ serverConfig.name }":`, err );
+            return { server: serverConfig.name, success: false, error: err };
         }
     } );
 
@@ -164,9 +171,9 @@ export async function initializeApplication (): Promise<void> {
         throw new Error( "All server watchers failed to initialize" );
     }
 
-    console.log( `Multi-server tracker initialized successfully!` );
-    console.log( `${ successful } server(s) active, ${ failed } failed` );
-    console.log( "Watching for file changes on active servers..." );
+    info( `Multi-server tracker initialized successfully!` );
+    info( `${ successful } server(s) active, ${ failed } failed` );
+    debug( "Watching for file changes on active servers..." );
 
     // Schedule periodic health checks
     scheduleHealthChecks();
@@ -191,9 +198,9 @@ async function setupServerWatcher ( serverConfig: ServerConfig ): Promise<void> 
     {
         const stats = await Bun.file( logFilePath ).stat();
         fileSize = stats.size;
-    } catch ( error )
+    } catch ( err )
     {
-        console.log( `Log file doesn't exist yet for ${ serverConfig.name }: ${ logFilePath }` );
+        debug( `Log file doesn't exist yet for ${ serverConfig.name }: ${ logFilePath }` );
     }
 
     // Create watcher state
@@ -208,11 +215,13 @@ async function setupServerWatcher ( serverConfig: ServerConfig ): Promise<void> 
         lastHealthCheck: Date.now(),
         errorCount: 0,
         lastError: null,
+        linesProcessed: 0,
+        fileSizeBytes: fileSize,
     };
 
     serverWatchers.set( serverConfig.id, watcher );
 
-    console.log( `Server watcher configured: ${ serverConfig.name }` );
+    debug( `Server watcher configured: ${ serverConfig.name }` );
 }
 
 // Start watching all configured servers
@@ -253,7 +262,7 @@ export async function stopApp (): Promise<void> {
     if ( shuttingDown ) return;
     shuttingDown = true;
 
-    console.log( 'Shutting down application...' );
+    info( 'Shutting down application...' );
 
     if ( healthCheckTimer )
     {
@@ -267,21 +276,21 @@ export async function stopApp (): Promise<void> {
     // give watchers some time to unwind
     await new Promise( ( r ) => setTimeout( r, 500 ) );
 
-    console.log( 'Shutdown complete' );
+    info( 'Shutdown complete' );
 }
 
 async function watchLogDirectory ( serverId: string ): Promise<void> {
     const watcher = serverWatchers.get( serverId );
     if ( !watcher )
     {
-        console.error( `No watcher found for server ID: ${ serverId }` );
+        error( `No watcher found for server ID: ${ serverId }` );
         return;
     }
 
     const logPath = watcher.config.logPath;
     const watchers = Array.from( serverWatchers.values() ).filter( ( w ) => w.config.logPath === logPath );
 
-    console.log( `� Starting file watcher for directory: ${ logPath }` );
+    debug( `� Starting file watcher for directory: ${ logPath }` );
 
     let retryCount = 0;
     const maxRetries = 5;
@@ -294,10 +303,14 @@ async function watchLogDirectory ( serverId: string ): Promise<void> {
         try
         {
             const dirWatcher = watch( logPath );
-            console.log( `✓ Successfully watching: ${ logPath }` );
+            debug( `✓ Successfully watching: ${ logPath }` );
 
             for await ( const event of dirWatcher )
             {
+                console.log( event.filename );
+                const file = Bun.file( `${ logPath }\\${ event.filename }` );
+                const fileContent = ( await file.text() ).trim().split( '\n' );
+                console.log( fileContent.pop() );
                 try
                 {
                     // Skip backup files and other irrelevant files
@@ -311,10 +324,14 @@ async function watchLogDirectory ( serverId: string ): Promise<void> {
                     {
                         if ( !serverWatcher.isHealthy )
                         {
-                            continue; // Skip unhealthy watchers
+                            // continue; // Skip unhealthy watchers
                         }
 
-                        const expectedFilename = "Insurgency.log"; // Standard log filename
+                        // Each server writes to a file named after its server UUID
+                        // (configured as `serverId` in the server config). Build the
+                        // expected filename per-server so multiple servers sharing a
+                        // directory can be distinguished.
+                        const expectedFilename = `${ serverWatcher.config.serverId }.log`;
 
                         if ( event.filename === expectedFilename )
                         {
@@ -326,7 +343,7 @@ async function watchLogDirectory ( serverId: string ): Promise<void> {
                 {
                     const errorMsg =
                         processingError instanceof Error ? processingError.message : String( processingError );
-                    console.error( `Error processing file event for ${ event.filename }:`, errorMsg );
+                    error( `Error processing file event for ${ event.filename }:`, errorMsg );
 
                     // Update watcher error state
                     for ( const serverWatcher of watchers )
@@ -343,25 +360,25 @@ async function watchLogDirectory ( serverId: string ): Promise<void> {
             }
 
             // If we get here, the watcher ended normally - shouldn't happen
-            console.warn( `File watcher ended unexpectedly for ${ logPath }` );
+            warn( `File watcher ended unexpectedly for ${ logPath }` );
             break;
-        } catch ( error )
+        } catch ( err )
         {
             retryCount++;
-            const errorMsg = error instanceof Error ? error.message : String( error );
-            console.error( `File watcher error (attempt ${ retryCount }/${ maxRetries }) for ${ logPath }:`, errorMsg );
+            const errorMsg = err instanceof Error ? err.message : String( err );
+            error( `File watcher error (attempt ${ retryCount }/${ maxRetries }) for ${ logPath }:`, errorMsg );
 
             // Update watcher error state
             if ( watcher )
             {
                 watcher.errorCount++;
-                watcher.lastError = error instanceof Error ? error : new Error( String( error ) );
+                watcher.lastError = err instanceof Error ? err : new Error( String( err ) );
                 watcher.isHealthy = watcher.errorCount < MAX_ERROR_COUNT;
             }
 
             if ( retryCount >= maxRetries )
             {
-                console.error( `File watcher permanently failed for ${ logPath } after ${ maxRetries } attempts` );
+                error( `File watcher permanently failed for ${ logPath } after ${ maxRetries } attempts` );
                 if ( watcher )
                 {
                     watcher.isHealthy = false;
@@ -371,7 +388,7 @@ async function watchLogDirectory ( serverId: string ): Promise<void> {
 
             // Wait before retrying with exponential backoff
             const delay = Math.pow( 2, retryCount ) * 2000; // Start at 4s, max ~1 minute
-            console.log( `⏳ Retrying file watcher in ${ delay }ms...` );
+            debug( `⏳ Retrying file watcher in ${ delay }ms...` );
             await new Promise( ( resolve ) => setTimeout( resolve, delay ) );
         }
     }
@@ -399,7 +416,7 @@ async function processServerLogChange ( watcher: ServerWatcher ): Promise<void> 
         const exists = await file.exists();
         if ( !exists )
         {
-            console.warn( `⚠️ Log file disappeared: ${ watcher.logFilePath }` );
+            warn( `⚠️ Log file disappeared: ${ watcher.logFilePath }` );
             return;
         }
 
@@ -413,7 +430,7 @@ async function processServerLogChange ( watcher: ServerWatcher ): Promise<void> 
         // Handle case where file was truncated (server restart)
         if ( currentStats.size < watcher.fileSize )
         {
-            console.log( `Log file truncated for ${ watcher.config.name }, resetting position` );
+            debug( `Log file truncated for ${ watcher.config.name }, resetting position` );
             watcher.fileSize = 0;
             watcher.lastProcessedLine = "";
         }
@@ -421,7 +438,37 @@ async function processServerLogChange ( watcher: ServerWatcher ): Promise<void> 
         // Read just the last line to check if it's new
         const logContent = await file.text();
         const lines = logContent.split( "\n" );
-        const lastLine = lines.filter( ( line: string ) => line.trim() ).pop();
+        const nonEmpty = lines.filter( ( line: string ) => line.trim() );
+        const lastLine = nonEmpty.pop();
+
+        // Detect log open lines (supporting rollover)
+        const openLineMatches = nonEmpty.filter( l => /Log file open,\s+\d{2}\/\d{2}\/\d{2}\s+\d{2}:\d{2}:\d{2}/.test( l ) );
+        if ( openLineMatches.length )
+        {
+            const lastOpen = openLineMatches.pop()!;
+            const m = lastOpen.match( /Log file open,\s+(\d{2})\/(\d{2})\/(\d{2})\s+(\d{2}):(\d{2}):(\d{2})/ );
+            if ( m )
+            {
+                const [ , month, day, year2, hh, mm, ss ] = m;
+                const fullYear = parseInt( year2 ) + 2000;
+                const iso = new Date( `${ fullYear }-${ month }-${ day }T${ hh }:${ mm }:${ ss }Z` ).toISOString();
+                if ( !watcher.logOpenTime || watcher.logOpenTime !== iso )
+                {
+                    watcher.logOpenTime = iso;
+                    watcher.linesProcessed = 0;
+                    try
+                    {
+                        const stmts = getStatements();
+                        const result = stmts.upsertLogFile.get( watcher.serverId, watcher.logFilePath, iso, 0, currentStats.size ) as any;
+                        watcher.logFileId = result?.id;
+                        debug( `Detected log open${ watcher.logFileId ? ' (id ' + watcher.logFileId + ')' : '' } for ${ watcher.config.name } (${ iso })` );
+                    } catch ( e )
+                    {
+                        warn( `Failed to record log file open time for ${ watcher.config.name }: ${ e instanceof Error ? e.message : e }` );
+                    }
+                }
+            }
+        }
 
         if ( !lastLine || lastLine === watcher.lastProcessedLine )
         {
@@ -432,6 +479,19 @@ async function processServerLogChange ( watcher: ServerWatcher ): Promise<void> 
         // Process the log file and parse events
         const gameEvents = await processLogFile( watcher, lastLine );
 
+        // Increment lines processed counter and persist periodically
+        watcher.linesProcessed += 1;
+        if ( watcher.logFileId && watcher.linesProcessed % 50 === 0 ) // batch every 50 lines
+        {
+            try
+            {
+                getStatements().updateLogFileLines.run( watcher.linesProcessed, currentStats.size, watcher.logFileId );
+            } catch ( e )
+            {
+                debug( `Failed to update lines_processed (${ watcher.linesProcessed }) for log file id ${ watcher.logFileId }` );
+            }
+        }
+
         // Update tracking variables successfully
         watcher.lastProcessedTime = now;
         watcher.fileSize = currentStats.size;
@@ -440,24 +500,33 @@ async function processServerLogChange ( watcher: ServerWatcher ): Promise<void> 
         // Reset error count on successful processing
         if ( watcher.errorCount > 0 )
         {
-            console.log( `✓ Server ${ watcher.config.name } recovered from errors` );
+            info( `✓ Server ${ watcher.config.name } recovered from errors` );
             watcher.errorCount = 0;
             watcher.lastError = null;
             watcher.isHealthy = true;
         }
-    } catch ( error )
+
+        // Final update if this specific line triggered a state change and we haven't persisted recently
+        if ( watcher.logFileId && watcher.linesProcessed < 50 )
+        {
+            try
+            {
+                getStatements().updateLogFileLines.run( watcher.linesProcessed, currentStats.size, watcher.logFileId );
+            } catch { }
+        }
+    } catch ( err )
     {
-        const errorMsg = error instanceof Error ? error.message : String( error );
-        console.error( `❌ Error processing log change for ${ watcher.config.name }:`, errorMsg );
+        const errorMsg = err instanceof Error ? err.message : String( err );
+        error( `❌ Error processing log change for ${ watcher.config.name }:`, errorMsg );
 
         // Update error state
         watcher.errorCount++;
-        watcher.lastError = error instanceof Error ? error : new Error( String( error ) );
+        watcher.lastError = err instanceof Error ? err : new Error( String( err ) );
         watcher.isHealthy = watcher.errorCount < MAX_ERROR_COUNT;
 
         if ( !watcher.isHealthy )
         {
-            console.error( `Server "${ watcher.config.name }" marked as unhealthy due to repeated errors` );
+            error( `Server "${ watcher.config.name }" marked as unhealthy due to repeated errors` );
         }
     }
 }
@@ -488,49 +557,46 @@ async function processLogFile ( watcher: ServerWatcher, logLine: string ): Promi
             switch ( event.type )
             {
                 case "game_over":
-                    console.log( `${ serverPrefix } Game over!` );
+                    info( `${ serverPrefix } Game over!` );
                     break;
                 case "player_join":
-                    console.log( `${ serverPrefix } Player joined: ${ event.data.playerName }` );
+                    info( `${ serverPrefix } Player joined: ${ event.data.playerName }` );
                     break;
                 case "player_leave":
                 case "player_disconnect":
-                    console.log( `${ serverPrefix } Player left: ${ event.data.playerName || event.data.steamId }` );
+                    info( `${ serverPrefix } Player left: ${ event.data.playerName || event.data.steamId }` );
                     break;
                 case "team_kill":
-                    console.log(
+                    info(
                         `${ serverPrefix } TEAM KILL: ${ event.data.killer } killed teammate ${ event.data.victim } with ${ event.data.weapon }`
                     );
                     break;
                 case "player_kill":
-                    console.log(
+                    info(
                         `${ serverPrefix } ⚔️ ${ event.data.killer } killed ${ event.data.victim } with ${ event.data.weapon }`
                     );
                     break;
                 case "suicide":
-                    console.log( `${ serverPrefix } ${ event.data.killer } committed suicide with ${ event.data.weapon }` );
+                    info( `${ serverPrefix } ${ event.data.killer } committed suicide with ${ event.data.weapon }` );
                     break;
                 case "difficulty_set":
-                    console.log( `${ serverPrefix } ⚙️ AI difficulty set to: ${ event.data.difficulty }` );
+                    info( `${ serverPrefix } ⚙️ AI difficulty set to: ${ event.data.difficulty }` );
                     break;
                 case "round_over":
-                    console.log(
+                    info(
                         `${ serverPrefix } Round ${ event.data.roundNumber } over: Team ${ event.data.winningTeam } won (${ event.data.winReason })`
                     );
                     break;
                 case "map_load":
-                    console.log( `${ serverPrefix } Loading map: ${ event.data.mapName } (${ event.data.scenario })` );
+                    info( `${ serverPrefix } Loading map: ${ event.data.mapName } (${ event.data.scenario })` );
                     break;
                 case "chat_command":
                     // Handle chat commands with server context
                     const response = CommandHandler.handleCommand( event as ChatEvent, watcher.serverId );
-                    console.log(
-                        `${ serverPrefix } ${ event.data.playerName } used command: ${ event.data.command } ${ event.data.args?.join( " " ) || ""
-                        }`
-                    );
+                    info( `${ serverPrefix } ${ event.data.playerName } used command: ${ event.data.command } ${ event.data.args?.join( " " ) || "" }` );
                     if ( response )
                     {
-                        console.log( `${ serverPrefix } Response: ${ response }` );
+                        info( `${ serverPrefix } Response: ${ response }` );
                     }
                     break;
                 // Ignore any other events not listed in events.md
@@ -541,9 +607,9 @@ async function processLogFile ( watcher: ServerWatcher, logLine: string ): Promi
         } );
 
         return events;
-    } catch ( error )
+    } catch ( err )
     {
-        console.error( `❌ Error processing log file for ${ watcher.config.name }:`, error );
+        error( `❌ Error processing log file for ${ watcher.config.name }:`, err );
         return [];
     }
 }

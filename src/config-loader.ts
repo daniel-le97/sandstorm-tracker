@@ -34,7 +34,7 @@ export class ConfigLoader {
                 },
             ],
             database: {
-                path: "sandstorm_stats.db",
+                path: "sandstorm-tracker.db",
                 enableWAL: true,
                 cacheSize: 1000,
             },
@@ -124,6 +124,7 @@ export class ConfigLoader {
 
         try
         {
+            const relative = Bun.pathToFileURL( "./sandstorm-tracker.json" );
             // Use provided path or environment variable
             let finalConfigPath = configPath || process.env.SANDSTORM_CONFIG_PATH;
             let config: AppConfig;
@@ -131,8 +132,8 @@ export class ConfigLoader {
             // If no explicit path, check for both TOML and JSON in default location
             if ( !finalConfigPath )
             {
-                const tomlPath = "sandstorm-config.toml";
-                const jsonPath = "sandstorm-config.json";
+                const tomlPath = "./sandstorm-tracker.toml";
+                const jsonPath = "./sandstorm-tracker.json";
                 const tomlExists = await Bun.file( tomlPath ).exists();
                 const jsonExists = await Bun.file( jsonPath ).exists();
                 if ( tomlExists && jsonExists )
@@ -153,20 +154,26 @@ export class ConfigLoader {
                 config = await this.loadFromFile( finalConfigPath );
             } else
             {
-                // Start with default config
-                config = defaultConfig;
-
-                // Load servers from environment variables if available
+                // No configuration file provided. Require servers to be specified via
+                // environment variables. Do NOT fall back to a default config that
+                // contains working server entries — servers must be explicitly
+                // declared by the user in a config file (JSON/TOML) or via env vars.
                 const envServers = await this.loadServersFromEnvironment();
                 if ( envServers.length > 0 )
                 {
-                    // Create new config with environment servers
+                    // Use default sections for database/logging/performance but with
+                    // servers coming from the environment.
                     config = new AppConfig( {
                         servers: envServers,
-                        database: config.database.toJSON(),
-                        logging: config.logging.toJSON(),
-                        performance: config.performance.toJSON(),
+                        database: defaultConfig.database.toJSON(),
+                        logging: defaultConfig.logging.toJSON(),
+                        performance: defaultConfig.performance.toJSON(),
                     } );
+                } else
+                {
+                    throw new ConfigurationError(
+                        'No configuration file found and no servers specified in environment. Please provide a configuration file (sandstorm-config.toml or sandstorm-config.json) with a `servers` section.'
+                    );
                 }
             }
 
@@ -226,8 +233,22 @@ export class ConfigLoader {
                 console.log( `Loaded JSON configuration from ${ configPath }` );
             }
 
-            // Create config using class constructor for validation
-            return createConfigFromJSON( configData );
+            // Merge with defaults for optional sections so users may provide a
+            // minimal config containing only `servers` without needing to copy
+            // database/logging/performance entries. File values override defaults.
+            try
+            {
+                const defaults = defaultConfig.toJSON();
+                const merged = { ...defaults, ...configData };
+                // If the file omitted sections like database/logging/performance,
+                // merged will contain defaults; servers must still be provided.
+                return createConfigFromJSON( merged );
+            } catch ( e )
+            {
+                // Fall back to attempting to create from raw data to preserve
+                // previous error handling paths.
+                return createConfigFromJSON( configData );
+            }
         } catch ( error )
         {
             if ( error instanceof SyntaxError )

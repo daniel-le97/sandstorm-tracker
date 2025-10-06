@@ -34,7 +34,8 @@
     "setup": "bun run scripts/setup-dev-environment.ts",
     "setup:example": "node scripts/setup-example-config.js",
     "validate:config": "bun run src/validate-config.ts",
-    "cli": "bun run examples/cli.ts"
+    "cli": "bun run examples/cli.ts",
+    "process-log": "bun run scripts/process-log.ts"
   },
   "keywords": [
     "insurgency",
