@@ -7,7 +7,7 @@ const testDbPath = 'test_sandstorm_stats.db';
 
 describe( 'Database Operations', () => {
     let db: Database;
-    let StatsService: any;
+    let TrackerService: any;
     let testServerId: number;
 
     beforeAll( async () => {
@@ -25,7 +25,7 @@ describe( 'Database Operations', () => {
 
         // Import modules after setting test path
         const dbModule = await import( '../src/database.ts' );
-        StatsService = ( await import( '../src/stats-service' ) ).default;
+        TrackerService = ( await import( '../src/trackerService.ts' ) ).default;
 
         db = dbModule.default();
     } );
@@ -66,7 +66,7 @@ describe( 'Database Operations', () => {
     } );
 
     test( 'Player join creates session', () => {
-        StatsService.processEvent( {
+        TrackerService.processEvent( {
             type: 'player_join',
             timestamp: '2025.10.05-12.00.00:000',
             data: {
@@ -87,14 +87,14 @@ describe( 'Database Operations', () => {
 
     test( 'Kill event records correctly', () => {
         // First ensure players exist
-        StatsService.processEvent( {
+        TrackerService.processEvent( {
             type: 'player_join',
             timestamp: '2025.10.05-12.00.00:000',
             data: { playerName: 'Killer' },
             rawLine: 'test'
         }, testServerId );
 
-        StatsService.processEvent( {
+        TrackerService.processEvent( {
             type: 'player_join',
             timestamp: '2025.10.05-12.00.00:000',
             data: { playerName: 'Victim' },
@@ -102,7 +102,7 @@ describe( 'Database Operations', () => {
         }, testServerId );
 
         // Record kill
-        StatsService.processEvent( {
+        TrackerService.processEvent( {
             type: 'player_kill',
             timestamp: '2025.10.05-12.01.00:000',
             data: {
@@ -131,7 +131,7 @@ describe( 'Database Operations', () => {
 
     test( 'Player stats retrieval works', () => {
         // First create a player and some data
-        StatsService.processEvent( {
+        TrackerService.processEvent( {
             type: 'player_join',
             timestamp: '2025.10.05-12.00.00:000',
             data: {
@@ -140,21 +140,21 @@ describe( 'Database Operations', () => {
             rawLine: 'test join'
         }, testServerId );
 
-        const player = StatsService.getPlayerStatsByName( 'StatsTestPlayer', testServerId );
+        const player = TrackerService.getPlayerStatsByName( 'StatsTestPlayer', testServerId );
         expect( player ).toBeDefined();
         expect( player?.player_name ).toBe( 'StatsTestPlayer' );
     } );
 
     test( 'Top players query works', () => {
         // Create some test players first
-        StatsService.processEvent( {
+        TrackerService.processEvent( {
             type: 'player_join',
             timestamp: '2025.10.05-12.00.00:000',
             data: { playerName: 'TopPlayer1' },
             rawLine: 'test'
         }, testServerId );
 
-        StatsService.processEvent( {
+        TrackerService.processEvent( {
             type: 'player_join',
             timestamp: '2025.10.05-12.00.00:000',
             data: { playerName: 'TopPlayer2' },
@@ -162,7 +162,7 @@ describe( 'Database Operations', () => {
         }, testServerId );
 
         // Add some kills to make them show up in top players
-        StatsService.processEvent( {
+        TrackerService.processEvent( {
             type: 'player_kill',
             timestamp: '2025.10.05-12.01.00:000',
             data: {
@@ -177,7 +177,7 @@ describe( 'Database Operations', () => {
             rawLine: 'test kill'
         }, testServerId );
 
-        const topPlayers = StatsService.getTopPlayers( testServerId, 5 );
+        const topPlayers = TrackerService.getTopPlayers( testServerId, 5 );
 
         expect( topPlayers ).toBeDefined();
         expect( Array.isArray( topPlayers ) ).toBe( true );
@@ -194,7 +194,7 @@ describe( 'Database Operations', () => {
     } );
 
     test( 'Player weapons query works', () => {
-        const weapons = StatsService.getPlayerWeapons( '76561198000000001', testServerId, 5 );
+        const weapons = TrackerService.getPlayerWeapons( '76561198000000001', testServerId, 5 );
 
         expect( weapons ).toBeDefined();
         expect( Array.isArray( weapons ) ).toBe( true );
@@ -209,7 +209,7 @@ describe( 'Database Operations', () => {
 
     test( 'K/D ratio calculation is correct', () => {
         // Create a fresh player for K/D testing
-        StatsService.processEvent( {
+        TrackerService.processEvent( {
             type: 'player_join',
             timestamp: '2025.10.05-12.00.00:000',
             data: { playerName: 'KDRTest' },
@@ -219,7 +219,7 @@ describe( 'Database Operations', () => {
         // Record multiple kills, no deaths
         for ( let i = 0; i < 3; i++ )
         {
-            StatsService.processEvent( {
+            TrackerService.processEvent( {
                 type: 'player_kill',
                 timestamp: '2025.10.05-12.01.00:000',
                 data: {
@@ -235,7 +235,7 @@ describe( 'Database Operations', () => {
             }, testServerId );
         }
 
-        const stats = StatsService.getPlayerStats( '76561198000000099', testServerId );
+        const stats = TrackerService.getPlayerStats( '76561198000000099', testServerId );
         expect( stats.total_kills ).toBe( 3 );
         expect( stats.total_deaths ).toBe( 0 );
         expect( stats.kdr ).toBe( 3 ); // Should be kills when no deaths
@@ -243,7 +243,7 @@ describe( 'Database Operations', () => {
 
     test( 'Suicides and team kills are not counted as player kills', () => {
         // Create a test player
-        StatsService.processEvent( {
+        TrackerService.processEvent( {
             type: 'player_join',
             timestamp: '2025.10.05-12.00.00:000',
             data: { playerName: 'KillTypeTest' },
@@ -253,7 +253,7 @@ describe( 'Database Operations', () => {
         // Record 2 legitimate player kills
         for ( let i = 0; i < 2; i++ )
         {
-            StatsService.processEvent( {
+            TrackerService.processEvent( {
                 type: 'player_kill',
                 timestamp: '2025.10.05-12.01.00:000',
                 data: {
@@ -270,7 +270,7 @@ describe( 'Database Operations', () => {
         }
 
         // Record a team kill (should NOT count as player kill)
-        StatsService.processEvent( {
+        TrackerService.processEvent( {
             type: 'team_kill',
             timestamp: '2025.10.05-12.02.00:000',
             data: {
@@ -286,7 +286,7 @@ describe( 'Database Operations', () => {
         }, testServerId );
 
         // Record a suicide (should NOT count as player kill)
-        StatsService.processEvent( {
+        TrackerService.processEvent( {
             type: 'suicide',
             timestamp: '2025.10.05-12.03.00:000',
             data: {
@@ -302,7 +302,7 @@ describe( 'Database Operations', () => {
         }, testServerId );
 
         // Verify stats: only player kills count toward total_kills
-        const stats = StatsService.getPlayerStats( '76561198000000200', testServerId );
+        const stats = TrackerService.getPlayerStats( '76561198000000200', testServerId );
         expect( stats ).toBeDefined();
         expect( stats.total_kills ).toBe( 2 ); // Only the 2 player kills
         expect( stats.team_kills ).toBe( 1 ); // Team kill tracked separately

@@ -4,7 +4,7 @@ import { Database } from 'bun:sqlite';
 import { parseLogEvents } from '../src/events';
 
 describe( 'Integration Tests', () => {
-    let StatsService: any;
+    let TrackerService: any;
     let CommandHandler: any;
     let db: Database;
     let testServerId: number;
@@ -22,7 +22,7 @@ describe( 'Integration Tests', () => {
         process.env.TEST_DB_PATH = testDbPath;
 
         const dbModule = await import( '../src/database.ts' );
-        StatsService = ( await import( '../src/stats-service' ) ).default;
+        TrackerService = ( await import( '../src/trackerService.ts' ) ).default;
         CommandHandler = ( await import( '../src/command-handler' ) ).default;
 
         db = dbModule.default();
@@ -48,7 +48,7 @@ describe( 'Integration Tests', () => {
             'Server for integration tests'
         );
 
-        StatsService.endAllSessions( testServerId );
+        TrackerService.endAllSessions( testServerId );
     } );
 
     test( 'Complete log processing pipeline works end-to-end', () => {
@@ -64,7 +64,7 @@ describe( 'Integration Tests', () => {
         expect( events.length ).toBeGreaterThan( 0 );
 
         events.forEach( event => {
-            StatsService.processEvent( event, testServerId );
+            TrackerService.processEvent( event, testServerId );
         } );
 
         const players = db.prepare( 'SELECT * FROM players WHERE server_id = ?' ).all( testServerId );

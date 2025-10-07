@@ -3,7 +3,7 @@ import { getStatements, initializeDatabase, type MatchDetails, type MatchHistory
 import { MatchDetailsSchema, MatchHistorySchema, MatchParticipantSchema } from "../src/validation";
 import * as v from "valibot";
 import type { MapLoadEvent, PlayerJoinEvent, PlayerLeaveEvent } from "../src/events";
-import { StatsService } from "../src/stats-service";
+import { TrackerService } from "../src/trackerService";
 import { unlinkSync } from "fs";
 
 // Use test database
@@ -53,7 +53,7 @@ describe( "Match History", () => {
         initializeDatabase();
 
         // Clear all in-memory state from previous tests
-        StatsService.clearAllState();
+        TrackerService.clearAllState();
 
         // Clear all database tables for clean state
         const db = require( "../src/database" ).default();
@@ -112,7 +112,7 @@ describe( "Match History", () => {
 
         // Simulate map load event
         const mapLoadEvent = createMapLoadEvent( "Tell", "Checkpoint", "2024-01-15T10:30:00Z" );
-        StatsService.processEvent( mapLoadEvent, serverId );
+        TrackerService.processEvent( mapLoadEvent, serverId );
 
         // Verify match was created
         const matches = statements.getActiveMatches.all( serverId ) as any[];
@@ -143,10 +143,10 @@ describe( "Match History", () => {
                 scenario: "Checkpoint",
             },
         } as MapLoadEvent;
-        StatsService.processEvent( mapLoadEvent, serverId );
+        TrackerService.processEvent( mapLoadEvent, serverId );
 
         // Get the active match
-        const activeMatch = StatsService.getActiveMatch( serverId );
+        const activeMatch = TrackerService.getActiveMatch( serverId );
         expect( activeMatch ).toBeDefined();
 
         // Simulate player join
@@ -158,7 +158,7 @@ describe( "Match History", () => {
             },
         } as PlayerJoinEvent;
 
-        StatsService.processEvent( playerJoinEvent, serverId );
+        TrackerService.processEvent( playerJoinEvent, serverId );
 
         // Verify player was added to match
         const participants = statements.getMatchParticipants.all( activeMatch!.matchId, serverId ) as { player_id: string; }[];
@@ -186,11 +186,11 @@ describe( "Match History", () => {
             timestamp: "2024-01-15T10:30:00Z",
             data: { mapName: "Tell", scenario: "Checkpoint" },
         } as MapLoadEvent;
-        StatsService.processEvent( mapLoadEvent, serverId );
+        TrackerService.processEvent( mapLoadEvent, serverId );
         // Add multiple players
         const players = [ "Alice", "Bob", "Charlie" ];
         players.forEach( ( playerName, index ) => {
-            StatsService.processEvent( {
+            TrackerService.processEvent( {
                 type: "player_join",
                 timestamp: `2024-01-15T10:3${ index + 1 }:00Z`,
                 data: {
@@ -200,7 +200,7 @@ describe( "Match History", () => {
                 rawLine: `joined`
             }, serverId );
         } );
-        const activeMatch = StatsService.getActiveMatch( serverId );
+        const activeMatch = TrackerService.getActiveMatch( serverId );
         expect( activeMatch ).toBeDefined();
         expect( activeMatch!.participants.size ).toBe( 3 );
         // Validate participants
@@ -238,14 +238,14 @@ describe( "Match History", () => {
             timestamp: "2024-01-15T10:30:00Z",
             data: { mapName: "Tell", scenario: "Checkpoint" },
         } as MapLoadEvent;
-        StatsService.processEvent( mapLoadEvent, serverId );
+        TrackerService.processEvent( mapLoadEvent, serverId );
 
         const playerJoinEvent = {
             type: "player_join" as const,
             timestamp: "2024-01-15T10:31:00Z",
             data: { playerName: "TestPlayer" },
         } as PlayerJoinEvent;
-        StatsService.processEvent( playerJoinEvent, serverId );
+        TrackerService.processEvent( playerJoinEvent, serverId );
 
         // Player leaves
         const playerLeaveEvent = {
@@ -253,10 +253,10 @@ describe( "Match History", () => {
             timestamp: "2024-01-15T10:45:00Z",
             data: { playerName: "TestPlayer" },
         } as PlayerLeaveEvent;
-        StatsService.processEvent( playerLeaveEvent, serverId );
+        TrackerService.processEvent( playerLeaveEvent, serverId );
 
         // Verify player participation was ended
-        const activeMatch = StatsService.getActiveMatch( serverId );
+        const activeMatch = TrackerService.getActiveMatch( serverId );
         const participants = statements.getMatchParticipants.all( activeMatch!.matchId, serverId ) as MatchParticipant[];
 
         const participantsRaw3 = statements.getMatchParticipants.all( activeMatch!.matchId, serverId );
@@ -285,13 +285,13 @@ describe( "Match History", () => {
             data: { mapName: "Tell", scenario: "Checkpoint" },
             rawLine: "LoadMap"
         };
-        StatsService.processEvent( mapLoadEvent, serverId );
-        const activeMatch = StatsService.getActiveMatch( serverId );
+        TrackerService.processEvent( mapLoadEvent, serverId );
+        const activeMatch = TrackerService.getActiveMatch( serverId );
         expect( activeMatch ).toBeDefined();
         // End match with a later timestamp to ensure duration > 0 (15 minutes later)
-        StatsService.endMatch( serverId, "completed", "2024-01-15T10:45:00Z" );
+        TrackerService.endMatch( serverId, "completed", "2024-01-15T10:45:00Z" );
         // Verify match was ended
-        expect( StatsService.getActiveMatch( serverId ) ).toBeUndefined();
+        expect( TrackerService.getActiveMatch( serverId ) ).toBeUndefined();
         // Validate match
         let matchRaw = statements.getMatchDetails.get( activeMatch!.matchId, serverId );
         if ( ( matchRaw as any ).maps_played === undefined ) ( matchRaw as any ).maps_played = null;
@@ -325,14 +325,14 @@ describe( "Match History", () => {
                 data: { mapName: `Map${ i }`, scenario: "Checkpoint" },
                 rawLine: `[2024.01.15-${ startHour.toString().padStart( 2, '0' ) }.30.00:000] LogGameMode: LoadMap: Map${ i }?Scenario=Scenario_Map${ i }_Checkpoint_Security`
             };
-            StatsService.processEvent( mapLoadEvent, serverId );
+            TrackerService.processEvent( mapLoadEvent, serverId );
             // End match 1 hour later
-            StatsService.endMatch( serverId, "completed", `2024-01-15T${ endHour.toString().padStart( 2, '0' ) }:30:00Z` );
+            TrackerService.endMatch( serverId, "completed", `2024-01-15T${ endHour.toString().padStart( 2, '0' ) }:30:00Z` );
         }
 
         // Get match history
-        const history = StatsService.getMatchHistory( serverId, 10 ) as MatchHistory[];
-        const historyRaw = StatsService.getMatchHistory( serverId, 10 );
+        const history = TrackerService.getMatchHistory( serverId, 10 ) as MatchHistory[];
+        const historyRaw = TrackerService.getMatchHistory( serverId, 10 );
         const validatedHistory = historyRaw.map( h => v.parse( MatchHistorySchema, h ) );
         expect( validatedHistory ).toHaveLength( 3 );
 
@@ -360,9 +360,9 @@ describe( "Match History", () => {
             data: { mapName: "Tell", scenario: "Checkpoint" },
             rawLine: "[2024.01.15-10.30.00:000] LogGameMode: LoadMap: Tell?Scenario=Scenario_Tell_Checkpoint_Security"
         };
-        StatsService.processEvent( mapLoadEvent, serverId );
+        TrackerService.processEvent( mapLoadEvent, serverId );
 
-        const activeMatch = StatsService.getActiveMatch( serverId );
+        const activeMatch = TrackerService.getActiveMatch( serverId );
 
         // Add players
         [ "Alice", "Bob" ].forEach( ( name, index ) => {
@@ -375,12 +375,12 @@ describe( "Match History", () => {
                 },
                 rawLine: `[2024.01.15-10.3${ index + 1 }.00:000] LogOnlineSession: Player "${ name }" joined (EOS: steam_${ name.toLowerCase() }_detail_${ index })`
             };
-            StatsService.processEvent( joinEvent, serverId );
+            TrackerService.processEvent( joinEvent, serverId );
         } );
 
         // Get match details
-        const details = StatsService.getMatchDetails( activeMatch!.matchId, serverId ) as MatchDetails;
-        const detailsRaw = StatsService.getMatchDetails( activeMatch!.matchId, serverId );
+        const details = TrackerService.getMatchDetails( activeMatch!.matchId, serverId ) as MatchDetails;
+        const detailsRaw = TrackerService.getMatchDetails( activeMatch!.matchId, serverId );
         const validatedDetails = v.parse( MatchDetailsSchema, detailsRaw );
 
         expect( validatedDetails.match ).toBeDefined();
@@ -407,8 +407,8 @@ describe( "Match History", () => {
             data: { mapName: "Tell", scenario: "Checkpoint" },
             rawLine: "LoadMap"
         };
-        StatsService.processEvent( mapLoadEvent, serverId );
-        StatsService.processEvent( {
+        TrackerService.processEvent( mapLoadEvent, serverId );
+        TrackerService.processEvent( {
             type: "player_join",
             timestamp: "2024-01-15T10:31:00Z",
             data: {
@@ -417,12 +417,12 @@ describe( "Match History", () => {
             },
             rawLine: "joined"
         }, serverId );
-        const activeMatch = StatsService.getActiveMatch( serverId );
+        const activeMatch = TrackerService.getActiveMatch( serverId );
         expect( activeMatch ).toBeDefined();
         // Simulate server crash
-        StatsService.handleServerCrash( serverId );
+        TrackerService.handleServerCrash( serverId );
         // Verify match was aborted
-        expect( StatsService.getActiveMatch( serverId ) ).toBeUndefined();
+        expect( TrackerService.getActiveMatch( serverId ) ).toBeUndefined();
         // Validate match
         let matchRaw = statements.getMatchDetails.get( activeMatch!.matchId, serverId );
         if ( ( matchRaw as any ).maps_played === undefined ) ( matchRaw as any ).maps_played = null;
@@ -450,9 +450,9 @@ describe( "Match History", () => {
             data: { mapName: "Tell", scenario: "Checkpoint" },
             rawLine: "[2024.01.15-10.30.00:000] LogGameMode: LoadMap: Tell?Scenario=Scenario_Tell_Checkpoint_Security"
         };
-        StatsService.processEvent( firstMapEvent, serverId );
+        TrackerService.processEvent( firstMapEvent, serverId );
 
-        const activeMatch = StatsService.getActiveMatch( serverId );
+        const activeMatch = TrackerService.getActiveMatch( serverId );
         const initialMatchId = activeMatch!.matchId;
 
         // Load second map (should add to same match)
@@ -462,15 +462,15 @@ describe( "Match History", () => {
             data: { mapName: "Crossing", scenario: "Push" },
             rawLine: "[2024.01.15-11.00.00:000] LogGameMode: LoadMap: Crossing?Scenario=Scenario_Crossing_Push_Security"
         };
-        StatsService.processEvent( secondMapEvent, serverId );
+        TrackerService.processEvent( secondMapEvent, serverId );
 
         // Should still be the same active match
-        const sameMatch = StatsService.getActiveMatch( serverId );
+        const sameMatch = TrackerService.getActiveMatch( serverId );
         expect( sameMatch!.matchId ).toBe( initialMatchId );
 
         // Verify both maps are tracked for the match
-        const details = StatsService.getMatchDetails( initialMatchId, serverId ) as MatchDetails;
-        const detailsRaw2 = StatsService.getMatchDetails( initialMatchId, serverId );
+        const details = TrackerService.getMatchDetails( initialMatchId, serverId ) as MatchDetails;
+        const detailsRaw2 = TrackerService.getMatchDetails( initialMatchId, serverId );
         const validatedDetails2 = v.parse( MatchDetailsSchema, detailsRaw2 );
         expect( validatedDetails2.maps ).toHaveLength( 2 );
         expect( validatedDetails2.maps[ 0 ].sequence_order ).toBe( 1 );

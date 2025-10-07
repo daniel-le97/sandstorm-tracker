@@ -2,7 +2,7 @@ import { beforeAll, describe, expect, test } from "bun:test";
 import { parseLogEvent } from "../src/events";
 
 describe( "Commander Fire Support Integration", () => {
-    let StatsService: any;
+    let TrackerService: any;
     let testServerDbId: number;
     let db: any;
 
@@ -12,7 +12,7 @@ describe( "Commander Fire Support Integration", () => {
 
         // Import modules
         const dbModule = await import( "../src/database.ts" );
-        StatsService = ( await import( "../src/stats-service" ) ).default;
+        TrackerService = ( await import( "../src/trackerService.ts" ) ).default;
         db = dbModule.default();
 
         // Clean up any existing data
@@ -72,7 +72,7 @@ describe( "Commander Fire Support Integration", () => {
         if ( mortarEvent )
         {
             // Process the event through stats service
-            StatsService.processEvent( mortarEvent, testServerDbId );
+            TrackerService.processEvent( mortarEvent, testServerDbId );
 
             // Verify the kill was recorded (even with unknown killer)
             // Note: The system may create a placeholder entry for unknown killers
@@ -86,10 +86,10 @@ describe( "Commander Fire Support Integration", () => {
         expect( artilleryEvent ).not.toBeNull();
         if ( artilleryEvent )
         {
-            StatsService.processEvent( artilleryEvent, testServerDbId );
+            TrackerService.processEvent( artilleryEvent, testServerDbId );
 
             // Check that commander player stats include the artillery kill
-            const commanderStats = StatsService.getPlayerStats( "76561198123456789", testServerDbId );
+            const commanderStats = TrackerService.getPlayerStats( "76561198123456789", testServerDbId );
             expect( commanderStats ).toBeDefined();
             if ( commanderStats )
             {
@@ -97,7 +97,7 @@ describe( "Commander Fire Support Integration", () => {
             }
 
             // Check weapon stats for artillery
-            const weaponStats = StatsService.getPlayerWeapons( "76561198123456789", testServerDbId, 10 );
+            const weaponStats = TrackerService.getPlayerWeapons( "76561198123456789", testServerDbId, 10 );
             expect( weaponStats ).toBeDefined();
 
             const artilleryWeaponStat = weaponStats?.find( ( w: any ) => w.weapon_name === "Artillery Strike" );
@@ -163,12 +163,12 @@ describe( "Commander Fire Support Integration", () => {
             const event = parseLogEvent( line );
             if ( event )
             {
-                StatsService.processEvent( event, testServerDbId );
+                TrackerService.processEvent( event, testServerDbId );
             }
         } );
 
         // Check weapon stats for the commander
-        const weaponStats = StatsService.getPlayerWeapons( "76561198111222333", testServerDbId, 10 );
+        const weaponStats = TrackerService.getPlayerWeapons( "76561198111222333", testServerDbId, 10 );
         expect( weaponStats ).toBeDefined();
         expect( weaponStats?.length ).toBeGreaterThan( 0 );
 

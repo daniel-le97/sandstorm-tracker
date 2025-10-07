@@ -51,7 +51,7 @@ function startCrashDetection (): void {
             {
                 const serverId = parseInt( serverKey );
                 console.log( `Server ${ serverId } crash detected! Ending all active sessions...` );
-                StatsService.handleServerCrash( serverId );
+                TrackerService.handleServerCrash( serverId );
             }
         }
     }, 5000 ); // Check every 5 seconds
@@ -62,7 +62,7 @@ function updateLastActivity ( serverId: number ): void {
     lastFileActivity.set( serverId.toString(), new Date() );
 }
 
-export class StatsService {
+export class TrackerService {
     /**
      * Initialize the stats service and start crash detection
      */
@@ -665,4 +665,4 @@ export class StatsService {
     }
 }
 
-export default StatsService;
+export default TrackerService;

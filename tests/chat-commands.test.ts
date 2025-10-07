@@ -2,7 +2,7 @@ import { beforeAll, describe, expect, test } from "bun:test";
 import { unlinkSync } from "fs";
 
 describe( "Chat Commands", () => {
-    let StatsService: any;
+    let TrackerService: any;
     let CommandHandler: any;
     let testServerDbId: number;
     const testDbPath = "tests/databases/test_commands.db";
@@ -22,7 +22,7 @@ describe( "Chat Commands", () => {
 
         // Import modules
         const dbFunctions = await import( "../src/database.ts" );
-        StatsService = ( await import( "../src/stats-service" ) ).default;
+        TrackerService = ( await import( "../src/trackerService.ts" ) ).default;
         CommandHandler = ( await import( "../src/command-handler" ) ).default;
 
         // Create test server first (required for foreign key constraints)
@@ -35,7 +35,7 @@ describe( "Chat Commands", () => {
         );
 
         // Set up test data
-        StatsService.processEvent(
+        TrackerService.processEvent(
             {
                 type: "player_join",
                 timestamp: "2025.10.05-12.00.00:000",
@@ -45,7 +45,7 @@ describe( "Chat Commands", () => {
             testServerDbId
         );
 
-        StatsService.processEvent(
+        TrackerService.processEvent(
             {
                 type: "player_join",
                 timestamp: "2025.10.05-12.00.30:000",
@@ -58,7 +58,7 @@ describe( "Chat Commands", () => {
         // Add some kills for Alice
         for ( let i = 0; i < 5; i++ )
         {
-            StatsService.processEvent(
+            TrackerService.processEvent(
                 {
                     type: "player_kill",
                     timestamp: "2025.10.05-12.01.00:000",

@@ -5,7 +5,7 @@ import { ConfigLoader } from "./config-loader";
 import { upsertServer } from "./database";
 import type { ChatEvent, GameEvent } from "./events";
 import { parseLogEvents } from "./events";
-import StatsService from "./stats-service";
+import TrackerService from "./trackerService";
 import { info, debug, warn, error } from "./lib/console/logger";
 import { getStatements } from "./database";
 import { sep } from "path";
@@ -146,7 +146,7 @@ export async function initializeApplication (): Promise<void> {
     info( `Found ${ enabledServers.length } enabled server(s)` );
 
     // Initialize stats service with error handling
-    StatsService.initialize();
+    TrackerService.initialize();
     debug( "✓ Statistics service initialized" );
 
     // Set up each server watcher with individual error handling
@@ -545,11 +545,11 @@ async function processLogFile ( watcher: ServerWatcher, logLine: string ): Promi
         }
 
         // Update file activity timestamp
-        StatsService.updateActivity( watcher.serverId );
+        TrackerService.updateActivity( watcher.serverId );
 
         events.forEach( ( event ) => {
             // Process event in database with server context
-            StatsService.processEvent( event, watcher.serverId );
+            TrackerService.processEvent( event, watcher.serverId );
 
             // Only log events that are specifically listed in events.md
             const serverPrefix = `[${ watcher.config.name }]`;

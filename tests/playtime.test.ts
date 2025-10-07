@@ -3,7 +3,7 @@ import { beforeAll, beforeEach, describe, expect, test } from "bun:test";
 import { unlinkSync } from "fs";
 
 describe( "Playtime Tracking", () => {
-    let StatsService: any;
+    let TrackerService: any;
     let db: Database;
     let testServerDbId: number;
     const testDbPath = "test_playtime.db";
@@ -23,7 +23,7 @@ describe( "Playtime Tracking", () => {
 
         // Import modules
         const dbModule = await import( "../src/database.ts" );
-        StatsService = ( await import( "../src/stats-service" ) ).default;
+        TrackerService = ( await import( "../src/trackerService.ts" ) ).default;
         db = dbModule.default();
     } );
 
@@ -51,11 +51,11 @@ describe( "Playtime Tracking", () => {
         );
 
         // Clear active sessions
-        StatsService.endAllSessions( testServerDbId );
+        TrackerService.endAllSessions( testServerDbId );
     } );
 
     test( "Player join starts session tracking", () => {
-        StatsService.processEvent(
+        TrackerService.processEvent(
             {
                 type: "player_join",
                 timestamp: "2025.10.05-12.00.00:000",
@@ -68,7 +68,7 @@ describe( "Playtime Tracking", () => {
         );
 
         // Check that session was created
-        const activeSessions = StatsService.getActiveSessions( testServerDbId );
+        const activeSessions = TrackerService.getActiveSessions( testServerDbId );
         expect( activeSessions.has( "PlaytimeTest" ) ).toBe( true );
 
         const sessionId = activeSessions.get( "PlaytimeTest" );
@@ -77,7 +77,7 @@ describe( "Playtime Tracking", () => {
 
     test( "Player leave ends session and calculates playtime", () => {
         // First join
-        StatsService.processEvent(
+        TrackerService.processEvent(
             {
                 type: "player_join",
                 timestamp: "2025.10.05-12.00.00:000",
@@ -90,7 +90,7 @@ describe( "Playtime Tracking", () => {
         );
 
         // Simulate some time passing and then leave
-        StatsService.processEvent(
+        TrackerService.processEvent(
             {
                 type: "player_leave",
                 timestamp: "2025.10.05-12.30.00:000", // 30 minutes later
@@ -103,18 +103,18 @@ describe( "Playtime Tracking", () => {
         );
 
         // Check session was ended
-        const activeSessions = StatsService.getActiveSessions( testServerDbId );
+        const activeSessions = TrackerService.getActiveSessions( testServerDbId );
         expect( activeSessions.has( "SessionTest" ) ).toBe( false );
 
         // Check player was created
-        const player = StatsService.getPlayerStatsByName( "SessionTest", testServerDbId );
+        const player = TrackerService.getPlayerStatsByName( "SessionTest", testServerDbId );
         expect( player ).toBeDefined();
         expect( player?.player_name ).toBe( "SessionTest" );
     } );
 
     test( "Server crash detection works with timeout", () => {
         // Start a session
-        StatsService.processEvent(
+        TrackerService.processEvent(
             {
                 type: "player_join",
                 timestamp: "2025.10.05-12.00.00:000",
@@ -127,27 +127,27 @@ describe( "Playtime Tracking", () => {
         );
 
         // Verify session is active
-        const activeSessions = StatsService.getActiveSessions( testServerDbId );
+        const activeSessions = TrackerService.getActiveSessions( testServerDbId );
         expect( activeSessions.has( "CrashTest" ) ).toBe( true );
 
         // Simulate server crash by calling handleServerCrash
-        StatsService.handleServerCrash( testServerDbId );
+        TrackerService.handleServerCrash( testServerDbId );
 
         // Check that all sessions were ended
-        const activeSessionsAfterCrash = StatsService.getActiveSessions( testServerDbId );
+        const activeSessionsAfterCrash = TrackerService.getActiveSessions( testServerDbId );
         expect( activeSessionsAfterCrash.size ).toBe( 0 );
     } );
 
     test( "Last file change tracking updates correctly", async () => {
-        const initialTime = StatsService.getLastFileChange( testServerDbId );
+        const initialTime = TrackerService.getLastFileChange( testServerDbId );
 
         // Small delay to ensure timestamp differs
         await new Promise( ( resolve ) => setTimeout( resolve, 1 ) );
 
         // Update last file change time
-        StatsService.updateLastFileChange( testServerDbId );
+        TrackerService.updateLastFileChange( testServerDbId );
 
-        const updatedTime = StatsService.getLastFileChange( testServerDbId );
+        const updatedTime = TrackerService.getLastFileChange( testServerDbId );
         expect( updatedTime.getTime() ).toBeGreaterThan( initialTime.getTime() );
     } );
 
@@ -156,7 +156,7 @@ describe( "Playtime Tracking", () => {
 
         // Join all players
         playerNames.forEach( ( name, index ) => {
-            StatsService.processEvent(
+            TrackerService.processEvent(
                 {
                     type: "player_join",
                     timestamp: `2025.10.05-12.0${ index }.00:000`,
@@ -170,7 +170,7 @@ describe( "Playtime Tracking", () => {
         } );
 
         // Check all sessions are active
-        const activeSessions = StatsService.getActiveSessions( testServerDbId );
+        const activeSessions = TrackerService.getActiveSessions( testServerDbId );
         expect( activeSessions.size ).toBe( 3 );
 
         playerNames.forEach( ( name ) => {
@@ -178,7 +178,7 @@ describe( "Playtime Tracking", () => {
         } );
 
         // Leave one player
-        StatsService.processEvent(
+        TrackerService.processEvent(
             {
                 type: "player_leave",
                 timestamp: "2025.10.05-12.05.00:000",
@@ -191,7 +191,7 @@ describe( "Playtime Tracking", () => {
         );
 
         // Check only 2 sessions remain
-        const remainingSessions = StatsService.getActiveSessions( testServerDbId );
+        const remainingSessions = TrackerService.getActiveSessions( testServerDbId );
         expect( remainingSessions.size ).toBe( 2 );
         expect( remainingSessions.has( "Player1" ) ).toBe( true );
         expect( remainingSessions.has( "Player2" ) ).toBe( false );
@@ -200,7 +200,7 @@ describe( "Playtime Tracking", () => {
 
     test( "Session tracking handles rejoining players", () => {
         // Player joins
-        StatsService.processEvent(
+        TrackerService.processEvent(
             {
                 type: "player_join",
                 timestamp: "2025.10.05-12.00.00:000",
@@ -213,7 +213,7 @@ describe( "Playtime Tracking", () => {
         );
 
         // Player leaves
-        StatsService.processEvent(
+        TrackerService.processEvent(
             {
                 type: "player_leave",
                 timestamp: "2025.10.05-12.15.00:000",
@@ -226,7 +226,7 @@ describe( "Playtime Tracking", () => {
         );
 
         // Player joins again
-        StatsService.processEvent(
+        TrackerService.processEvent(
             {
                 type: "player_join",
                 timestamp: "2025.10.05-12.20.00:000",
@@ -239,7 +239,7 @@ describe( "Playtime Tracking", () => {
         );
 
         // Check new session was created
-        const activeSessions = StatsService.getActiveSessions( testServerDbId );
+        const activeSessions = TrackerService.getActiveSessions( testServerDbId );
         expect( activeSessions.has( "RejoinTest" ) ).toBe( true );
 
         // Should have a different session ID than before
@@ -251,7 +251,7 @@ describe( "Playtime Tracking", () => {
         const playerName = "AccumulateTest";
 
         // First session
-        StatsService.processEvent(
+        TrackerService.processEvent(
             {
                 type: "player_join",
                 timestamp: "2025.10.05-10.00.00:000",
@@ -261,7 +261,7 @@ describe( "Playtime Tracking", () => {
             testServerDbId
         );
 
-        StatsService.processEvent(
+        TrackerService.processEvent(
             {
                 type: "player_leave",
                 timestamp: "2025.10.05-10.30.00:000", // 30 min session
@@ -272,7 +272,7 @@ describe( "Playtime Tracking", () => {
         );
 
         // Second session
-        StatsService.processEvent(
+        TrackerService.processEvent(
             {
                 type: "player_join",
                 timestamp: "2025.10.05-11.00.00:000",
@@ -282,7 +282,7 @@ describe( "Playtime Tracking", () => {
             testServerDbId
         );
 
-        StatsService.processEvent(
+        TrackerService.processEvent(
             {
                 type: "player_leave",
                 timestamp: "2025.10.05-11.45.00:000", // 45 min session
@@ -293,7 +293,7 @@ describe( "Playtime Tracking", () => {
         );
 
         // Check accumulated playtime
-        const player = StatsService.getPlayerStatsByName( playerName, testServerDbId );
+        const player = TrackerService.getPlayerStatsByName( playerName, testServerDbId );
         expect( player ).toBeDefined();
         expect( player?.player_name ).toBe( playerName );
         // Note: Actual playtime calculation depends on implementation details

@@ -8,7 +8,7 @@ describe( "File Watcher Functionality", () => {
     const testLogDir = "./test-logs";
     const testLogFile = join( testLogDir, "Insurgency.log" );
     const testDbPath = "test_file_watcher.db";
-    let StatsServiceRef: any;
+    let TrackerServiceRef: any;
     let watcherController: AbortController | null = null;
     let testServerId: number;
 
@@ -18,7 +18,7 @@ describe( "File Watcher Functionality", () => {
 
         // Import modules
         const dbModule = await import( "../src/database.ts" );
-        StatsServiceRef = ( await import( "../src/stats-service" ) ).default;
+        TrackerServiceRef = ( await import( "../src/trackerService.ts" ) ).default;
 
         // Initialize database
         const db = dbModule.default();
@@ -30,14 +30,14 @@ describe( "File Watcher Functionality", () => {
         }
 
         // Initialize stats service
-        StatsServiceRef.initialize();
+        TrackerServiceRef.initialize();
     } );
 
     beforeEach( () => {
         // Reset stats service state
-        if ( StatsServiceRef.reset )
+        if ( TrackerServiceRef.reset )
         {
-            StatsServiceRef.reset();
+            TrackerServiceRef.reset();
         }
 
         // Clean up any existing log file
@@ -262,8 +262,8 @@ describe( "File Watcher Functionality", () => {
             let processedEvents: any[] = [];
 
             // Mock the event processing
-            const originalProcessEvent = StatsServiceRef.processEvent;
-            StatsServiceRef.processEvent = function ( event: any, serverId: number ) {
+            const originalProcessEvent = TrackerServiceRef.processEvent;
+            TrackerServiceRef.processEvent = function ( event: any, serverId: number ) {
                 eventsProcessed++;
                 processedEvents.push( { event, serverId } );
                 // Call original function if it exists
@@ -294,7 +294,7 @@ describe( "File Watcher Functionality", () => {
                                 // Parse and process the last line
                                 const events = parseLogEvents( lastLine );
                                 events.forEach( ( gameEvent ) => {
-                                    StatsServiceRef.processEvent( gameEvent, testServerId );
+                                    TrackerServiceRef.processEvent( gameEvent, testServerId );
                                 } );
 
                                 lastProcessedLine = lastLine;
@@ -326,7 +326,7 @@ describe( "File Watcher Functionality", () => {
             await watchPromise;
 
             // Restore original function
-            StatsServiceRef.processEvent = originalProcessEvent;
+            TrackerServiceRef.processEvent = originalProcessEvent;
 
             expect( eventsProcessed ).toBeGreaterThan( 0 );
             expect( processedEvents.length ).toBeGreaterThan( 0 );

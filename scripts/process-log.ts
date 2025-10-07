@@ -13,11 +13,11 @@
  *   1. Registers (or reuses) a server in the DB
  *   2. Reads a static log file line-by-line (streaming, memory efficient)
  *   3. Parses each line for game events using existing parseLogEvents()
- *   4. Feeds events into StatsService (replaying history)
+ *   4. Feeds events into TrackerService (replaying history)
  *   5. On completion prints a summary: total lines, events, matches, top players
  */
 import { parseLogEvents } from "../src/events";
-import StatsService from "../src/stats-service";
+import TrackerService from "../src/trackerService";
 import { upsertServer, getStatements } from "../src/database";
 import logger from "../src/lib/console/logger";
 import { hijackConsole } from "../src/lib/console/console-hijack";
@@ -81,7 +81,7 @@ async function main () {
     const dbServerId = upsertServer( serverUuid, serverName, serverUuid, logPathForDb, "offline import" );
 
     // Initialize stats service
-    StatsService.initialize();
+    TrackerService.initialize();
 
     // We'll stream lines to avoid loading giant files fully
     const file = Bun.file( args.file );
@@ -115,7 +115,7 @@ async function main () {
         eventCount += events.length;
         for ( const ev of events )
         {
-            StatsService.processEvent( ev, dbServerId );
+            TrackerService.processEvent( ev, dbServerId );
         }
         if ( logFileId && lineCount % 100 === 0 )
         {
