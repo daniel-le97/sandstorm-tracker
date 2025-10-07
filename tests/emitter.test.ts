@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'bun:test';
-import eventBus from '../src/lib/emitter/emitter';
+import eventBus from '../src/lib/emitter/gameEventEmitter';
 
 describe( 'Typed eventBus', () => {
     beforeEach( () => {

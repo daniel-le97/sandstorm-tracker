@@ -19,6 +19,10 @@ builds:
 
 archives:
   - formats: [tar.gz]
+    # include top-level files like README/LICENSE in the generated archives
+    files:
+      - README.md
+      - LICENSE
     # this name template makes the OS and Arch compatible with the results of `uname`.
     name_template: >-
       {{ .ProjectName }}_

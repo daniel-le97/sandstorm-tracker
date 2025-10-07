@@ -2,17 +2,27 @@ import { root } from './src/cli';
 import { stopApp } from './src/app';
 import logger from './src/lib/console/logger';
 import { hijackConsole } from './src/lib/console/console-hijack';
+import { startServer, stopServer } from './src/lib/http-server/serve';
+import appEmitter from './src/lib/emitter/emitter';
+
+appEmitter.on("shutdown", () => {
+    logger.info("App is shutting down, performing cleanup...");
+});
 
 // Thin launcher: delegate to CLI (root command) while retaining graceful shutdown
 async function main (): Promise<void> {
     process.on( 'SIGINT', async () => {
         logger.info( 'Received SIGINT' );
+        // appEmitter.emit("shutdown");
         await stopApp();
+        await stopServer()
         process.exit( 0 );
     } );
     process.on( 'SIGTERM', async () => {
         logger.info( 'Received SIGTERM' );
+        // appEmitter.emit("shutdown");
         await stopApp();
+        await stopServer()
         process.exit( 0 );
     } );
 
@@ -27,6 +37,7 @@ async function main (): Promise<void> {
 
         // Delegate startup to the CLI root command (it will call initialize/startWatching when appropriate)
         await root.run();
+        await startServer()
     } catch ( error )
     {
         logger.error( "❌ Failed to start multi-server tracker:", error );
