@@ -34,6 +34,4 @@ async function main (): Promise<void> {
     }
 }
 
-console.log( Bun.randomUUIDv7() );
-
 main().catch( console.error );

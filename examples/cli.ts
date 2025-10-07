@@ -1,5 +1,5 @@
 #!/usr/bin/env bun
-import { Command } from '../src/cli/lib/command';
+import { Command } from '../src/lib/cli/lib/command';
 
 const root = new Command( {
     name: 'sandstorm',

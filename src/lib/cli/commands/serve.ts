@@ -1,5 +1,5 @@
 import type { Action } from '../lib/command';
-import { initializeApplication, startWatching } from '../../app';
+import { initializeApplication, startWatching } from '../../../app';
 
 export const serveAction: Action = async ( { flags, args } ) => {
     if ( flags.verbose ) console.log( 'verbose enabled' );

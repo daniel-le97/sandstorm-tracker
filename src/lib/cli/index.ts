@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 import { Command } from './lib/index';
 // Index only wires up command definitions and imports their actions.
-import { setVerbose } from '../lib/console/logger';
+import { setVerbose } from '../console/logger';
 import { serveAction } from './commands/serve';
 import { versionAction } from './commands/version';
 import { updateAction } from './commands/update';

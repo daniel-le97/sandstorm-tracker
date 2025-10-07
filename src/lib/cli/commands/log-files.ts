@@ -1,5 +1,5 @@
 import type { Action } from '../lib/command';
-import { getStatements } from '../../database';
+import { getStatements } from '../../../database';
 
 export const logFilesAction: Action = async ( { flags } ) => {
     try
@@ -24,7 +24,7 @@ export const logFilesAction: Action = async ( { flags } ) => {
                      ${ whereClause }
                      ORDER BY lf.open_time DESC
                      LIMIT ${ limit }`;
-        const db = ( await import( '../../database' ) ).DB.getDefaultDatabase();
+        const db = ( await import( '../../../database' ) ).DB.getDefaultDatabase();
         const rows = db.query( sql ).all( ...params ) as any[];
         if ( !rows.length )
         {

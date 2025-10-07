@@ -1,10 +1,10 @@
 #!/usr/bin/env bun
-import { Command } from './cli/lib/index';
+import { Command } from './lib/cli/lib/index';
 import { setVerbose } from './lib/console/logger';
 import { getStatements } from './database';
-import { updateAction } from './cli/commands/update';
-import { logFilesAction } from './cli/commands/log-files';
-import { serveAction } from './cli/commands/serve';
+import { updateAction } from './lib/cli/commands/update';
+import { logFilesAction } from './lib/cli/commands/log-files';
+import { serveAction } from './lib/cli/commands/serve';
 
 export const root = new Command( {
     name: 'sandstorm',
