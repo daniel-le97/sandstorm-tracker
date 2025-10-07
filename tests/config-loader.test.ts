@@ -1,5 +1,6 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test } from "bun:test";
 import { mkdirSync, rmSync, unlinkSync } from "fs";
+import { rename } from "fs/promises";
 import { join } from "path";
 import { AppConfig } from "../src/config";
 import { ConfigLoader, ConfigurationError } from "../src/config-loader";
@@ -207,9 +208,35 @@ missing_bracket = true`;
             delete process.env.SANDSTORM_SERVER_1_ENABLED;
 
             // Do not remove any repo-level config files; tests must not delete
-            // user configuration present in the repository.
+            // user configuration present in the repository. Instead, temporarily
+            // move any repo-level config out of the way so this test can simulate
+            // "no config file" in a deterministic way.
+            const repoJson = './sandstorm-tracker.json';
+            const repoToml = './sandstorm-tracker.toml';
+            const backupJson = './sandstorm-tracker.json.bak';
+            const backupToml = './sandstorm-tracker.toml.bak';
 
-            await expect( ConfigLoader.loadConfig() ).rejects.toThrow( "No configuration file found" );
+            let movedJson = false;
+            let movedToml = false;
+            try
+            {
+                if ( await Bun.file( repoJson ).exists() )
+                {
+                    await rename( repoJson, backupJson );
+                    movedJson = true;
+                }
+                if ( await Bun.file( repoToml ).exists() )
+                {
+                    await rename( repoToml, backupToml );
+                    movedToml = true;
+                }
+
+                await expect( ConfigLoader.loadConfig() ).rejects.toThrow( "No configuration file found" );
+            } finally
+            {
+                if ( movedJson ) await rename( backupJson, repoJson );
+                if ( movedToml ) await rename( backupToml, repoToml );
+            }
         } );
 
         test( "should load servers from environment variables when provided", async () => {
@@ -220,8 +247,34 @@ missing_bracket = true`;
             process.env.SANDSTORM_SERVER_1_SERVER_ID = "60844f66-b93b-4fe1-afc4-a0a91b493866";
             process.env.SANDSTORM_SERVER_1_ENABLED = "true";
 
-            // Ensure no explicit config path is used
-            delete process.env.SANDSTORM_CONFIG_PATH;
+            // Ensure no explicit config path is used and the loader does not
+            // accidentally pick up the repository config. Temporarily move it
+            // so we exercise reading servers from environment variables.
+            const repoJson = './sandstorm-tracker.json';
+            const backupJson = './sandstorm-tracker.json.bak';
+            let movedJson = false;
+            try
+            {
+                if ( await Bun.file( repoJson ).exists() )
+                {
+                    await rename( repoJson, backupJson );
+                    movedJson = true;
+                }
+
+                const config = await ConfigLoader.loadConfig();
+                expect( config ).toBeInstanceOf( AppConfig );
+                expect( config.servers ).toHaveLength( 1 );
+                expect( config.servers[ 0 ].id ).toBe( "env-server-1" );
+            } finally
+            {
+                if ( movedJson ) await rename( backupJson, repoJson );
+                // Clean up env vars for subsequent tests
+                delete process.env.SANDSTORM_SERVER_1_ID;
+                delete process.env.SANDSTORM_SERVER_1_NAME;
+                delete process.env.SANDSTORM_SERVER_1_LOG_PATH;
+                delete process.env.SANDSTORM_SERVER_1_SERVER_ID;
+                delete process.env.SANDSTORM_SERVER_1_ENABLED;
+            }
 
             // Do not remove any repo-level config files; tests must not delete
             // user configuration present in the repository.

@@ -1,7 +1,7 @@
 import { root } from './src/cli';
 import { stopApp } from './src/app';
-import logger from './src/lib/logger';
-import { hijackConsole } from './src/lib/console-hijack';
+import logger from './src/lib/console/logger';
+import { hijackConsole } from './src/lib/console/console-hijack';
 
 // Thin launcher: delegate to CLI (root command) while retaining graceful shutdown
 async function main (): Promise<void> {
@@ -34,6 +34,6 @@ async function main (): Promise<void> {
     }
 }
 
-console.log(Bun.randomUUIDv7())
+console.log( Bun.randomUUIDv7() );
 
 main().catch( console.error );

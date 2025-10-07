@@ -1,4 +1,4 @@
-import type { Action } from '../command';
+import type { Action } from '../lib/command';
 // import { checkForUpdates, downloadAndExtractLatestRelease, findExecutableInExtract, installExtractedBinary } from '../update';
 
 export const updateAction: Action = async ( { flags } ) => {

@@ -1,4 +1,4 @@
-import type { Action } from '../command';
+import type { Action } from '../lib/command';
 import { initializeApplication, startWatching } from '../../app';
 
 export const serveAction: Action = async ( { flags, args } ) => {

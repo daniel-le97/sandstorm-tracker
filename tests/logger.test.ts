@@ -32,7 +32,7 @@ describe( 'Logger integration', () => {
         try
         {
             // dynamically import so nativeConsole binds to our patched console
-            const logger = await import( '../src/lib/logger' );
+            const logger = await import( '../src/lib/console/logger' );
 
             // enable file logging to our temp path
             await logger.enableFileLogging( true, tmp );
@@ -65,7 +65,7 @@ describe( 'Logger integration', () => {
             expect( captured.some( ( s ) => s.includes( 'this is debug' ) ) ).toBe( false );
 
             // cleanup file
-            await rm(tmp, { force: true }).catch(() => { /* ignore */ });
+            await rm( tmp, { force: true } ).catch( () => { /* ignore */ } );
         } finally
         {
             // restore original console methods

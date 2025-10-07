@@ -33,7 +33,7 @@ export class RconClient extends EventEmitter {
             timeout: 5000,
             reconnectDelay: 3000,
             maxReconnectAttempts: 5,
-            encoding: 'ascii',
+            encoding: 'utf8',
             tcpTimeout: 30000,
             keepAlive: true,
             keepAliveInitialDelay: 0,

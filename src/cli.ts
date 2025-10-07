@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 import { Command } from './cli/lib/index';
-import { setVerbose } from './lib/logger';
+import { setVerbose } from './lib/console/logger';
 import { getStatements } from './database';
 import { updateAction } from './cli/commands/update';
 import { logFilesAction } from './cli/commands/log-files';

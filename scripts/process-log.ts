@@ -19,8 +19,8 @@
 import { parseLogEvents } from "../src/events";
 import StatsService from "../src/stats-service";
 import { upsertServer, getStatements } from "../src/database";
-import logger from "../src/lib/logger";
-import { hijackConsole } from "../src/lib/console-hijack";
+import logger from "../src/lib/console/logger";
+import { hijackConsole } from "../src/lib/console/console-hijack";
 
 // Simple argument parsing (no external deps)
 interface Args {

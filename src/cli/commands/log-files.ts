@@ -1,4 +1,4 @@
-import type { Action } from '../command';
+import type { Action } from '../lib/command';
 import { getStatements } from '../../database';
 
 export const logFilesAction: Action = async ( { flags } ) => {

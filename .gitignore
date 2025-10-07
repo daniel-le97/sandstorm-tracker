@@ -105,3 +105,6 @@ yarn.lock
 # Runtime directories
 runtime/
 run/
+
+
+SandstormServerTracker/

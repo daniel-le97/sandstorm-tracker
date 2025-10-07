@@ -6,7 +6,7 @@ import { upsertServer } from "./database";
 import type { ChatEvent, GameEvent } from "./events";
 import { parseLogEvents } from "./events";
 import StatsService from "./stats-service";
-import { info, debug, warn, error } from "./lib/logger";
+import { info, debug, warn, error } from "./lib/console/logger";
 import { getStatements } from "./database";
 import { sep } from "path";
 
