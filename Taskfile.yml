@@ -1,0 +1,26 @@
+version: "3"
+tasks:
+  build:
+    desc: Build all Go binaries
+    cmds:
+      - go build ./...
+  web:
+    desc: Run the web server (default db, port 8080)
+    cmds:
+      - go run ./cmd/web -db=sandstorm_stats.db -port=8080 -server=hc
+  test:
+    desc: Run all Go tests
+    cmds:
+      - go test ./...
+  sqlc:
+    desc: Generate Go code from SQL queries
+    cmds:
+      - sqlc generate
+  fmt:
+    desc: Run gofmt on all Go files
+    cmds:
+      - gofmt -w .
+  clean:
+    desc: Remove built binaries
+    cmds:
+      - go clean
