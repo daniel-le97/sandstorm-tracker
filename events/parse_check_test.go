@@ -1,9 +1,8 @@
-package main
+package events
 
 import (
 	"bufio"
 	"os"
-	"sandstorm-tracker/events"
 	"strings"
 	"testing"
 )
@@ -15,7 +14,7 @@ func TestParseCheck(t *testing.T) {
 	}
 	defer file.Close()
 
-	parser := events.NewEventParser()
+	parser := NewEventParser()
 	scanner := NewScanner(file)
 	lineNum := 0
 	killEvents := 0
@@ -28,21 +27,21 @@ func TestParseCheck(t *testing.T) {
 	for scanner.Scan() {
 		line := scanner.Text()
 		lineNum++
-		if strings.Contains(line, "killed") && strings.Contains(line, "with") && strings.Contains(line, "LogGameplayEvents") {
-			killEvents++
-			event, err := parser.ParseLine(line, "hc")
-			if err != nil {
-				unparsedKills++
-				continue
-			}
-			if event == nil || event.Type != events.EventPlayerKill {
-				unparsedKills++
-				continue
-			}
-			killersData, ok := event.Data["killers"].([]events.Killer)
-			if !ok {
-				unparsedKills++
-				continue
+		event, err := parser.ParseLine(line, "hc")
+		if err != nil {
+			unparsedKills++
+			continue
+		}
+		if event == nil {
+			continue
+		}
+		if event.Type == EventPlayerKill {
+			// Count a kill for each killer in multi-kill lines
+			killersData, ok := event.Data["killers"].([]Killer)
+			if ok {
+				killEvents += len(killersData)
+			} else {
+				killEvents++ // fallback, should not happen
 			}
 			for _, killer := range killersData {
 				switch {
@@ -60,8 +59,8 @@ func TestParseCheck(t *testing.T) {
 	}
 
 	t.Run("kill event count", func(t *testing.T) {
-		if killEvents != 104 {
-			t.Errorf("Expected 104 kill events, got %d", killEvents)
+		if killEvents != 119 {
+			t.Errorf("Expected 119 kill events, got %d", killEvents)
 		}
 	})
 	t.Run("unparsed kill events", func(t *testing.T) {

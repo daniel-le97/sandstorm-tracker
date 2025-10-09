@@ -1,6 +1,8 @@
+// ...existing code...
 package events
 
 import (
+	"strings"
 	"testing"
 	"time"
 )
@@ -99,6 +101,18 @@ func TestPlayerKillRegex(t *testing.T) {
 			victimTeam:  "1",
 			weapon:      "BP_Projectile_Mortar_HE_C_2147480348",
 		},
+		{
+			name:        "Multi-killer line",
+			logLine:     "[2025.10.04-21.36.29:821][243]LogGameplayEvents: Display: Blue[76561198047711504, team 0] + *OSS*0rigin[76561198007416544, team 0] killed Breacher[INVALID, team 1] with BP_Projectile_ANM14_C_2147461154",
+			shouldMatch: true,
+			killer:      "Blue",
+			killerSteam: "76561198047711504",
+			killerTeam:  "0",
+			victim:      "Breacher",
+			victimSteam: "INVALID",
+			victimTeam:  "1",
+			weapon:      "BP_Projectile_ANM14_C_2147461154",
+		},
 	}
 
 	for _, tt := range tests {
@@ -110,15 +124,82 @@ func TestPlayerKillRegex(t *testing.T) {
 					t.Fatalf("Expected regex to match but got no matches for: %s", tt.logLine)
 				}
 
-				// Check extracted values
-				if matches[2] != tt.killer {
-					t.Errorf("Expected killer %q, got %q", tt.killer, matches[2])
-				}
-				if matches[5] != tt.victim {
-					t.Errorf("Expected victim %q, got %q", tt.victim, matches[5])
-				}
-				if matches[8] != tt.weapon {
-					t.Errorf("Expected weapon %q, got %q", tt.weapon, matches[8])
+				// matches: 1=timestamp, 2=killerSection, 3=victim, 4=victimSteam, 5=victimTeam, 6=weapon
+				killerSection := matches[2]
+				victim := matches[3]
+				victimSteam := matches[4]
+				victimTeam := matches[5]
+				weapon := matches[6]
+
+				if tt.name == "Multi-killer line" {
+					// Check both Blue and *OSS*0rigin are present
+					foundBlue := false
+					foundOrigin := false
+					for _, killer := range parseKillerSection(killerSection) {
+						if killer.Name == "Blue" && killer.SteamID == "76561198047711504" && killer.Team == 0 {
+							foundBlue = true
+						}
+						if killer.Name == "*OSS*0rigin" && killer.SteamID == "76561198007416544" && killer.Team == 0 {
+							foundOrigin = true
+						}
+					}
+					if !foundBlue || !foundOrigin {
+						t.Errorf("Expected both Blue and *OSS*0rigin as killers, got %+v", parseKillerSection(killerSection))
+					}
+					if victim != tt.victim {
+						t.Errorf("Expected victim %q, got %q", tt.victim, victim)
+					}
+					if victimSteam != tt.victimSteam {
+						t.Errorf("Expected victimSteam %q, got %q", tt.victimSteam, victimSteam)
+					}
+					if victimTeam != tt.victimTeam {
+						t.Errorf("Expected victimTeam %q, got %q", tt.victimTeam, victimTeam)
+					}
+					if weapon != tt.weapon {
+						t.Errorf("Expected weapon %q, got %q", tt.weapon, weapon)
+					}
+				} else {
+					// For single killer, keep old logic
+					firstKiller := ""
+					firstKillerSteam := ""
+					firstKillerTeam := ""
+					if killerSection == "?" {
+						firstKiller = "?"
+					} else {
+						parts := strings.SplitN(killerSection, " + ", 2)
+						k := parts[0]
+						nameEnd := strings.Index(k, "[")
+						if nameEnd > 0 {
+							firstKiller = k[:nameEnd]
+							rest := k[nameEnd+1:]
+							steamEnd := strings.Index(rest, ", team ")
+							if steamEnd > 0 {
+								firstKillerSteam = rest[:steamEnd]
+								firstKillerTeam = strings.TrimSuffix(rest[steamEnd+7:], "]")
+							}
+						}
+					}
+					if firstKiller != tt.killer {
+						t.Errorf("Expected killer %q, got %q", tt.killer, firstKiller)
+					}
+					if firstKillerSteam != tt.killerSteam {
+						t.Errorf("Expected killerSteam %q, got %q", tt.killerSteam, firstKillerSteam)
+					}
+					if firstKillerTeam != tt.killerTeam {
+						t.Errorf("Expected killerTeam %q, got %q", tt.killerTeam, firstKillerTeam)
+					}
+					if victim != tt.victim {
+						t.Errorf("Expected victim %q, got %q", tt.victim, victim)
+					}
+					if victimSteam != tt.victimSteam {
+						t.Errorf("Expected victimSteam %q, got %q", tt.victimSteam, victimSteam)
+					}
+					if victimTeam != tt.victimTeam {
+						t.Errorf("Expected victimTeam %q, got %q", tt.victimTeam, victimTeam)
+					}
+					if weapon != tt.weapon {
+						t.Errorf("Expected weapon %q, got %q", tt.weapon, weapon)
+					}
 				}
 			} else {
 				if len(matches) > 0 {

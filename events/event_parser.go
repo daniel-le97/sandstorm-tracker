@@ -121,8 +121,9 @@ type LogPatterns struct {
 // NewLogPatterns creates and compiles all regex patterns
 func NewLogPatterns() *LogPatterns {
 	return &LogPatterns{
-		// Kill events - matches actual format from real logs (handles normal kills, AI suicide, and multi-player kills)
-		PlayerKill: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\s*\d+\]LogGameplayEvents: Display: (.+?) killed ([^[]+?)\[([^,\]]*), team (\d+)\]\s+with (.+)`),
+		// Kill events - always provide consistent capture groups for killer/victim/weapon fields
+		// PlayerKill: timestamp, killerSection, victimName, victimSteam, victimTeam, weapon
+		PlayerKill: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\s*\d+\]LogGameplayEvents: Display: (.+?) killed ([^\[]+)\[([^,\]]*), team (\d+)\] with (.+)$`),
 
 		// Player connection events - handles both LogNet and LogGameMode formats
 		PlayerJoin: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\d+\]Log(?:Net: Join succeeded: (.+)|GameMode: Display: Player \d+ '([^']+)' joined team (\d+))`),
