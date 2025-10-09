@@ -9,6 +9,7 @@ import (
 	"net"
 	"os"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -50,9 +51,12 @@ var (
 	conf                       = Get()
 	l         PocketBaseLogger = NoOpLogger{}
 	idCounter int32            = 0
+	idMutex   sync.Mutex
 )
 
 func generateID() int32 {
+	idMutex.Lock()
+	defer idMutex.Unlock()
 	idCounter++
 	return idCounter
 }
@@ -186,8 +190,8 @@ func Send(conn net.Conn, command string) (string, error) {
 func BuildPacket(id int32, packetType int32, payload string) []byte {
 	l.Debug("Building packet", "id", id, "type", packetType, "payload", payload)
 	payloadBytes := []byte(payload)
-	payloadBytes = append(payloadBytes, 0x00)      // Null terminator for the payload
-	packetSize := int32(4 + 4 + len(payloadBytes)) // ID + Type + Payload
+	payloadBytes = append(payloadBytes, 0x00, 0x00) // Two null terminators for RCON protocol
+	packetSize := int32(4 + 4 + len(payloadBytes))  // ID + Type + Payload
 	buffer := new(bytes.Buffer)
 	binary.Write(buffer, binary.LittleEndian, packetSize)
 	binary.Write(buffer, binary.LittleEndian, id)
@@ -208,11 +212,23 @@ func ReadPacket(conn net.Conn) *RconPacket {
 	}
 	packetSize := int32(binary.LittleEndian.Uint32(sizeBytes))
 
+	// Validate packet size to prevent excessive memory allocation
+	if packetSize < 0 || packetSize > 16384 {
+		l.Error("Invalid packet size", "size", packetSize)
+		return nil
+	}
+
 	// Read the rest of the packet
 	packetBytes := make([]byte, packetSize)
 	_, err = io.ReadFull(conn, packetBytes)
 	if err != nil {
 		l.Error("Error reading packet data", "error", err)
+		return nil
+	}
+
+	// Validate minimum packet size (ID + Type + at least one null terminator)
+	if len(packetBytes) < 9 {
+		l.Error("Packet too small", "size", len(packetBytes))
 		return nil
 	}
 
