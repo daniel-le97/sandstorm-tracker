@@ -17,9 +17,17 @@ func WriteEventToDB(ctx context.Context, queries *gen.Queries, event *GameEvent,
 		killers, _ := event.Data["killers"].([]Killer)
 		victimName, _ := event.Data["victim_name"].(string)
 		weapon, _ := event.Data["weapon"].(string)
-		isTeamKill := event.Type == EventFriendlyFire
-		isSuicide := event.Type == EventSuicide
 		createdAt := event.Timestamp
+
+		var killType int64
+		switch event.Type {
+		case EventPlayerKill:
+			killType = 0
+		case EventSuicide:
+			killType = 1
+		case EventFriendlyFire:
+			killType = 2
+		}
 
 		for _, killer := range killers {
 			// Upsert player (by SteamID if available, else by name)
@@ -41,8 +49,7 @@ func WriteEventToDB(ctx context.Context, queries *gen.Queries, event *GameEvent,
 				VictimName: &victimName,
 				ServerID:   serverID,
 				WeaponName: &weapon,
-				IsTeamKill: &isTeamKill,
-				IsSuicide:  &isSuicide,
+				KillType:   killType,
 				MatchID:    matchID,
 				CreatedAt:  &createdAt,
 			}

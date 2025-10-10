@@ -1,4 +1,3 @@
-// Open a file to log all kills written to the DB
 package events
 
 import (
@@ -90,15 +89,7 @@ func TestParseAndWriteLogToDB_HCLog(t *testing.T) {
 	}
 	realKills := 0
 	for _, k := range kills {
-		isTeamKill := false
-		isSuicide := false
-		if k.IsTeamKill != nil {
-			isTeamKill = *k.IsTeamKill
-		}
-		if k.IsSuicide != nil {
-			isSuicide = *k.IsSuicide
-		}
-		if !isTeamKill && !isSuicide {
+		if k.KillType == 0 {
 			realKills++
 		}
 	}

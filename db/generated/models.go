@@ -9,15 +9,15 @@ import (
 )
 
 type Kill struct {
-	ID         int64
-	ServerID   int64
-	MatchID    *int64
-	WeaponName *string
-	CreatedAt  *time.Time
-	KillerID   *int64
-	VictimName *string
-	IsTeamKill *bool
-	IsSuicide  *bool
+	ID                 int64
+	ServerID           int64
+	MatchID            *int64
+	MatchParticipantID *int64
+	WeaponName         *string
+	CreatedAt          *time.Time
+	KillerID           *int64
+	VictimName         *string
+	KillType           int64
 }
 
 type Map struct {
@@ -31,11 +31,11 @@ type Map struct {
 type Match struct {
 	ID         int64
 	ServerID   int64
-	Map        *string
-	Mode       *string
+	MapID      *int64
 	WinnerTeam *int64
 	StartTime  *time.Time
 	EndTime    *time.Time
+	Mode       string
 	CreatedAt  *time.Time
 	UpdatedAt  *time.Time
 }

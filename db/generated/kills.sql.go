@@ -12,9 +12,9 @@ import (
 
 const getKillStatsByPlayer = `-- name: GetKillStatsByPlayer :one
 SELECT 
-    SUM(CASE WHEN is_team_kill = 0 AND is_suicide = 0 THEN 1 ELSE 0 END) as total_kills,
-    SUM(CASE WHEN is_team_kill = 1 THEN 1 ELSE 0 END) as team_kills,
-    SUM(CASE WHEN is_suicide = 1 THEN 1 ELSE 0 END) as suicides
+    SUM(CASE WHEN kill_type = 0 THEN 1 ELSE 0 END) as total_kills,
+    SUM(CASE WHEN kill_type = 2 THEN 1 ELSE 0 END) as team_kills,
+    SUM(CASE WHEN kill_type = 1 THEN 1 ELSE 0 END) as suicides
 FROM kills
 WHERE killer_id = ? AND server_id = ?
 `
@@ -38,7 +38,7 @@ func (q *Queries) GetKillStatsByPlayer(ctx context.Context, arg GetKillStatsByPl
 }
 
 const getKillsByPlayer = `-- name: GetKillsByPlayer :many
-SELECT k.id, k.killer_id, k.victim_name, k.server_id, k.weapon_name, k.is_team_kill, k.is_suicide, k.match_id, k.created_at,
+SELECT k.id, k.killer_id, k.victim_name, k.server_id, k.weapon_name, k.kill_type, k.match_id, k.created_at,
        p.name as killer_name, p.external_id as killer_external_id
 FROM kills k
 LEFT JOIN players p ON k.killer_id = p.id
@@ -59,8 +59,7 @@ type GetKillsByPlayerRow struct {
 	VictimName       *string
 	ServerID         int64
 	WeaponName       *string
-	IsTeamKill       *bool
-	IsSuicide        *bool
+	KillType         int64
 	MatchID          *int64
 	CreatedAt        *time.Time
 	KillerName       *string
@@ -82,8 +81,7 @@ func (q *Queries) GetKillsByPlayer(ctx context.Context, arg GetKillsByPlayerPara
 			&i.VictimName,
 			&i.ServerID,
 			&i.WeaponName,
-			&i.IsTeamKill,
-			&i.IsSuicide,
+			&i.KillType,
 			&i.MatchID,
 			&i.CreatedAt,
 			&i.KillerName,
@@ -103,7 +101,7 @@ func (q *Queries) GetKillsByPlayer(ctx context.Context, arg GetKillsByPlayerPara
 }
 
 const getKillsInTimeRange = `-- name: GetKillsInTimeRange :many
-SELECT k.id, k.killer_id, k.victim_name, k.server_id, k.weapon_name, k.is_team_kill, k.is_suicide, k.match_id, k.created_at,
+SELECT k.id, k.killer_id, k.victim_name, k.server_id, k.weapon_name, k.kill_type, k.match_id, k.created_at,
        p.name as killer_name, p.external_id as killer_external_id
 FROM kills k
 LEFT JOIN players p ON k.killer_id = p.id
@@ -117,8 +115,7 @@ type GetKillsInTimeRangeRow struct {
 	VictimName       *string
 	ServerID         int64
 	WeaponName       *string
-	IsTeamKill       *bool
-	IsSuicide        *bool
+	KillType         int64
 	MatchID          *int64
 	CreatedAt        *time.Time
 	KillerName       *string
@@ -140,8 +137,7 @@ func (q *Queries) GetKillsInTimeRange(ctx context.Context, serverID int64) ([]Ge
 			&i.VictimName,
 			&i.ServerID,
 			&i.WeaponName,
-			&i.IsTeamKill,
-			&i.IsSuicide,
+			&i.KillType,
 			&i.MatchID,
 			&i.CreatedAt,
 			&i.KillerName,
@@ -162,8 +158,8 @@ func (q *Queries) GetKillsInTimeRange(ctx context.Context, serverID int64) ([]Ge
 
 const insertKill = `-- name: InsertKill :exec
 
-INSERT INTO kills (killer_id, victim_name, server_id, weapon_name, is_team_kill, is_suicide, match_id, created_at)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+INSERT INTO kills (killer_id, victim_name, server_id, weapon_name, kill_type, match_id, created_at)
+VALUES (?, ?, ?, ?, ?, ?, ?)
 `
 
 type InsertKillParams struct {
@@ -171,8 +167,7 @@ type InsertKillParams struct {
 	VictimName *string
 	ServerID   int64
 	WeaponName *string
-	IsTeamKill *bool
-	IsSuicide  *bool
+	KillType   int64
 	MatchID    *int64
 	CreatedAt  *time.Time
 }
@@ -184,8 +179,7 @@ func (q *Queries) InsertKill(ctx context.Context, arg InsertKillParams) error {
 		arg.VictimName,
 		arg.ServerID,
 		arg.WeaponName,
-		arg.IsTeamKill,
-		arg.IsSuicide,
+		arg.KillType,
 		arg.MatchID,
 		arg.CreatedAt,
 	)
@@ -193,7 +187,7 @@ func (q *Queries) InsertKill(ctx context.Context, arg InsertKillParams) error {
 }
 
 const listAllKills = `-- name: ListAllKills :many
-SELECT id, server_id, match_id, weapon_name, created_at, killer_id, victim_name, is_team_kill, is_suicide FROM kills ORDER BY created_at DESC
+SELECT id, server_id, match_id, match_participant_id, weapon_name, created_at, killer_id, victim_name, kill_type FROM kills ORDER BY created_at DESC
 `
 
 func (q *Queries) ListAllKills(ctx context.Context) ([]Kill, error) {
@@ -209,12 +203,12 @@ func (q *Queries) ListAllKills(ctx context.Context) ([]Kill, error) {
 			&i.ID,
 			&i.ServerID,
 			&i.MatchID,
+			&i.MatchParticipantID,
 			&i.WeaponName,
 			&i.CreatedAt,
 			&i.KillerID,
 			&i.VictimName,
-			&i.IsTeamKill,
-			&i.IsSuicide,
+			&i.KillType,
 		); err != nil {
 			return nil, err
 		}

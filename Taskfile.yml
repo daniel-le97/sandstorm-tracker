@@ -4,6 +4,10 @@ tasks:
     desc: Build all Go binaries
     cmds:
       - go build ./...
+  pb:
+    desc: run pocketbase
+    cmds:
+      - go run ./cmd/pb.go serve
   web:
     desc: Run the web server (default db, port 8080)
     cmds:

@@ -1,8 +1,8 @@
 -- Match management queries
 
 -- name: StartMatch :one
-INSERT INTO matches (server_id, map, mode, start_time)
-VALUES (?, ?, ?, ?)
+INSERT INTO matches (server_id, map_id, start_time)
+VALUES (?, ?, ?)
 RETURNING id;
 
 -- name: EndMatch :exec

@@ -73,3 +73,11 @@
 
 // 2 players killed a bot by blowing up an objective
 [2025.10.04-21.32.55:613][297]LogGameplayEvents: Display: ArmoredBear[76561198995742987, team 0] + -=312th=- Rabbit[76561198262186571, team 0] killed Rifleman[INVALID, team 1] with ODCheckpoint_B_5
+
+// players captured an objective, anyone who was dead respawns
+[2025.10.04-21.35.09:295][ 74]LogGameplayEvents: Display: Objective 2 was captured for team 0 from team 1 by -=312th=- Rabbit[76561198262186571], Blue[76561198047711504], *OSS*0rigin[76561198007416544].
+
+// players destroyed an objective, anyone who was dead respawns
+[2025.10.04-21.32.55:614][297]LogGameplayEvents: Display: Objective 1 owned by team 1 was destroyed for team 0 by -=312th=- Rabbit[76561198262186571], ArmoredBear[76561198995742987].
+
+

@@ -27,12 +27,13 @@ kills
 - id
 - server_id
 - match_id
+- match_participant_id
 - weapon_name
 - created_at
 - killer_id
 - victim_name
-- is_team_kill
-- is_suicide
+- kill_type (0,1,2)
+- team
 
 maps
  - id

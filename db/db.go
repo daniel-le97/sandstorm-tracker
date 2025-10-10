@@ -5,11 +5,14 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-
+    "embed"
 	generated "sandstorm-tracker/db/generated"
 
 	_ "modernc.org/sqlite"
 )
+
+//go:embed schema.sql
+var embeddedSchema embed.FS
 
 // DatabaseService provides database operations
 type DatabaseService struct {
@@ -75,92 +78,13 @@ func initializeSchema(db *sql.DB) error {
 }
 
 func createFullSchema(db *sql.DB) error {
-	schema := `
--- Simplified servers table
-CREATE TABLE IF NOT EXISTS servers (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    external_id TEXT UNIQUE,
-    name TEXT,
-    path TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-
--- Server logs
-CREATE TABLE IF NOT EXISTS server_logs (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    server_id INTEGER NOT NULL,
-    open_time DATETIME NOT NULL,
-    log_path TEXT NOT NULL,
-    lines_processed INTEGER DEFAULT 0,
-    file_size_bytes INTEGER DEFAULT 0,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (server_id) REFERENCES servers(id) ON DELETE CASCADE
-);
--- Players
-CREATE TABLE IF NOT EXISTS players (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    external_id TEXT UNIQUE NOT NULL,
-    name TEXT NOT NULL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-
--- Matches
-CREATE TABLE IF NOT EXISTS matches (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    server_id INTEGER NOT NULL,
-    map TEXT,
-    mode TEXT,
-    winner_team INTEGER,
-    start_time DATETIME,
-    end_time DATETIME,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (server_id) REFERENCES servers(id) ON DELETE CASCADE
-);
-
--- Match participant
-CREATE TABLE IF NOT EXISTS match_participant (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    player_id INTEGER NOT NULL,
-    match_id INTEGER NOT NULL,
-    join_time DATETIME,
-    leave_time DATETIME,
-    team INTEGER,
-    FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE,
-    FOREIGN KEY (match_id) REFERENCES matches(id) ON DELETE CASCADE
-);
-
--- Kills
-CREATE TABLE IF NOT EXISTS kills (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    server_id INTEGER NOT NULL,
-    match_id INTEGER,
-    weapon_name TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    killer_id INTEGER,
-    victim_name TEXT,
-    is_team_kill BOOLEAN DEFAULT 0,
-    is_suicide BOOLEAN DEFAULT 0,
-    FOREIGN KEY (server_id) REFERENCES servers(id) ON DELETE CASCADE,
-    FOREIGN KEY (match_id) REFERENCES matches(id) ON DELETE SET NULL,
-    FOREIGN KEY (killer_id) REFERENCES players(id) ON DELETE SET NULL
-);
-
--- Schema version tracking
-CREATE TABLE IF NOT EXISTS schema_version (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    version INTEGER NOT NULL,
-    applied_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-
-INSERT INTO schema_version (version) VALUES (1);
-`
-
+    schemaBytes, err := embeddedSchema.ReadFile("schema.sql")
+    if err != nil {
+        return fmt.Errorf("failed to read embedded schema: %w", err)
+    }
+    schema := string(schemaBytes)
 	if _, err := db.Exec(schema); err != nil {
-		return fmt.Errorf("failed to create schema: %w", err)
-	}
-	return nil
+        return fmt.Errorf("failed to create schema: %w", err)
+    }
+    return nil
 }

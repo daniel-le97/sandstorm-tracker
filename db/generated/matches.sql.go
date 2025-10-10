@@ -45,7 +45,7 @@ func (q *Queries) EndMatch(ctx context.Context, arg EndMatchParams) error {
 }
 
 const getActiveMatches = `-- name: GetActiveMatches :many
-SELECT id, server_id, map, mode, winner_team, start_time, end_time, created_at, updated_at FROM matches
+SELECT id, server_id, map_id, winner_team, start_time, end_time, mode, created_at, updated_at FROM matches
 WHERE server_id = ? AND end_time IS NULL
 ORDER BY start_time DESC
 `
@@ -62,11 +62,11 @@ func (q *Queries) GetActiveMatches(ctx context.Context, serverID int64) ([]Match
 		if err := rows.Scan(
 			&i.ID,
 			&i.ServerID,
-			&i.Map,
-			&i.Mode,
+			&i.MapID,
 			&i.WinnerTeam,
 			&i.StartTime,
 			&i.EndTime,
+			&i.Mode,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -85,7 +85,7 @@ func (q *Queries) GetActiveMatches(ctx context.Context, serverID int64) ([]Match
 
 const getMatchDetails = `-- name: GetMatchDetails :one
 SELECT
-    m.id, m.server_id, m.map, m.mode, m.winner_team, m.start_time, m.end_time, m.created_at, m.updated_at,
+    m.id, m.server_id, m.map_id, m.winner_team, m.start_time, m.end_time, m.mode, m.created_at, m.updated_at,
     (SELECT COUNT(*) FROM match_participant WHERE match_id = m.id) as participant_count
 FROM matches m
 WHERE m.id = ? AND m.server_id = ?
@@ -99,11 +99,11 @@ type GetMatchDetailsParams struct {
 type GetMatchDetailsRow struct {
 	ID               int64
 	ServerID         int64
-	Map              *string
-	Mode             *string
+	MapID            *int64
 	WinnerTeam       *int64
 	StartTime        *time.Time
 	EndTime          *time.Time
+	Mode             string
 	CreatedAt        *time.Time
 	UpdatedAt        *time.Time
 	ParticipantCount int64
@@ -115,11 +115,11 @@ func (q *Queries) GetMatchDetails(ctx context.Context, arg GetMatchDetailsParams
 	err := row.Scan(
 		&i.ID,
 		&i.ServerID,
-		&i.Map,
-		&i.Mode,
+		&i.MapID,
 		&i.WinnerTeam,
 		&i.StartTime,
 		&i.EndTime,
+		&i.Mode,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.ParticipantCount,
@@ -129,7 +129,7 @@ func (q *Queries) GetMatchDetails(ctx context.Context, arg GetMatchDetailsParams
 
 const getMatchHistory = `-- name: GetMatchHistory :many
 SELECT
-    m.id, m.server_id, m.map, m.mode, m.winner_team, m.start_time, m.end_time, m.created_at, m.updated_at,
+    m.id, m.server_id, m.map_id, m.winner_team, m.start_time, m.end_time, m.mode, m.created_at, m.updated_at,
     COUNT(DISTINCT mp.player_id) as participant_count
 FROM matches m
 LEFT JOIN match_participant mp ON m.id = mp.match_id
@@ -147,11 +147,11 @@ type GetMatchHistoryParams struct {
 type GetMatchHistoryRow struct {
 	ID               int64
 	ServerID         int64
-	Map              *string
-	Mode             *string
+	MapID            *int64
 	WinnerTeam       *int64
 	StartTime        *time.Time
 	EndTime          *time.Time
+	Mode             string
 	CreatedAt        *time.Time
 	UpdatedAt        *time.Time
 	ParticipantCount int64
@@ -169,11 +169,11 @@ func (q *Queries) GetMatchHistory(ctx context.Context, arg GetMatchHistoryParams
 		if err := rows.Scan(
 			&i.ID,
 			&i.ServerID,
-			&i.Map,
-			&i.Mode,
+			&i.MapID,
 			&i.WinnerTeam,
 			&i.StartTime,
 			&i.EndTime,
+			&i.Mode,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.ParticipantCount,
@@ -193,26 +193,20 @@ func (q *Queries) GetMatchHistory(ctx context.Context, arg GetMatchHistoryParams
 
 const startMatch = `-- name: StartMatch :one
 
-INSERT INTO matches (server_id, map, mode, start_time)
-VALUES (?, ?, ?, ?)
+INSERT INTO matches (server_id, map_id, start_time)
+VALUES (?, ?, ?)
 RETURNING id
 `
 
 type StartMatchParams struct {
 	ServerID  int64
-	Map       *string
-	Mode      *string
+	MapID     *int64
 	StartTime *time.Time
 }
 
 // Match management queries
 func (q *Queries) StartMatch(ctx context.Context, arg StartMatchParams) (int64, error) {
-	row := q.db.QueryRowContext(ctx, startMatch,
-		arg.ServerID,
-		arg.Map,
-		arg.Mode,
-		arg.StartTime,
-	)
+	row := q.db.QueryRowContext(ctx, startMatch, arg.ServerID, arg.MapID, arg.StartTime)
 	var id int64
 	err := row.Scan(&id)
 	return id, err

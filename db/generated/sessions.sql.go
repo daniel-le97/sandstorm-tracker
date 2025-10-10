@@ -80,9 +80,10 @@ func (q *Queries) GetActiveSessions(ctx context.Context, serverID int64) ([]GetA
 }
 
 const getPlayerSessions = `-- name: GetPlayerSessions :many
-SELECT mp.id, mp.player_id, mp.match_id, mp.join_time, mp.leave_time, mp.team, mp.created_at, m.map, m.mode
+SELECT mp.id, mp.player_id, mp.match_id, mp.join_time, mp.leave_time, mp.team, mp.created_at, maps.map_name, m.mode
 FROM match_participant mp
 JOIN matches m ON mp.match_id = m.id
+LEFT JOIN maps ON m.map_id = maps.id
 WHERE mp.player_id = ? AND m.server_id = ?
 ORDER BY mp.join_time DESC
 LIMIT ?
@@ -102,8 +103,8 @@ type GetPlayerSessionsRow struct {
 	LeaveTime *time.Time
 	Team      *int64
 	CreatedAt *time.Time
-	Map       *string
-	Mode      *string
+	MapName   *string
+	Mode      string
 }
 
 func (q *Queries) GetPlayerSessions(ctx context.Context, arg GetPlayerSessionsParams) ([]GetPlayerSessionsRow, error) {
@@ -123,7 +124,7 @@ func (q *Queries) GetPlayerSessions(ctx context.Context, arg GetPlayerSessionsPa
 			&i.LeaveTime,
 			&i.Team,
 			&i.CreatedAt,
-			&i.Map,
+			&i.MapName,
 			&i.Mode,
 		); err != nil {
 			return nil, err

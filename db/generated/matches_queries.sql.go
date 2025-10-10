@@ -186,8 +186,7 @@ func (q *Queries) GetMatchParticipants(ctx context.Context, matchID int64) ([]Ge
 const getPlayerMatchHistory = `-- name: GetPlayerMatchHistory :many
 SELECT
     m.id as match_id,
-    m.map,
-    m.mode,
+    maps.map_name,
     m.start_time,
     m.end_time,
     mp.join_time,
@@ -195,6 +194,7 @@ SELECT
     mp.team
 FROM matches m
 JOIN match_participant mp ON m.id = mp.match_id
+LEFT JOIN maps ON m.map_id = maps.id
 WHERE mp.player_id = (SELECT id FROM players WHERE external_id = ?)
 AND m.server_id = ?
 ORDER BY m.start_time DESC
@@ -209,8 +209,7 @@ type GetPlayerMatchHistoryParams struct {
 
 type GetPlayerMatchHistoryRow struct {
 	MatchID   int64
-	Map       *string
-	Mode      *string
+	MapName   *string
 	StartTime *time.Time
 	EndTime   *time.Time
 	JoinTime  *time.Time
@@ -229,8 +228,7 @@ func (q *Queries) GetPlayerMatchHistory(ctx context.Context, arg GetPlayerMatchH
 		var i GetPlayerMatchHistoryRow
 		if err := rows.Scan(
 			&i.MatchID,
-			&i.Map,
-			&i.Mode,
+			&i.MapName,
 			&i.StartTime,
 			&i.EndTime,
 			&i.JoinTime,

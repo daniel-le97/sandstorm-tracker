@@ -12,8 +12,8 @@ import (
 	"time"
 )
 
-// PocketBaseLogger interface matching PocketBase's app.Logger() methods
-type PocketBaseLogger interface {
+// Logger interface for pluggable logging
+type Logger interface {
 	Debug(msg string, args ...any)
 	Info(msg string, args ...any)
 	Warn(msg string, args ...any)
@@ -28,14 +28,16 @@ func (l NoOpLogger) Info(msg string, args ...any)  {}
 func (l NoOpLogger) Warn(msg string, args ...any)  {}
 func (l NoOpLogger) Error(msg string, args ...any) {}
 
-// Config struct
+// Config struct for RCON client
 type ClientConfig struct {
 	Timeout time.Duration
+	Logger  Logger
 }
 
-func Get() *ClientConfig {
+func DefaultConfig() *ClientConfig {
 	return &ClientConfig{
 		Timeout: 5 * time.Second,
+		Logger:  NoOpLogger{},
 	}
 }
 
@@ -46,54 +48,64 @@ type RconPacket struct {
 	Payload string
 }
 
-var (
-	conf                       = Get()
-	l         PocketBaseLogger = NoOpLogger{}
-	idCounter int32            = 0
-)
+var idCounter int32 = 0
 
 func generateID() int32 {
 	idCounter++
 	return idCounter
 }
 
-func SetLogger(logger PocketBaseLogger) {
-	l = logger
+// RconClient wraps a connection and config for testability
+type RconClient struct {
+	Conn   net.Conn
+	Config *ClientConfig
 }
 
-func Auth(conn net.Conn, password string) bool {
+func NewRconClient(conn net.Conn, config *ClientConfig) *RconClient {
+	if config == nil {
+		config = DefaultConfig()
+	}
+	return &RconClient{Conn: conn, Config: config}
+}
+
+// SetLogger allows changing the logger at runtime
+func (c *RconClient) SetLogger(logger Logger) {
+	c.Config.Logger = logger
+}
+
+// Auth authenticates with the RCON server
+func (c *RconClient) Auth(password string) bool {
 	authID := generateID()
-	// Send the authentication packet.
 	authPacket := BuildPacket(authID, 3, password)
-	_, err := conn.Write(authPacket)
+	_, err := c.Conn.Write(authPacket)
 	if err != nil {
-		l.Error("Error sending authentication packet", "error", err)
+		c.Config.Logger.Error("Error sending authentication packet", "error", err)
 		return false
 	}
-	// Wait for the response.
-	responsePacket := ReadPacket(conn)
-	if responsePacket == nil {
-		l.Error("Error reading authentication response")
+	responsePacket, err := c.ReadPacket()
+	if err != nil {
+		c.Config.Logger.Error("Error reading authentication response", "error", err)
 		return false
 	}
 	if responsePacket.ID == authID && responsePacket.Type == 2 {
-		l.Info("Authentication successful")
+		c.Config.Logger.Info("Authentication successful")
 		return true
 	} else {
-		l.Error("Authentication failed")
+		c.Config.Logger.Error("Authentication failed")
 		return false
 	}
 }
 
-func Repl(conn net.Conn) {
+// Repl provides a simple interactive shell for RCON
+func (c *RconClient) Repl() {
 	reader := bufio.NewReader(os.Stdin)
-	prompt := fmt.Sprintf("RCON %s] ", conn.RemoteAddr().String())
+	prompt := fmt.Sprintf("RCON %s] ", c.Conn.RemoteAddr().String())
 
 	fmt.Print(prompt)
 	for {
 		input, err := reader.ReadString('\n')
 		if err != nil {
-			l.Error("Error reading input", "error", err)
+			c.Config.Logger.Error("Error reading input", "error", err)
 			break
 		}
 
@@ -107,69 +119,64 @@ func Repl(conn net.Conn) {
 			break
 		}
 
-		err = SendAndPrint(conn, input)
+		err = c.SendAndPrint(input)
 		if err != nil {
-			l.Error("Error executing command", "error", err)
+			c.Config.Logger.Error("Error executing command", "error", err)
 		}
 
 		fmt.Print(prompt)
 	}
 }
 
-func SendAndPrint(conn net.Conn, command string) error {
-	output, err := Send(conn, command)
+// SendAndPrint sends a command and prints the response
+func (c *RconClient) SendAndPrint(command string) error {
+	output, err := c.Send(command)
 	if err != nil {
 		return fmt.Errorf("error sending command: %s", err.Error())
 	}
-	// Print output
 	if strings.TrimSpace(output) == "" {
-		l.Info("Server response empty")
+		c.Config.Logger.Info("Server response empty")
 		return nil
 	}
-	l.Info("Server response:")
+	c.Config.Logger.Info("Server response:")
 	fmt.Printf("%s\n", output)
 	return nil
 }
 
-func Send(conn net.Conn, command string) (string, error) {
-	// Generate unique IDs for the command and empty packets
+// Send sends a command and returns the response
+func (c *RconClient) Send(command string) (string, error) {
 	commandID := generateID()
-
-	// Send the command packet
 	commandPacket := BuildPacket(commandID, 2, command)
-	l.Debug("Sending command", "command", command)
-	_, err := conn.Write(commandPacket)
+	c.Config.Logger.Debug("Sending command", "command", command)
+	_, err := c.Conn.Write(commandPacket)
 	if err != nil {
 		return "", fmt.Errorf("error sending command packet: %s", err.Error())
 	}
 
-	// Read and assemble response packets
 	var (
 		fullPayload     strings.Builder
 		sentEmptyPacket bool
 	)
 	for {
-		responsePacket := ReadPacket(conn)
-		if responsePacket == nil {
-			return "", fmt.Errorf("error reading command response")
+		responsePacket, err := c.ReadPacket()
+		if err != nil {
+			return "", fmt.Errorf("error reading command response: %w", err)
 		}
 
 		if commandID != responsePacket.ID {
-			l.Error("Received packet with unexpected ID", "id", responsePacket.ID)
+			c.Config.Logger.Error("Received packet with unexpected ID", "id", responsePacket.ID)
 			continue
 		}
 
 		if responsePacket.ID == commandID && responsePacket.Type == 0 {
-			// Check if we've received the empty response packet
 			if sentEmptyPacket && responsePacket.Payload == "" {
 				break
 			}
 			fullPayload.WriteString(responsePacket.Payload)
 			if !sentEmptyPacket {
-				// Send the empty SERVERDATA_RESPONSE_VALUE packet
 				emptyPacket := BuildPacket(commandID, 0, "")
-				l.Debug("Sending empty packet to confirm response fully received")
-				_, err = conn.Write(emptyPacket)
+				c.Config.Logger.Debug("Sending empty packet to confirm response fully received")
+				_, err = c.Conn.Write(emptyPacket)
 				if err != nil {
 					return fullPayload.String(), fmt.Errorf("error sending empty packet: %s", err.Error())
 				}
@@ -183,8 +190,8 @@ func Send(conn net.Conn, command string) (string, error) {
 	return fullPayload.String(), nil
 }
 
+// BuildPacket creates a binary RCON packet
 func BuildPacket(id int32, packetType int32, payload string) []byte {
-	l.Debug("Building packet", "id", id, "type", packetType, "payload", payload)
 	payloadBytes := []byte(payload)
 	payloadBytes = append(payloadBytes, 0x00)      // Null terminator for the payload
 	packetSize := int32(4 + 4 + len(payloadBytes)) // ID + Type + Payload
@@ -196,27 +203,28 @@ func BuildPacket(id int32, packetType int32, payload string) []byte {
 	return buffer.Bytes()
 }
 
-func ReadPacket(conn net.Conn) *RconPacket {
-	conn.SetReadDeadline(time.Now().Add(conf.Timeout))
+// ReadPacket reads a packet from the connection
+func (c *RconClient) ReadPacket() (*RconPacket, error) {
+	c.Conn.SetReadDeadline(time.Now().Add(c.Config.Timeout))
 
-	// Read the packet size
 	sizeBytes := make([]byte, 4)
-	_, err := io.ReadFull(conn, sizeBytes)
+	_, err := io.ReadFull(c.Conn, sizeBytes)
 	if err != nil {
-		l.Error("Error reading packet size", "error", err)
-		return nil
+		c.Config.Logger.Error("Error reading packet size", "error", err)
+		return nil, err
 	}
 	packetSize := int32(binary.LittleEndian.Uint32(sizeBytes))
 
-	// Read the rest of the packet
 	packetBytes := make([]byte, packetSize)
-	_, err = io.ReadFull(conn, packetBytes)
+	_, err = io.ReadFull(c.Conn, packetBytes)
 	if err != nil {
-		l.Error("Error reading packet data", "error", err)
-		return nil
+		c.Config.Logger.Error("Error reading packet data", "error", err)
+		return nil, err
 	}
 
-	// Parse the packet
+	if len(packetBytes) < 10 {
+		return nil, fmt.Errorf("packet too short")
+	}
 	packetID := int32(binary.LittleEndian.Uint32(packetBytes[0:4]))
 	packetType := int32(binary.LittleEndian.Uint32(packetBytes[4:8]))
 	payload := string(packetBytes[8 : len(packetBytes)-2]) // Exclude the two null terminators
@@ -227,6 +235,6 @@ func ReadPacket(conn net.Conn) *RconPacket {
 		Type:    packetType,
 		Payload: payload,
 	}
-	l.Debug("Received packet", "id", packetID, "type", packetType, "payload", payload)
-	return packet
+	c.Config.Logger.Debug("Received packet", "id", packetID, "type", packetType, "payload", payload)
+	return packet, nil
 }

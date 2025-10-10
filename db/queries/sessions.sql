@@ -19,9 +19,10 @@ JOIN players p ON mp.player_id = p.id
 WHERE m.server_id = ? AND mp.leave_time IS NULL;
 
 -- name: GetPlayerSessions :many
-SELECT mp.*, m.map, m.mode
+SELECT mp.*, maps.map_name, m.mode
 FROM match_participant mp
 JOIN matches m ON mp.match_id = m.id
+LEFT JOIN maps ON m.map_id = maps.id
 WHERE mp.player_id = ? AND m.server_id = ?
 ORDER BY mp.join_time DESC
 LIMIT ?;

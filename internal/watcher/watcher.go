@@ -275,13 +275,23 @@ func (fw *FileWatcher) handleKillEvent(ctx context.Context, event *events.GameEv
 				if err != nil {
 					return fmt.Errorf("failed to upsert killer %s: %w", killer.Name, err)
 				}
+				var killTypeInt int64
+				switch killType {
+				case "regular":
+					killTypeInt = 0
+				case "suicide":
+					killTypeInt = 1
+				case "team_kill":
+					killTypeInt = 2
+				default:
+					killTypeInt = 0
+				}
 				err = fw.db.GetQueries().InsertKill(ctx, generated.InsertKillParams{
 					KillerID:   &killerID,
 					VictimName: &victimName,
 					ServerID:   serverDBID,
 					WeaponName: &weapon,
-					IsTeamKill: boolPtr(killType == "team_kill"),
-					IsSuicide:  boolPtr(killType == "suicide"),
+					KillType:   killTypeInt,
 					MatchID:    nil,
 					CreatedAt:  &event.Timestamp,
 				})
@@ -310,13 +320,23 @@ func (fw *FileWatcher) handleKillEvent(ctx context.Context, event *events.GameEv
 				if err != nil {
 					return fmt.Errorf("failed to upsert killer %s: %w", killer.Name, err)
 				}
+				var killTypeInt int64
+				switch killType {
+				case "regular":
+					killTypeInt = 0
+				case "suicide":
+					killTypeInt = 1
+				case "team_kill":
+					killTypeInt = 2
+				default:
+					killTypeInt = 0
+				}
 				err = fw.db.GetQueries().InsertKill(ctx, generated.InsertKillParams{
 					KillerID:   &killerID,
 					VictimName: &victimName,
 					ServerID:   serverDBID,
 					WeaponName: &weapon,
-					IsTeamKill: boolPtr(killType == "team_kill"),
-					IsSuicide:  boolPtr(killType == "suicide"),
+					KillType:   killTypeInt,
 					MatchID:    nil,
 					CreatedAt:  &event.Timestamp,
 				})

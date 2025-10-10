@@ -41,8 +41,7 @@ SELECT id, map_name, scenario FROM maps WHERE 0=1;
 -- name: GetPlayerMatchHistory :many
 SELECT
     m.id as match_id,
-    m.map,
-    m.mode,
+    maps.map_name,
     m.start_time,
     m.end_time,
     mp.join_time,
@@ -50,6 +49,7 @@ SELECT
     mp.team
 FROM matches m
 JOIN match_participant mp ON m.id = mp.match_id
+LEFT JOIN maps ON m.map_id = maps.id
 WHERE mp.player_id = (SELECT id FROM players WHERE external_id = ?)
 AND m.server_id = ?
 ORDER BY m.start_time DESC
