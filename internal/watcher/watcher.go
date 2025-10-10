@@ -12,7 +12,7 @@ import (
 
 	"sandstorm-tracker/db"
 	generated "sandstorm-tracker/db/generated"
-	"sandstorm-tracker/events"
+	"sandstorm-tracker/internal/events"
 
 	"github.com/fsnotify/fsnotify"
 )

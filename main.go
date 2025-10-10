@@ -1,73 +1,86 @@
 package main
 
 import (
-    "flag"
-    "log"
-    "os"
-    "os/signal"
-    "strings"
-    "syscall"
-
-    "sandstorm-tracker/db"
-    "sandstorm-tracker/internal/dbutil"
-    "sandstorm-tracker/internal/watcher"
+	"flag"
+	// "fmt"
+	"log"
+	"os"
+	"os/signal"
+	"sandstorm-tracker/db"
+	"sandstorm-tracker/internal/config"
+	"sandstorm-tracker/internal/utils"
+	"sandstorm-tracker/internal/watcher"
+	"strings"
+	"syscall"
 )
 
+
+
 func main() {
-    var (
-        pathsStr = flag.String("paths", "", "Comma-separated list of paths to watch (files or directories)")
-        dbPath   = flag.String("db", "sandstorm_stats.db", "Path to SQLite database file")
-        checkDB  = flag.Bool("check", false, "Check database contents and exit")
-    )
-    flag.Parse()
+	// Initialize configuration
+	_, err := config.InitConfig()
 
-    if *checkDB {
-        dbutil.CheckDatabase(*dbPath)
-        return
-    }
+	// ...existing code...
+	var (
+		pathsStr = flag.String("paths", "", "Comma-separated list of paths to watch (files or directories)")
+		dbPath   = flag.String("db", "sandstorm_stats.db", "Path to SQLite database file")
+		checkDB  = flag.Bool("check", false, "Check database contents and exit")
+	)
+	flag.Parse()
 
-    if *pathsStr == "" {
-        log.Fatal("Please provide at least one path to watch using -paths flag")
-    }
+	if *checkDB {
+		utils.CheckDatabase(*dbPath)
+		return
+	}
 
-    paths := strings.Split(*pathsStr, ",")
-    for i, path := range paths {
-        paths[i] = strings.TrimSpace(path)
-    }
+	if *pathsStr == "" {
+		log.Fatal("Please provide at least one path to watch using -paths flag")
+	}
 
-    log.Printf("Starting Sandstorm log watcher")
-    log.Printf("Watching paths: %v", paths)
-    log.Printf("Database: %s", *dbPath)
+	paths := strings.Split(*pathsStr, ",")
+	for i, path := range paths {
+		paths[i] = strings.TrimSpace(path)
+		id, err := utils.GetServerIdFromPath(paths[i])
+		if err != nil {
+			log.Printf("Warning: Failed to get server ID from path %s: %v", paths[i], err)
+			continue
+		}
+		log.Printf("Found server ID %s for path %s", id, paths[i])
+	}
 
-    dbService, err := db.NewDatabaseService(*dbPath)
-    if err != nil {
-        log.Fatalf("Failed to initialize database: %v", err)
-    }
-    defer dbService.Close()
+	log.Printf("Starting Sandstorm log watcher")
+	log.Printf("Watching paths: %v", paths)
+	log.Printf("Database: %s", *dbPath)
 
-    log.Println("Database initialized successfully")
+	dbService, err := db.NewDatabaseService(*dbPath)
+	if err != nil {
+		log.Fatalf("Failed to initialize database: %v", err)
+	}
+	defer dbService.Close()
 
-    fw, err := watcher.NewFileWatcher(dbService)
-    if err != nil {
-        log.Fatalf("Failed to create file watcher: %v", err)
-    }
+	log.Println("Database initialized successfully")
 
-    for _, path := range paths {
-        if err := fw.AddPath(path); err != nil {
-            log.Printf("Warning: Failed to add path %s: %v", path, err)
-        }
-    }
+	fw, err := watcher.NewFileWatcher(dbService)
+	if err != nil {
+		log.Fatalf("Failed to create file watcher: %v", err)
+	}
 
-    fw.Start()
+	for _, path := range paths {
+		if err := fw.AddPath(path); err != nil {
+			log.Printf("Warning: Failed to add path %s: %v", path, err)
+		}
+	}
 
-    sigChan := make(chan os.Signal, 1)
-    signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+	fw.Start()
 
-    log.Println("File watcher started. Press Ctrl+C to stop.")
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
-    <-sigChan
-    log.Println("Shutting down...")
+	log.Println("File watcher started. Press Ctrl+C to stop.")
 
-    fw.Stop()
-    log.Println("File watcher stopped.")
+	<-sigChan
+	log.Println("Shutting down...")
+
+	fw.Stop()
+	log.Println("File watcher stopped.")
 }

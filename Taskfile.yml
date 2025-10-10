@@ -3,7 +3,11 @@ tasks:
   build:
     desc: Build all Go binaries
     cmds:
-      - go build ./...
+      - go build ./...\
+  dev:
+    desc: run app with defaults (db sandstorm_stats.db, port 8080, server hc)
+    cmds:
+      - go run main.go -paths="C:\Users\danie\code\sandstorm-admin-wrapper\sandstorm-server\Insurgency\Saved\Logs"
   pb:
     desc: run pocketbase
     cmds:

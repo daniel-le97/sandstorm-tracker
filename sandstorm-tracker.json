@@ -1,0 +1,23 @@
+{
+  "servers": [
+    {
+      "name": "Main Server",
+      "logPath": "/opt/sandstorm/Insurgency/Saved/Logs",
+      "enabled": true
+    },
+    {
+      "name": "Secondary Server",
+      "logPath": "/opt/sandstorm2/Insurgency/Saved/Logs",
+      "enabled": false
+    }
+  ],
+  "database": {
+    "path": "sandstorm_stats.db",
+    "enableWAL": true,
+    "cacheSize": 2000
+  },
+  "logging": {
+    "level": "info",
+    "enableServerLogs": true
+  }
+}

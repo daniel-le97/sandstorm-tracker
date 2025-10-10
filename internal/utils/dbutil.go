@@ -1,9 +1,11 @@
-package dbutil
+package utils
 
 import (
 	"context"
 	"fmt"
 	"log"
+	"os"
+	"strings"
 
 	"sandstorm-tracker/db"
 )
@@ -60,4 +62,25 @@ func CheckDatabase(dbPath string) {
 	for playerName, count := range killCounts {
 		fmt.Printf("%s: %d kills\n", playerName, count)
 	}
+}
+
+func GetServerIdFromPath(path string) (string, error) {
+	// Example path: C:\Games\Steam\steamapps\common\Sandstorm Dedicated Server\Server1\Logs
+	entries, err := os.ReadDir(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return "", fmt.Errorf("path does not exist: %s", path)
+		}
+	}
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		name := entry.Name()
+		if strings.Contains(name, "backup") {
+			continue
+		}
+		return strings.Trim(name, ".log"), nil
+	}
+	return "", fmt.Errorf("could not determine server ID from path: %s", path)
 }

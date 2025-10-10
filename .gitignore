@@ -1,0 +1,46 @@
+# Binaries
+*.exe
+*.dll
+*.so
+*.dylib
+*.test
+sandstorm_stats.db
+
+# Output folders
+bin/
+obj/
+
+# Logs
+*.log
+logs/
+
+# IDE/editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*.bak
+.DS_Store
+Thumbs.db
+
+# Dependency directories
+vendor/
+
+# Go build cache
+*.out
+
+# Config files (if you want to keep them local only)
+config.json
+config.yaml
+sandstorm-tracker.json
+
+# OS generated files
+*.tmp
+~*
+
+# Test output
+coverage.out
+
+# Misc
+.env
+.env.*
