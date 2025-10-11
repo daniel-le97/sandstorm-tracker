@@ -44,6 +44,9 @@ func WriteEventToDB(ctx context.Context, queries *gen.Queries, event *GameEvent,
 				return err
 			}
 
+            // Calculate multiplier before inserting
+            multiplier := calculateKillMultiplier(event, &killer)
+
 			params := gen.InsertKillParams{
 				KillerID:   &playerID,
 				VictimName: &victimName,
@@ -52,11 +55,34 @@ func WriteEventToDB(ctx context.Context, queries *gen.Queries, event *GameEvent,
 				KillType:   killType,
 				MatchID:    matchID,
 				CreatedAt:  &createdAt,
+                Multiplier: multiplier,
 			}
 			if err := queries.InsertKill(ctx, params); err != nil {
 				return err
 			}
-		}
+	}
 	}
 	return nil
+}
+// calculateKillMultiplier determines the multiplier for a kill event and killer.
+// Extend this logic as needed for your game rules (e.g., fire support, headshot, etc.)
+func calculateKillMultiplier(event *GameEvent, killer *Killer) float64 {
+	// Example logic: you can expand this as needed
+	// Default multiplier
+	multiplier := 1.0
+
+	// Example: check for fire support (add your own logic)
+	if event.Data["fire_support"] == true {
+		multiplier = 2.0
+	}
+
+	// Example: check for headshot (add your own logic)
+	if event.Data["headshot"] == true {
+		multiplier *= 1.5
+	}
+
+	// Add more rules as needed
+
+	return multiplier
+
 }

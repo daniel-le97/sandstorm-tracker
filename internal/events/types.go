@@ -1,3 +1,4 @@
+// GetMultiplier returns the multiplier for this kill event
 package events
 
 import (
@@ -81,6 +82,11 @@ type KillEvent struct {
 	Distance      float64   `json:"distance,omitempty"`
 	MapName       string    `json:"map_name"`
 	RoundNumber   int       `json:"round_number"`
+	Multiplier    float64   `json:"multiplier"`
+}
+
+func (k *KillEvent) GetMultiplier() float64 {
+	return k.Multiplier
 }
 
 // ChatCommand represents a chat command from a player

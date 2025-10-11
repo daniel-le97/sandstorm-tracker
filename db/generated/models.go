@@ -18,6 +18,7 @@ type Kill struct {
 	KillerID           *int64
 	VictimName         *string
 	KillType           int64
+	Multiplier         float64
 }
 
 type Map struct {
@@ -56,6 +57,14 @@ type Player struct {
 	Name       string
 	CreatedAt  *time.Time
 	UpdatedAt  *time.Time
+}
+
+type PlayerLife struct {
+	ID                 int64
+	MatchParticipantID int64
+	SpawnTime          time.Time
+	DeathTime          *time.Time
+	CauseOfDeath       *string
 }
 
 type SchemaVersion struct {

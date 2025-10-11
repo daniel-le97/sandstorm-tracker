@@ -158,8 +158,8 @@ func (q *Queries) GetKillsInTimeRange(ctx context.Context, serverID int64) ([]Ge
 
 const insertKill = `-- name: InsertKill :exec
 
-INSERT INTO kills (killer_id, victim_name, server_id, weapon_name, kill_type, match_id, created_at)
-VALUES (?, ?, ?, ?, ?, ?, ?)
+INSERT INTO kills (killer_id, victim_name, server_id, weapon_name, kill_type, match_id, created_at, multiplier)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 `
 
 type InsertKillParams struct {
@@ -170,6 +170,7 @@ type InsertKillParams struct {
 	KillType   int64
 	MatchID    *int64
 	CreatedAt  *time.Time
+	Multiplier float64
 }
 
 // Kill tracking queries
@@ -182,12 +183,13 @@ func (q *Queries) InsertKill(ctx context.Context, arg InsertKillParams) error {
 		arg.KillType,
 		arg.MatchID,
 		arg.CreatedAt,
+		arg.Multiplier,
 	)
 	return err
 }
 
 const listAllKills = `-- name: ListAllKills :many
-SELECT id, server_id, match_id, match_participant_id, weapon_name, created_at, killer_id, victim_name, kill_type FROM kills ORDER BY created_at DESC
+SELECT id, server_id, match_id, match_participant_id, weapon_name, created_at, killer_id, victim_name, kill_type, multiplier FROM kills ORDER BY created_at DESC
 `
 
 func (q *Queries) ListAllKills(ctx context.Context) ([]Kill, error) {
@@ -209,6 +211,7 @@ func (q *Queries) ListAllKills(ctx context.Context) ([]Kill, error) {
 			&i.KillerID,
 			&i.VictimName,
 			&i.KillType,
+			&i.Multiplier,
 		); err != nil {
 			return nil, err
 		}

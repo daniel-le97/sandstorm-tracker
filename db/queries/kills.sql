@@ -1,8 +1,8 @@
 -- Kill tracking queries
 
 -- name: InsertKill :exec
-INSERT INTO kills (killer_id, victim_name, server_id, weapon_name, kill_type, match_id, created_at)
-VALUES (?, ?, ?, ?, ?, ?, ?);
+INSERT INTO kills (killer_id, victim_name, server_id, weapon_name, kill_type, match_id, created_at, multiplier)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?);
 
 -- name: GetKillsByPlayer :many
 SELECT k.id, k.killer_id, k.victim_name, k.server_id, k.weapon_name, k.kill_type, k.match_id, k.created_at,

@@ -71,6 +71,7 @@ CREATE TABLE IF NOT EXISTS kills (
     killer_id INTEGER,
     victim_name TEXT,
     kill_type INTEGER NOT NULL CHECK (kill_type IN (0, 1, 2)), -- 0=regular, 1=suicide, 2=teamkill
+    multiplier REAL NOT NULL DEFAULT 1.0,
     FOREIGN KEY (server_id) REFERENCES servers(id) ON DELETE CASCADE,
     FOREIGN KEY (killer_id) REFERENCES players(id) ON DELETE SET NULL,
     FOREIGN KEY (match_id) REFERENCES matches(id) ON DELETE SET NULL,
