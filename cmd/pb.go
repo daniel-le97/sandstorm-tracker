@@ -16,7 +16,7 @@ import (
 	"github.com/pocketbase/pocketbase/tools/osutils"
 )
 
-func main() {
+func TestPB() {
 	app := pocketbase.New()
 
 	// ---------------------------------------------------------------
