@@ -8,10 +8,6 @@ tasks:
     desc: run app with defaults (db sandstorm-tracker.db, port 8080, server hc)
     cmds:
       - go run main.go -paths="C:\Users\danie\code\sandstorm-admin-wrapper\sandstorm-server\Insurgency\Saved\Logs"
-  pb:
-    desc: run pocketbase
-    cmds:
-      - go run ./cmd/pb.go serve
   web:
     desc: Run the web server (default db, port 8080)
     cmds:
@@ -23,7 +19,7 @@ tasks:
   sqlc:
     desc: Generate Go code from SQL queries
     cmds:
-      - sqlc generate
+      - cd db; sqlc generate
   fmt:
     desc: Run gofmt on all Go files
     cmds:
