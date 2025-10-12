@@ -81,3 +81,8 @@
 [2025.10.04-21.32.55:614][297]LogGameplayEvents: Display: Objective 1 owned by team 1 was destroyed for team 0 by -=312th=- Rabbit[76561198262186571], ArmoredBear[76561198995742987].
 
 
+// game startup arguments, we need to extract this info, if the VALUE IS REDACTED, WE DONT EVER WANT TO STORE IT
+LogInit: Command Line:  Town?Scenario=Scenario_Hideout_Checkpoint_Security?MaxPlayers=10?Game=CheckpointHardcore?Lighting=Day -Hostname="-=312th=- TD's Tough Tavern Dallas I [HC]" -MaxPlayers=10 -Port=27102 -QueryPort=27111 -log=9fa1f292-8394-401f-986f-26207fb9f9e8.log -LogCmds="LogGameplayEvents Log" -LOCALLOGTIMES -AdminList=Admins -MapCycle=MapCycle -GameStatsToken=REDACTED -GameStats -GSLTToken=REDACTED -Motd=REDACTED
+
+
+

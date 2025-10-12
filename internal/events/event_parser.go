@@ -8,6 +8,67 @@ import (
 	"time"
 )
 
+// EventServerArgs represents a server start event with command line arguments
+type EventServerArgs struct {
+	Timestamp  time.Time
+	ServerID   string
+	Args       []string
+	RawCommand string
+}
+
+// parseServerArgsEvent parses LogInit: Command Line: lines into EventServerArgs
+func parseServerArgsEvent(line string) *EventServerArgs {
+	// LogInit: Command Line: ... -log=9fa1f292-8394-401f-986f-26207fb9f9e8.log ...
+	re := regexp.MustCompile(`LogInit: Command Line: (.+)$`)
+	matches := re.FindStringSubmatch(line)
+	if len(matches) < 2 {
+		return nil
+	}
+	raw := matches[1]
+	// Split args, but keep quoted map arg as one
+	var args []string
+	inQuote := false
+	current := ""
+	for _, r := range raw {
+		switch r {
+		case '"':
+			inQuote = !inQuote
+			current += string(r)
+		case ' ':
+			if inQuote {
+				current += string(r)
+			} else if current != "" {
+				args = append(args, current)
+				current = ""
+			}
+		default:
+			current += string(r)
+		}
+	}
+	if current != "" {
+		args = append(args, current)
+	}
+	// Redact GSLTToken and other sensitive args
+	for i, arg := range args {
+		if strings.HasPrefix(arg, "-GSLTToken=") {
+			args[i] = "-GSLTToken=REDACTED"
+		}
+	}
+	// Extract server ID from -log=... argument
+	serverID := ""
+	for _, arg := range args {
+		if strings.HasPrefix(arg, "-log=") && strings.HasSuffix(arg, ".log") {
+			serverID = strings.TrimSuffix(arg[len("-log="):], ".log")
+			break
+		}
+	}
+	return &EventServerArgs{
+		ServerID:   serverID,
+		Args:       args,
+		RawCommand: raw,
+	}
+}
+
 // EventType represents different types of game events
 type EventType int
 
@@ -187,6 +248,23 @@ func (p *EventParser) ParseLine(line, serverID string) (*GameEvent, error) {
 	timestamp, err := parseTimestamp(timestampMatches[1])
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse timestamp: %w", err)
+	}
+
+	// Check for server args event (LogInit: Command Line: ...)
+	if strings.Contains(line, "LogInit: Command Line:") {
+		if event := parseServerArgsEvent(line); event != nil {
+			data := map[string]interface{}{
+				"args":        event.Args,
+				"raw_command": event.RawCommand,
+			}
+			return &GameEvent{
+				Type:       EventType(-1), // Use -1 or define EventServerArgs if desired
+				Timestamp:  timestamp,
+				ServerID:   event.ServerID,
+				Data:       data,
+				RawLogLine: line,
+			}, nil
+		}
 	}
 
 	// Try to match against each pattern
