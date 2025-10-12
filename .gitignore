@@ -34,6 +34,8 @@ config.json
 config.yaml
 sandstorm-tracker.json
 
+sandstorm-tracker.exe
+
 # OS generated files
 *.tmp
 ~*
