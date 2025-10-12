@@ -4,7 +4,7 @@
 *.so
 *.dylib
 *.test
-sandstorm_stats.db
+sandstorm-tracker.db
 
 # Output folders
 bin/
@@ -43,4 +43,6 @@ coverage.out
 
 # Misc
 .env
-.env.*
+
+
+sandstorm-tracker.json

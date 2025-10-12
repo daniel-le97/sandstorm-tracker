@@ -5,7 +5,7 @@ tasks:
     cmds:
       - go build ./...\
   dev:
-    desc: run app with defaults (db sandstorm_stats.db, port 8080, server hc)
+    desc: run app with defaults (db sandstorm-tracker.db, port 8080, server hc)
     cmds:
       - go run main.go -paths="C:\Users\danie\code\sandstorm-admin-wrapper\sandstorm-server\Insurgency\Saved\Logs"
   pb:
@@ -15,7 +15,7 @@ tasks:
   web:
     desc: Run the web server (default db, port 8080)
     cmds:
-      - go run ./cmd/web -db=sandstorm_stats.db -port=8080 -server=hc
+      - go run ./cmd/web -db=sandstorm-tracker.db -port=8080 -server=hc
   test:
     desc: Run all Go tests
     cmds:

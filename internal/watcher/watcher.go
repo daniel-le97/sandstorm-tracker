@@ -48,10 +48,6 @@ func NewFileWatcher(dbService *db.DatabaseService) (*FileWatcher, error) {
 	return fw, nil
 }
 
-func boolPtr(b bool) *bool {
-	return &b
-}
-
 func (fw *FileWatcher) AddPath(path string) error {
 	absPath, err := filepath.Abs(path)
 	if err != nil {
@@ -343,6 +339,7 @@ func (fw *FileWatcher) handleKillEvent(ctx context.Context, event *events.GameEv
 }
 
 func (fw *FileWatcher) handlePlayerJoin(ctx context.Context, event *events.GameEvent, serverDBID int64) error {
+	_ = serverDBID
 	playerName, _ := event.Data["player_name"].(string)
 	steamID, _ := event.Data["steam_id"].(string)
 	if steamID == "INVALID" {

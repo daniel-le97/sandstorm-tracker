@@ -12,6 +12,8 @@
   - `internal/config/`: Configuration loading and management using Viper
   - `internal/rcon/`: RCON client for server commands and queries
   - `internal/tail/`: Log file tailing and processing, unused as watcher package is used instead
+  - `internal/log/`: Centralized logging setup and configuration
+  - `internal/core/`: core needs to tie together the rest of the packages for my app
   - `cmd/`: CLI tools and commands
 - **Data Flow:**
   1. Log files are watched and parsed for events.
@@ -31,7 +33,7 @@
       }
     ],
     "database": {
-      "path": "sandstorm_stats.db",
+      "path": "sandstorm-tracker.db",
       "enableWAL": true,
       "cacheSize": 2000
     },

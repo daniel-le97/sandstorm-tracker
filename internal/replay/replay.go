@@ -1,6 +1,6 @@
-package chronos
+package replay
 
-// Package chronos provides log replay and catch-up functionality for Sandstorm Tracker.
+// Package replay provides log replay and catch-up functionality for Sandstorm Tracker.
 // It ensures all log lines and events are processed in strict sequential order, even if the
 // application starts after the game server has already been running.
 //
@@ -96,7 +96,7 @@ func ReplayAndCatchUp(logDir string, parser *events.EventParser, handleEvent fun
 	for _, fi := range fileInfos {
 		err := replayFile(fi.name, parser, handleEvent)
 		if err != nil {
-			log.Printf("[CHRONOS] Error replaying %s: %v", fi.name, err)
+			log.Printf("[replay] Error replaying %s: %v", fi.name, err)
 		}
 	}
 	return nil
@@ -132,13 +132,13 @@ func replayFile(filename string, parser *events.EventParser, handleEvent func(*e
 		newOffset += int64(len(line) + 1)
 		event, err := parser.ParseLine(line, extractServerIDFromPath(filename))
 		if err != nil {
-			log.Printf("[CHRONOS] Failed to parse line: %v", err)
+			log.Printf("[replay] Failed to parse line: %v", err)
 			continue
 		}
 		if event != nil {
 			err = handleEvent(event, filename)
 			if err != nil {
-				log.Printf("[CHRONOS] Event handler error: %v", err)
+				log.Printf("[replay] Event handler error: %v", err)
 			}
 		}
 		saveOffset(filename, newOffset)

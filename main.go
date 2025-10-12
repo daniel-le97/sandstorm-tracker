@@ -14,8 +14,6 @@ import (
 	"syscall"
 )
 
-
-
 func main() {
 	// Initialize configuration
 	_, err := config.InitConfig()
@@ -23,7 +21,7 @@ func main() {
 	// ...existing code...
 	var (
 		pathsStr = flag.String("paths", "", "Comma-separated list of paths to watch (files or directories)")
-		dbPath   = flag.String("db", "sandstorm_stats.db", "Path to SQLite database file")
+		dbPath   = flag.String("db", "sandstorm-tracker.db", "Path to SQLite database file")
 		checkDB  = flag.Bool("check", false, "Check database contents and exit")
 	)
 	flag.Parse()

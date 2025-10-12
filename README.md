@@ -65,7 +65,7 @@ Sandstorm Tracker is a Go project that tracks kills, playtime, alive time, weapo
       }
     ],
     "database": {
-      "path": "sandstorm_stats.db",
+      "path": "sandstorm-tracker.db",
       "enableWAL": true,
       "cacheSize": 2000
     },

@@ -1,4 +1,4 @@
-## Watcher & Chronos Package Responsibilities
+## Watcher & replay Package Responsibilities
 
 ### 1. Monitor Log Directory
 
@@ -41,4 +41,3 @@
 - Ensure all processed offsets are persisted before exit.
 
 ---
-
