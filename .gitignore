@@ -11,7 +11,7 @@ bin/
 obj/
 
 # Logs
-*.log
+
 logs/
 
 # IDE/editor files
