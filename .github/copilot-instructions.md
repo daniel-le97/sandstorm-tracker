@@ -10,6 +10,8 @@
   - `internal/watcher/`: File/directory watching and log ingestion
   - `internal/events/`: Event parsing and processing logic
   - `internal/config/`: Configuration loading and management using Viper
+  - `internal/rcon/`: RCON client for server commands and queries
+  - `internal/tail/`: Log file tailing and processing, unused as watcher package is used instead
   - `cmd/`: CLI tools and commands
 - **Data Flow:**
   1. Log files are watched and parsed for events.
