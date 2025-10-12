@@ -8,7 +8,7 @@
   - `db/`: Database schema, queries, and access logic (SQLite by default)
   - `internal/utils/`: Utility functions (e.g., database checks, file helpers)
   - `internal/watcher/`: File/directory watching and log ingestion
-    = `internal/events/`: Event parsing and processing logic
+  - `internal/events/`: Event parsing and processing logic
   - `internal/config/`: Configuration loading and management using Viper
   - `cmd/`: CLI tools and commands
 - **Data Flow:**
@@ -38,7 +38,7 @@
   ```
 - **Structs:** Use Go structs with `mapstructure` tags for config unmarshalling (see `main.go`).
 - **Testing:** Place tests in `*_test.go` files next to the code they test. Run with `go test ./...`.
-- **Build:** Use `go build -o sandstorm-tracker main.go`, or `task build`/`make` if available.
+- **Build:** Use `go build -o sandstorm-tracker main.go`, or `task build` if available.
 - **Ignore:** `.gitignore` excludes binaries, logs, local configs, and editor files.
 
 ## Developer Workflows

@@ -209,25 +209,17 @@ func (fw *FileWatcher) handleGameEvent(event *events.GameEvent, filePath string,
 }
 
 func getPlayerName(event *events.GameEvent) string {
-	switch event.Type {
-	case events.EventPlayerKill:
-		if killerName, ok := event.Data["killer_name"].(string); ok {
-			return killerName
-		}
-	case events.EventPlayerJoin:
-		if playerName, ok := event.Data["player_name"].(string); ok {
-			return playerName
-		}
-	case events.EventPlayerLeave:
-		if playerName, ok := event.Data["player_name"].(string); ok {
-			return playerName
-		}
-	case events.EventChatCommand:
-		if playerName, ok := event.Data["player_name"].(string); ok {
-			return playerName
-		}
-	}
-	return "N/A"
+    switch event.Type {
+    case events.EventPlayerKill:
+        if killerName, ok := event.Data["killer_name"].(string); ok {
+            return killerName
+        }
+    case events.EventPlayerJoin, events.EventPlayerLeave, events.EventChatCommand:
+        if playerName, ok := event.Data["player_name"].(string); ok {
+            return playerName
+        }
+    }
+    return "N/A"
 }
 
 func extractServerIDFromPath(filePath string) string {
