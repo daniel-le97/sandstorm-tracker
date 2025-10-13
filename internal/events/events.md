@@ -2,7 +2,7 @@
 [2025.10.04-15.23.38:790][979]LogGameplayEvents: Display: Game over
 
 // player joined
-[2025.10.04-15.35.33:666][194]LogNet: Join succeeded: ArmoredBear
+[2025.10.12-17.21.07:564][668]LogEOSAntiCheat: Display: ServerRegisterClient: Client: (76561198995742987) Result: (EOS_Success)
 
 
 // player left

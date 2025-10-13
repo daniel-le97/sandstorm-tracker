@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net"
 	"os"
 	"path/filepath"
 	"strings"
@@ -12,23 +13,29 @@ import (
 
 	"sandstorm-tracker/db"
 	generated "sandstorm-tracker/db/generated"
+	"sandstorm-tracker/internal/config"
 	"sandstorm-tracker/internal/events"
+	"sandstorm-tracker/internal/rcon"
+	"sandstorm-tracker/internal/utils"
 
 	"github.com/fsnotify/fsnotify"
 )
 
 type FileWatcher struct {
-	watcher     *fsnotify.Watcher
-	parser      *events.EventParser
-	db          *db.DatabaseService
-	ctx         context.Context
-	cancel      context.CancelFunc
-	wg          sync.WaitGroup
-	fileOffsets map[string]int64 // Track file read positions
-	mu          sync.RWMutex     // Protect fileOffsets map
+	watcher       *fsnotify.Watcher
+	parser        *events.EventParser
+	db            *db.DatabaseService
+	ctx           context.Context
+	cancel        context.CancelFunc
+	wg            sync.WaitGroup
+	fileOffsets   map[string]int64               // Track file read positions
+	mu            sync.RWMutex                   // Protect fileOffsets map
+	rconClients   map[string]*rcon.RconClient    // serverID -> RCON client
+	rconMu        sync.Mutex                     // Protect rconClients
+	serverConfigs map[string]config.ServerConfig // serverID -> ServerConfig
 }
 
-func NewFileWatcher(dbService *db.DatabaseService) (*FileWatcher, error) {
+func NewFileWatcher(dbService *db.DatabaseService, serverConfigs []config.ServerConfig) (*FileWatcher, error) {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create file watcher: %w", err)
@@ -36,13 +43,24 @@ func NewFileWatcher(dbService *db.DatabaseService) (*FileWatcher, error) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
+	scMap := make(map[string]config.ServerConfig)
+	for _, sc := range serverConfigs {
+		// Use the log file stem (without .log) as the key, matching serverID in events
+		serverID, err := utils.GetServerIdFromPath(sc.LogPath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get server ID from path %s: %w", sc.LogPath, err)
+		}
+		scMap[serverID] = sc
+	}
 	fw := &FileWatcher{
-		watcher:     watcher,
-		parser:      events.NewEventParser(),
-		db:          dbService,
-		ctx:         ctx,
-		cancel:      cancel,
-		fileOffsets: make(map[string]int64),
+		watcher:       watcher,
+		parser:        events.NewEventParser(),
+		db:            dbService,
+		ctx:           ctx,
+		cancel:        cancel,
+		fileOffsets:   make(map[string]int64),
+		rconClients:   make(map[string]*rcon.RconClient),
+		serverConfigs: scMap,
 	}
 
 	return fw, nil
@@ -153,6 +171,14 @@ func (fw *FileWatcher) processFile(filePath string) {
 			continue
 		}
 		if event != nil {
+			if event.Type == events.EventChatCommand {
+				lineCount++
+				log.Printf("Processed chat command from %s (Server ID: %s): %s",
+					filepath.Base(filePath),
+					serverID,
+					event.RawLogLine)
+				continue
+			}
 			fw.handleGameEvent(event, filePath, serverID)
 			lineCount++
 		}
@@ -165,17 +191,17 @@ func (fw *FileWatcher) processFile(filePath string) {
 	fw.fileOffsets[filePath] = newOffset
 	fw.mu.Unlock()
 	if lineCount > 0 {
-		log.Printf("Processed %d new events from %s", lineCount, filepath.Base(filePath))
+		// log.Printf("Processed %d new events from %s", lineCount, filepath.Base(filePath))
 	}
 }
 
 func (fw *FileWatcher) handleGameEvent(event *events.GameEvent, filePath string, serverID string) {
-	log.Printf("Event from %s (Server: %s): Type=%v, Time=%v, Player=%s",
-		filepath.Base(filePath),
-		serverID,
-		event.Type,
-		event.Timestamp.Format("15:04:05"),
-		getPlayerName(event))
+	// log.Printf("Event from %s (Server: %s): Type=%v, Time=%v, Player=%s",
+	// 	filepath.Base(filePath),
+	// 	serverID,
+	// 	event.Type,
+	// 	event.Timestamp.Format("15:04:05"),
+	// 	getPlayerName(event))
 	ctx := context.Background()
 	serverDBID, err := fw.ensureServer(ctx, serverID, filePath)
 	if err != nil {
@@ -196,26 +222,29 @@ func (fw *FileWatcher) handleGameEvent(event *events.GameEvent, filePath string,
 			log.Printf("Error handling player leave: %v", err)
 		}
 	case events.EventChatCommand:
+		log.Printf("processing chat: %s", event.RawLogLine)
+		// log.Printf("Event from %s (Server: %s): Type=%v, Time=%v, Player=%s",
 		if err := fw.handleChatCommand(ctx, event, serverDBID); err != nil {
 			log.Printf("Error handling chat command: %v", err)
 		}
 	default:
-		log.Printf("Event details: %+v", event.Data)
+		return
+		// log.Printf("Event details: %+v", event.Data)
 	}
 }
 
 func getPlayerName(event *events.GameEvent) string {
-    switch event.Type {
-    case events.EventPlayerKill:
-        if killerName, ok := event.Data["killer_name"].(string); ok {
-            return killerName
-        }
-    case events.EventPlayerJoin, events.EventPlayerLeave, events.EventChatCommand:
-        if playerName, ok := event.Data["player_name"].(string); ok {
-            return playerName
-        }
-    }
-    return "N/A"
+	switch event.Type {
+	case events.EventPlayerKill:
+		if killerName, ok := event.Data["killer_name"].(string); ok {
+			return killerName
+		}
+	case events.EventPlayerJoin, events.EventPlayerLeave, events.EventChatCommand:
+		if playerName, ok := event.Data["player_name"].(string); ok {
+			return playerName
+		}
+	}
+	return "N/A"
 }
 
 func extractServerIDFromPath(filePath string) string {
@@ -374,5 +403,44 @@ func (fw *FileWatcher) handleChatCommand(ctx context.Context, event *events.Game
 	playerName, _ := event.Data["player_name"].(string)
 	command, _ := event.Data["command"].(string)
 	log.Printf("Chat command from %s: %s", playerName, command)
+
+	// Find server config by serverDBID or event.ServerID (adjust as needed)
+	serverID := event.ServerID
+	sc, ok := fw.serverConfigs[event.ServerID]
+	if !ok {
+		log.Printf("No server config found for serverID: %s", serverID)
+		return nil
+	}
+
+	fw.rconMu.Lock()
+	client, exists := fw.rconClients[serverID]
+	fw.rconMu.Unlock()
+	if !exists {
+		// Create new RCON client
+		conn, err := net.Dial("tcp", sc.RconAddress)
+		if err != nil {
+			log.Printf("Failed to dial RCON for %s: %v", sc.RconAddress, err)
+			return err
+		}
+		client = rcon.NewRconClient(conn, nil)
+		if !client.Auth(sc.RconPassword) {
+			log.Printf("RCON auth failed for server %s", serverID)
+			conn.Close()
+			return fmt.Errorf("RCON auth failed")
+		}
+		fw.rconMu.Lock()
+		fw.rconClients[serverID] = client
+		fw.rconMu.Unlock()
+	}
+
+	// Example: respond to !kdr command
+	if command == "!kdr" {
+		msg := fmt.Sprintf("%s: Your KDR is ...", playerName) // Replace with real logic
+		_, err := client.Send("say " + msg)
+		if err != nil {
+			log.Printf("Failed to send RCON say: %v", err)
+		}
+	}
+	// Add more command handling as needed
 	return nil
 }

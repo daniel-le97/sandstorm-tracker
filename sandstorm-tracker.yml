@@ -1,14 +1,9 @@
 servers:
   - name: "Main Server"
-    logPath: "/opt/sandstorm/Insurgency/Saved/Logs"
+    logPath: "C:\\Users\\danie\\code\\sandstorm-admin-wrapper\\sandstorm-server\\Insurgency\\Saved\\Logs"
     rconAddress: "127.0.0.1:27015"
-    rconPassword: "MyRconPassword"
+    rconPassword: "hzZR1BfpM0eDYnLcfaqwM7Rq43QYwpLGdVuky0QZZxfuQFst"
     enabled: true
-  - name: "Secondary Server"
-    logPath: "/opt/sandstorm2/Insurgency/Saved/Logs"
-    rconAddress: "127.0.0.1:27014"
-    rconPassword: "MyRconPassword2"
-    enabled: false
 
 database:
   path: "sandstorm-tracker.db"

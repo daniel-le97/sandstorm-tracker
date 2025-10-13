@@ -16,9 +16,11 @@ import (
 )
 
 type ServerConfig struct {
-	Name    string `mapstructure:"name"`
-	LogPath string `mapstructure:"logPath"`
-	Enabled bool   `mapstructure:"enabled"`
+	Name         string `mapstructure:"name"`
+	LogPath      string `mapstructure:"logPath"`
+	RconAddress  string `mapstructure:"rconAddress"`
+	RconPassword string `mapstructure:"rconPassword"`
+	Enabled      bool   `mapstructure:"enabled"`
 }
 
 type DatabaseConfig struct {
@@ -38,11 +40,9 @@ type AppConfig struct {
 	Logging  LoggingConfig  `mapstructure:"logging"`
 }
 
-
-
 func InitConfig() (*AppConfig, error) {
 	viper.SetConfigName("sandstorm-tracker") // name of config file (without extension)
-	viper.SetConfigType("yml")              // or viper.SetConfigType("json")
+	viper.SetConfigType("yml")               // or viper.SetConfigType("json")
 	viper.AddConfigPath(".")                 // look for config in the working directory
 
 	err := viper.ReadInConfig()

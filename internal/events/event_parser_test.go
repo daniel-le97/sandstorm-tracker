@@ -282,39 +282,6 @@ func TestPlayerDisconnectRegex(t *testing.T) {
 	}
 }
 
-func TestPlayerRconLeaveRegex(t *testing.T) {
-	patterns := NewLogPatterns()
-
-	tests := []struct {
-		name        string
-		logLine     string
-		shouldMatch bool
-		player      string
-	}{
-		{
-			name:        "Player RCON leave",
-			logLine:     "[2025.10.04-15.37.59:204][779]LogRcon: 127.0.0.1:58877 << say See you later, ArmoredBear!",
-			shouldMatch: true,
-			player:      "ArmoredBear",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			matches := patterns.PlayerRconLeave.FindStringSubmatch(tt.logLine)
-
-			if tt.shouldMatch {
-				if len(matches) == 0 {
-					t.Fatalf("Expected regex to match but got no matches for: %s", tt.logLine)
-				}
-
-				if matches[2] != tt.player {
-					t.Errorf("Expected player %q, got %q", tt.player, matches[2])
-				}
-			}
-		})
-	}
-}
 
 func TestRoundEndRegex(t *testing.T) {
 	patterns := NewLogPatterns()
@@ -580,40 +547,6 @@ func TestChatCommandRegex(t *testing.T) {
 				}
 				if matches[4] != tt.command {
 					t.Errorf("Expected command %q, got %q", tt.command, matches[4])
-				}
-			}
-		})
-	}
-}
-
-func TestFallDamageRegex(t *testing.T) {
-	patterns := NewLogPatterns()
-
-	tests := []struct {
-		name        string
-		logLine     string
-		shouldMatch bool
-		damage      string
-	}{
-		{
-			name:        "Fall damage",
-			logLine:     "[2025.10.04-15.12.17:472][441]LogSoldier: Applying 268.43 fall damage, downward velocity on landing was -1821.08",
-			shouldMatch: true,
-			damage:      "268.43",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			matches := patterns.FallDamage.FindStringSubmatch(tt.logLine)
-
-			if tt.shouldMatch {
-				if len(matches) == 0 {
-					t.Fatalf("Expected regex to match but got no matches for: %s", tt.logLine)
-				}
-
-				if matches[2] != tt.damage {
-					t.Errorf("Expected damage %q, got %q", tt.damage, matches[2])
 				}
 			}
 		})

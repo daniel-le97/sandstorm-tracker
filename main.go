@@ -16,7 +16,7 @@ import (
 
 func main() {
 	// Initialize configuration
-	_, err := config.InitConfig()
+	appConfig, err := config.InitConfig()
 
 	// ...existing code...
 	var (
@@ -38,12 +38,12 @@ func main() {
 	paths := strings.Split(*pathsStr, ",")
 	for i, path := range paths {
 		paths[i] = strings.TrimSpace(path)
-		id, err := utils.GetServerIdFromPath(paths[i])
+		_, err := utils.GetServerIdFromPath(paths[i])
 		if err != nil {
 			log.Printf("Warning: Failed to get server ID from path %s: %v", paths[i], err)
 			continue
 		}
-		log.Printf("Found server ID %s for path %s", id, paths[i])
+		// log.Printf("Found server ID %s for path %s", id, paths[i])
 	}
 
 	log.Printf("Starting Sandstorm log watcher")
@@ -57,8 +57,7 @@ func main() {
 	defer dbService.Close()
 
 	log.Println("Database initialized successfully")
-
-	fw, err := watcher.NewFileWatcher(dbService)
+	fw, err := watcher.NewFileWatcher(dbService, appConfig.Servers)
 	if err != nil {
 		log.Fatalf("Failed to create file watcher: %v", err)
 	}

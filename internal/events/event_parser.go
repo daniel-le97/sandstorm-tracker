@@ -166,7 +166,6 @@ type LogPatterns struct {
 	PlayerKill       *regexp.Regexp
 	PlayerJoin       *regexp.Regexp
 	PlayerDisconnect *regexp.Regexp
-	PlayerRconLeave  *regexp.Regexp
 	RoundStart       *regexp.Regexp
 	RoundEnd         *regexp.Regexp
 	GameOver         *regexp.Regexp
@@ -175,7 +174,6 @@ type LogPatterns struct {
 	MapVote          *regexp.Regexp
 	ChatCommand      *regexp.Regexp
 	RconCommand      *regexp.Regexp
-	FallDamage       *regexp.Regexp
 	Timestamp        *regexp.Regexp
 }
 
@@ -187,11 +185,10 @@ func NewLogPatterns() *LogPatterns {
 		PlayerKill: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\s*\d+\]LogGameplayEvents: Display: (.+?) killed ([^\[]+)\[([^,\]]*), team (\d+)\] with (.+)$`),
 
 		// Player connection events - handles both LogNet and LogGameMode formats
-		PlayerJoin: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\d+\]Log(?:Net: Join succeeded: (.+)|GameMode: Display: Player \d+ '([^']+)' joined team (\d+))`),
+		// Updated to match LogEOSAntiCheat: Display: ServerRegisterClient: Client: (STEAMID) Result: (EOS_Success)
+		PlayerJoin: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\d+\]LogEOSAntiCheat: Display: ServerRegisterClient: Client: \((\d+)\) Result: \(EOS_Success\)`),
 
 		PlayerDisconnect: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\d+\]LogEOSAntiCheat: Display: ServerUnregisterClient: UserId \((\d+)\), Result: \(EOS_Success\)`),
-
-		PlayerRconLeave: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\d+\]LogRcon: .* << say See you later, (.+)!`),
 
 		// Game state events
 		RoundStart: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\d+\]LogGameplayEvents: Display: (?:Pre-)?round (\d+) started`),
@@ -211,9 +208,6 @@ func NewLogPatterns() *LogPatterns {
 		ChatCommand: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\d+\]LogChat: Display: ([^(]+)\((\d+)\) Global Chat: (!.+)`),
 
 		RconCommand: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\s*\d+\]LogRcon: ([^<]+)<< (.+)`),
-
-		// Other events
-		FallDamage: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\s*\d+\]LogSoldier: Applying ([0-9.]+) fall damage`),
 
 		// Utility pattern for timestamp extraction
 		Timestamp: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]`),
@@ -280,10 +274,6 @@ func (p *EventParser) ParseLine(line, serverID string) (*GameEvent, error) {
 		return event, nil
 	}
 
-	if event := p.parsePlayerRconLeave(line, timestamp, serverID); event != nil {
-		return event, nil
-	}
-
 	if event := p.parseRoundStart(line, timestamp, serverID); event != nil {
 		return event, nil
 	}
@@ -313,10 +303,6 @@ func (p *EventParser) ParseLine(line, serverID string) (*GameEvent, error) {
 	}
 
 	if event := p.parseRconCommand(line, timestamp, serverID); event != nil {
-		return event, nil
-	}
-
-	if event := p.parseFallDamage(line, timestamp, serverID); event != nil {
 		return event, nil
 	}
 
@@ -394,10 +380,10 @@ func (p *EventParser) parsePlayerJoin(line string, timestamp time.Time, serverID
 		return nil
 	}
 
-	playerName := strings.TrimSpace(matches[2])
+	steamID := strings.TrimSpace(matches[2])
 
 	data := map[string]interface{}{
-		"player_name": playerName,
+		"steam_id": steamID,
 	}
 
 	return &GameEvent{
@@ -420,28 +406,6 @@ func (p *EventParser) parsePlayerDisconnect(line string, timestamp time.Time, se
 
 	data := map[string]interface{}{
 		"steam_id": steamID,
-	}
-
-	return &GameEvent{
-		Type:       EventPlayerLeave,
-		Timestamp:  timestamp,
-		ServerID:   serverID,
-		Data:       data,
-		RawLogLine: line,
-	}
-}
-
-// parsePlayerRconLeave parses RCON leave messages
-func (p *EventParser) parsePlayerRconLeave(line string, timestamp time.Time, serverID string) *GameEvent {
-	matches := p.patterns.PlayerRconLeave.FindStringSubmatch(line)
-	if len(matches) < 3 {
-		return nil
-	}
-
-	playerName := strings.TrimSpace(matches[2])
-
-	data := map[string]interface{}{
-		"player_name": playerName,
 	}
 
 	return &GameEvent{
@@ -645,28 +609,6 @@ func (p *EventParser) parseRconCommand(line string, timestamp time.Time, serverI
 
 	return &GameEvent{
 		Type:       EventRconCommand,
-		Timestamp:  timestamp,
-		ServerID:   serverID,
-		Data:       data,
-		RawLogLine: line,
-	}
-}
-
-// parseFallDamage parses fall damage events
-func (p *EventParser) parseFallDamage(line string, timestamp time.Time, serverID string) *GameEvent {
-	matches := p.patterns.FallDamage.FindStringSubmatch(line)
-	if len(matches) < 3 {
-		return nil
-	}
-
-	damage, _ := strconv.ParseFloat(matches[2], 64)
-
-	data := map[string]interface{}{
-		"damage": damage,
-	}
-
-	return &GameEvent{
-		Type:       EventFallDamage,
 		Timestamp:  timestamp,
 		ServerID:   serverID,
 		Data:       data,
