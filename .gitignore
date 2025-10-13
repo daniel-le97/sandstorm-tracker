@@ -5,6 +5,10 @@
 *.dylib
 *.test
 sandstorm-tracker.db
+*.db-*
+
+
+sandstorm-tracker-offsets.json
 
 # Output folders
 bin/
