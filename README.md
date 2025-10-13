@@ -16,7 +16,8 @@ Sandstorm Tracker is a Go project that tracks kills, playtime, alive time, weapo
 - Go 1.20+
 - Insurgency: Sandstorm server(s) with log access
 - SQLite (default) or compatible database
-- (Optional) GNU Make or Taskfile for automation
+- [Task](https://taskfile.dev/#/installation) (required for development automation)
+- [sqlc](https://docs.sqlc.dev/en/stable/overview/install.html) (only if you are adjusting any .sql files in `/db`)
 
 ## Setup
 
@@ -53,25 +54,10 @@ Sandstorm Tracker is a Go project that tracks kills, playtime, alive time, weapo
 
 ## Configuration
 
-- Edit `sandstorm-tracker.json` to add your servers, log paths, and database options.
+- Edit `sandstorm-tracker.yaml` to add your servers, log paths, and database options.
 - Example config:
-  ```json
-  {
-    "servers": [
-      {
-        "name": "Main Server",
-        "logPath": "/opt/sandstorm/Insurgency/Saved/Logs",
-        "enabled": true
-      }
-    ],
-    "database": {
-      "path": "sandstorm-tracker.db",
-      "enableWAL": true,
-      "cacheSize": 2000
-    },
-    "logging": { "level": "info", "enableServerLogs": true }
-  }
-  ```
+  - [YAML file](./sandstorm-tracker.example.yml)
+  - [TOML file](./sandstorm-tracker.example.toml)
 
 ## Usage
 
@@ -83,6 +69,9 @@ Sandstorm Tracker is a Go project that tracks kills, playtime, alive time, weapo
 
 - Standard Go project layout.
 - Main logic in `main.go`, utilities in `internal/utils/`, database code in `db/`.
+- **Development requires [Task](https://taskfile.dev/#/installation) and [sqlc](https://docs.sqlc.dev/en/stable/overview/install.html).**
+  - Install Task: https://taskfile.dev/#/installation
+  - Install sqlc: https://docs.sqlc.dev/en/stable/overview/install.html
 - Tests can be run with:
   ```sh
   go test ./...
