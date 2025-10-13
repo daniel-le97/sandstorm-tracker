@@ -48,6 +48,7 @@ func NewFileWatcher(dbService *db.DatabaseService, serverConfigs []config.Server
 		// Use the log file stem (without .log) as the key, matching serverID in events
 		serverID, err := utils.GetServerIdFromPath(sc.LogPath)
 		if err != nil {
+			cancel()
 			return nil, fmt.Errorf("failed to get server ID from path %s: %w", sc.LogPath, err)
 		}
 		scMap[serverID] = sc
@@ -162,6 +163,7 @@ func (fw *FileWatcher) processFile(filePath string) {
 	scanner := bufio.NewScanner(file)
 	newOffset := offset
 	lineCount := 0
+	isRealtime := offset != 0
 	for scanner.Scan() {
 		line := scanner.Text()
 		newOffset += int64(len(line) + 1)
@@ -171,12 +173,13 @@ func (fw *FileWatcher) processFile(filePath string) {
 			continue
 		}
 		if event != nil {
+			// we do not want to handle a chat command unless the event is realtime
+			// so we only handle it if we are not at the start of the file
 			if event.Type == events.EventChatCommand {
+				if isRealtime {
+					fw.handleGameEvent(event, filePath, serverID)
+				}
 				lineCount++
-				log.Printf("Processed chat command from %s (Server ID: %s): %s",
-					filepath.Base(filePath),
-					serverID,
-					event.RawLogLine)
 				continue
 			}
 			fw.handleGameEvent(event, filePath, serverID)
@@ -294,8 +297,6 @@ func (fw *FileWatcher) handleKillEvent(ctx context.Context, event *events.GameEv
 				}
 				var killTypeInt int64
 				switch killType {
-				case "regular":
-					killTypeInt = 0
 				case "suicide":
 					killTypeInt = 1
 				case "team_kill":
