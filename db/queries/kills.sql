@@ -1,3 +1,10 @@
+-- name: GetDeathsByPlayer :many
+SELECT k.id, k.killer_id, k.victim_name, k.server_id, k.weapon_name, k.kill_type, k.match_id, k.created_at,
+       p.name as killer_name, p.external_id as killer_external_id
+FROM kills k
+LEFT JOIN players p ON k.killer_id = p.id
+WHERE (k.victim_name = ? ) AND k.server_id = ? AND k.kill_type != 2
+ORDER BY k.created_at DESC;
 -- Kill tracking queries
 
 -- name: InsertKill :exec
@@ -9,9 +16,8 @@ SELECT k.id, k.killer_id, k.victim_name, k.server_id, k.weapon_name, k.kill_type
        p.name as killer_name, p.external_id as killer_external_id
 FROM kills k
 LEFT JOIN players p ON k.killer_id = p.id
-WHERE (k.killer_id = ? ) AND k.server_id = ?
-ORDER BY k.created_at DESC
-LIMIT ?;
+WHERE (k.killer_id = ? ) AND k.server_id = ? AND k.kill_type = 0
+ORDER BY k.created_at DESC;
 
 -- name: GetKillsInTimeRange :many
 SELECT k.id, k.killer_id, k.victim_name, k.server_id, k.weapon_name, k.kill_type, k.match_id, k.created_at,

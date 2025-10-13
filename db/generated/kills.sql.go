@@ -10,6 +10,67 @@ import (
 	"time"
 )
 
+const getDeathsByPlayer = `-- name: GetDeathsByPlayer :many
+SELECT k.id, k.killer_id, k.victim_name, k.server_id, k.weapon_name, k.kill_type, k.match_id, k.created_at,
+       p.name as killer_name, p.external_id as killer_external_id
+FROM kills k
+LEFT JOIN players p ON k.killer_id = p.id
+WHERE (k.victim_name = ? ) AND k.server_id = ? AND k.kill_type != 2
+ORDER BY k.created_at DESC
+`
+
+type GetDeathsByPlayerParams struct {
+	VictimName *string
+	ServerID   int64
+}
+
+type GetDeathsByPlayerRow struct {
+	ID               int64
+	KillerID         *int64
+	VictimName       *string
+	ServerID         int64
+	WeaponName       *string
+	KillType         int64
+	MatchID          *int64
+	CreatedAt        *time.Time
+	KillerName       *string
+	KillerExternalID *string
+}
+
+func (q *Queries) GetDeathsByPlayer(ctx context.Context, arg GetDeathsByPlayerParams) ([]GetDeathsByPlayerRow, error) {
+	rows, err := q.db.QueryContext(ctx, getDeathsByPlayer, arg.VictimName, arg.ServerID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetDeathsByPlayerRow
+	for rows.Next() {
+		var i GetDeathsByPlayerRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.KillerID,
+			&i.VictimName,
+			&i.ServerID,
+			&i.WeaponName,
+			&i.KillType,
+			&i.MatchID,
+			&i.CreatedAt,
+			&i.KillerName,
+			&i.KillerExternalID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getKillStatsByPlayer = `-- name: GetKillStatsByPlayer :one
 SELECT 
     SUM(CASE WHEN kill_type = 0 THEN 1 ELSE 0 END) as total_kills,
@@ -42,15 +103,13 @@ SELECT k.id, k.killer_id, k.victim_name, k.server_id, k.weapon_name, k.kill_type
        p.name as killer_name, p.external_id as killer_external_id
 FROM kills k
 LEFT JOIN players p ON k.killer_id = p.id
-WHERE (k.killer_id = ? ) AND k.server_id = ?
+WHERE (k.killer_id = ? ) AND k.server_id = ? AND k.kill_type = 0
 ORDER BY k.created_at DESC
-LIMIT ?
 `
 
 type GetKillsByPlayerParams struct {
 	KillerID *int64
 	ServerID int64
-	Limit    int64
 }
 
 type GetKillsByPlayerRow struct {
@@ -67,7 +126,7 @@ type GetKillsByPlayerRow struct {
 }
 
 func (q *Queries) GetKillsByPlayer(ctx context.Context, arg GetKillsByPlayerParams) ([]GetKillsByPlayerRow, error) {
-	rows, err := q.db.QueryContext(ctx, getKillsByPlayer, arg.KillerID, arg.ServerID, arg.Limit)
+	rows, err := q.db.QueryContext(ctx, getKillsByPlayer, arg.KillerID, arg.ServerID)
 	if err != nil {
 		return nil, err
 	}

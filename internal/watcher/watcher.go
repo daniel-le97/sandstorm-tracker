@@ -5,9 +5,10 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"net"
 	"os"
 	"path/filepath"
+	"encoding/json"
+	// "strconv"
 	"strings"
 	"sync"
 
@@ -33,6 +34,7 @@ type FileWatcher struct {
 	rconClients   map[string]*rcon.RconClient    // serverID -> RCON client
 	rconMu        sync.Mutex                     // Protect rconClients
 	serverConfigs map[string]config.ServerConfig // serverID -> ServerConfig
+	offsetsPath string // Path to save offsets
 }
 
 func NewFileWatcher(dbService *db.DatabaseService, serverConfigs []config.ServerConfig) (*FileWatcher, error) {
@@ -53,18 +55,65 @@ func NewFileWatcher(dbService *db.DatabaseService, serverConfigs []config.Server
 		}
 		scMap[serverID] = sc
 	}
+
+	cwd , err := os.Getwd()
+	if err != nil {
+		cancel()
+		return nil, fmt.Errorf("failed to get current working directory: %w", err)
+	}
 	fw := &FileWatcher{
 		watcher:       watcher,
 		parser:        events.NewEventParser(),
 		db:            dbService,
 		ctx:           ctx,
 		cancel:        cancel,
+		offsetsPath:   filepath.Join(cwd, "sandstorm-tracker-offsets.json"),
 		fileOffsets:   make(map[string]int64),
 		rconClients:   make(map[string]*rcon.RconClient),
 		serverConfigs: scMap,
 	}
+	fw.loadOffsets()
 
 	return fw, nil
+}
+// Call this in your constructor after initializing fileOffsets
+func (fw *FileWatcher) loadOffsets() {
+	// check if file exists, or create it
+	if _, err := os.Stat(fw.offsetsPath); os.IsNotExist(err) {
+		file, err := os.Create(fw.offsetsPath)
+		if err != nil {
+			log.Printf("Failed to create offsets file: %v", err)
+			return
+		}
+		file.Close()
+	}
+    data, err := os.ReadFile(fw.offsetsPath)
+    if err != nil {
+        log.Printf("No previous file offsets found, starting fresh.")
+        return
+    }
+    var offsets map[string]int64
+    if err := json.Unmarshal(data, &offsets); err != nil {
+        log.Printf("Failed to unmarshal file offsets: %v", err)
+        return
+    }
+    fw.mu.Lock()
+    fw.fileOffsets = offsets
+    fw.mu.Unlock()
+    log.Printf("Loaded file offsets from %s", fw.offsetsPath)
+}
+
+func (fw *FileWatcher) saveOffsets() {
+    fw.mu.RLock()
+    data, err := json.MarshalIndent(fw.fileOffsets, "", "  ")
+    fw.mu.RUnlock()
+    if err != nil {
+        log.Printf("Failed to marshal file offsets: %v", err)
+        return
+    }
+    if err := os.WriteFile(fw.offsetsPath, data, 0644); err != nil {
+        log.Printf("Failed to write file offsets: %v", err)
+    }
 }
 
 func (fw *FileWatcher) AddPath(path string) error {
@@ -131,7 +180,9 @@ func (fw *FileWatcher) watchLoop() {
 
 func (fw *FileWatcher) handleFileEvent(event fsnotify.Event) {
 	if event.Has(fsnotify.Write) || event.Has(fsnotify.Create) {
-		if strings.HasSuffix(event.Name, ".log") || strings.Contains(event.Name, "log") {
+		// Only process main log files, ignore backups
+		name := filepath.Base(event.Name)
+		if strings.HasSuffix(name, ".log") && !strings.Contains(name, "-backup-") {
 			go fw.processFile(event.Name)
 		}
 	}
@@ -173,6 +224,7 @@ func (fw *FileWatcher) processFile(filePath string) {
 			continue
 		}
 		if event != nil {
+			// TODO - handle non-realtime chat commands
 			// we do not want to handle a chat command unless the event is realtime
 			// so we only handle it if we are not at the start of the file
 			if event.Type == events.EventChatCommand {
@@ -193,6 +245,7 @@ func (fw *FileWatcher) processFile(filePath string) {
 	fw.mu.Lock()
 	fw.fileOffsets[filePath] = newOffset
 	fw.mu.Unlock()
+	fw.saveOffsets()
 	if lineCount > 0 {
 		// log.Printf("Processed %d new events from %s", lineCount, filepath.Base(filePath))
 	}
@@ -266,182 +319,3 @@ func (fw *FileWatcher) ensureServer(ctx context.Context, serverID, logPath strin
 	})
 }
 
-func (fw *FileWatcher) handleKillEvent(ctx context.Context, event *events.GameEvent, serverDBID int64) error {
-	killersData, ok := event.Data["killers"].([]events.Killer)
-	if !ok {
-		return fmt.Errorf("invalid killers data in event")
-	}
-	victimName, _ := event.Data["victim_name"].(string)
-	victimSteamID, _ := event.Data["victim_steam_id"].(string)
-	weapon, _ := event.Data["weapon"].(string)
-	killType, _ := event.Data["kill_type"].(string)
-	isMultiKill, _ := event.Data["multi_kill"].(bool)
-	if victimSteamID != "INVALID" {
-		_, err := fw.db.GetQueries().UpsertPlayer(ctx, generated.UpsertPlayerParams{
-			ExternalID: victimSteamID,
-			Name:       victimName,
-		})
-		if err != nil {
-			return fmt.Errorf("failed to upsert victim: %w", err)
-		}
-	}
-	if victimSteamID == "INVALID" {
-		for _, killer := range killersData {
-			if killer.SteamID != "INVALID" {
-				killerID, err := fw.db.GetQueries().UpsertPlayer(ctx, generated.UpsertPlayerParams{
-					ExternalID: killer.SteamID,
-					Name:       killer.Name,
-				})
-				if err != nil {
-					return fmt.Errorf("failed to upsert killer %s: %w", killer.Name, err)
-				}
-				var killTypeInt int64
-				switch killType {
-				case "suicide":
-					killTypeInt = 1
-				case "team_kill":
-					killTypeInt = 2
-				default:
-					killTypeInt = 0
-				}
-				err = fw.db.GetQueries().InsertKill(ctx, generated.InsertKillParams{
-					KillerID:   &killerID,
-					VictimName: &victimName,
-					ServerID:   serverDBID,
-					WeaponName: &weapon,
-					KillType:   killTypeInt,
-					MatchID:    nil,
-					CreatedAt:  &event.Timestamp,
-				})
-				if err != nil {
-					return fmt.Errorf("failed to insert kill for killer %s: %w", killer.Name, err)
-				}
-				log.Printf("AI kill recorded: %s killed %s with %s%s",
-					killer.Name, victimName, weapon,
-					func() string {
-						if isMultiKill {
-							return " (multi-kill)"
-						} else {
-							return ""
-						}
-					}())
-			}
-		}
-	} else {
-		if len(killersData) == 1 {
-			killer := killersData[0]
-			if killer.SteamID != "INVALID" {
-				killerID, err := fw.db.GetQueries().UpsertPlayer(ctx, generated.UpsertPlayerParams{
-					ExternalID: killer.SteamID,
-					Name:       killer.Name,
-				})
-				if err != nil {
-					return fmt.Errorf("failed to upsert killer %s: %w", killer.Name, err)
-				}
-				var killTypeInt int64
-				switch killType {
-				case "regular":
-					killTypeInt = 0
-				case "suicide":
-					killTypeInt = 1
-				case "team_kill":
-					killTypeInt = 2
-				default:
-					killTypeInt = 0
-				}
-				err = fw.db.GetQueries().InsertKill(ctx, generated.InsertKillParams{
-					KillerID:   &killerID,
-					VictimName: &victimName,
-					ServerID:   serverDBID,
-					WeaponName: &weapon,
-					KillType:   killTypeInt,
-					MatchID:    nil,
-					CreatedAt:  &event.Timestamp,
-				})
-				if err != nil {
-					return fmt.Errorf("failed to insert kill: %w", err)
-				}
-				log.Printf("Player kill recorded: %s killed %s with %s", killer.Name, victimName, weapon)
-			}
-		}
-	}
-	return nil
-}
-
-func (fw *FileWatcher) handlePlayerJoin(ctx context.Context, event *events.GameEvent, serverDBID int64) error {
-	_ = serverDBID
-	playerName, _ := event.Data["player_name"].(string)
-	steamID, _ := event.Data["steam_id"].(string)
-	if steamID == "INVALID" {
-		return nil
-	}
-	if steamID == "" {
-		log.Printf("Skipping player join for %s - no Steam ID provided", playerName)
-		return nil
-	}
-	_, err := fw.db.GetQueries().UpsertPlayer(ctx, generated.UpsertPlayerParams{
-		ExternalID: steamID,
-		Name:       playerName,
-	})
-	return err
-}
-
-func (fw *FileWatcher) handlePlayerLeave(ctx context.Context, event *events.GameEvent, serverDBID int64) error {
-	playerName, _ := event.Data["player_name"].(string)
-	steamID, _ := event.Data["steam_id"].(string)
-	if steamID == "INVALID" {
-		return nil
-	}
-	if steamID == "" {
-		log.Printf("Player %s left - no Steam ID to track", playerName)
-		return nil
-	}
-	log.Printf("Player %s [%s] left the server", playerName, steamID)
-	return nil
-}
-
-func (fw *FileWatcher) handleChatCommand(ctx context.Context, event *events.GameEvent, serverDBID int64) error {
-	playerName, _ := event.Data["player_name"].(string)
-	command, _ := event.Data["command"].(string)
-	log.Printf("Chat command from %s: %s", playerName, command)
-
-	// Find server config by serverDBID or event.ServerID (adjust as needed)
-	serverID := event.ServerID
-	sc, ok := fw.serverConfigs[event.ServerID]
-	if !ok {
-		log.Printf("No server config found for serverID: %s", serverID)
-		return nil
-	}
-
-	fw.rconMu.Lock()
-	client, exists := fw.rconClients[serverID]
-	fw.rconMu.Unlock()
-	if !exists {
-		// Create new RCON client
-		conn, err := net.Dial("tcp", sc.RconAddress)
-		if err != nil {
-			log.Printf("Failed to dial RCON for %s: %v", sc.RconAddress, err)
-			return err
-		}
-		client = rcon.NewRconClient(conn, nil)
-		if !client.Auth(sc.RconPassword) {
-			log.Printf("RCON auth failed for server %s", serverID)
-			conn.Close()
-			return fmt.Errorf("RCON auth failed")
-		}
-		fw.rconMu.Lock()
-		fw.rconClients[serverID] = client
-		fw.rconMu.Unlock()
-	}
-
-	// Example: respond to !kdr command
-	if command == "!kdr" {
-		msg := fmt.Sprintf("%s: Your KDR is ...", playerName) // Replace with real logic
-		_, err := client.Send("say " + msg)
-		if err != nil {
-			log.Printf("Failed to send RCON say: %v", err)
-		}
-	}
-	// Add more command handling as needed
-	return nil
-}
