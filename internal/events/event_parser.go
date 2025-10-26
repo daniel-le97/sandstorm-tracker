@@ -248,7 +248,7 @@ func (p *EventParser) ParseLine(line, serverID string) (*GameEvent, error) {
 	// Check for server args event (LogInit: Command Line: ...)
 	if strings.Contains(line, "LogInit: Command Line:") {
 		if event := parseServerArgsEvent(line); event != nil {
-			data := map[string]interface{}{
+			data := map[string]any{
 				"args":        event.Args,
 				"raw_command": event.RawCommand,
 			}
@@ -355,7 +355,7 @@ func (p *EventParser) parseKillEvent(line string, timestamp time.Time, serverID 
 
 	// For multi-player kills, we'll create separate events for each killer
 	// but return the primary event with all killer data
-	data := map[string]interface{}{
+	data := map[string]any{
 		"killers":         killers,
 		"victim_name":     victimName,
 		"victim_steam_id": victimSteamID,
@@ -383,7 +383,7 @@ func (p *EventParser) parsePlayerJoin(line string, timestamp time.Time, serverID
 
 	steamID := strings.TrimSpace(matches[2])
 
-	data := map[string]interface{}{
+	data := map[string]any{
 		"steam_id": steamID,
 	}
 
@@ -405,7 +405,7 @@ func (p *EventParser) parsePlayerDisconnect(line string, timestamp time.Time, se
 
 	steamID := strings.TrimSpace(matches[2])
 
-	data := map[string]interface{}{
+	data := map[string]any{
 		"steam_id": steamID,
 	}
 
@@ -427,7 +427,7 @@ func (p *EventParser) parseRoundStart(line string, timestamp time.Time, serverID
 
 	roundNumber, _ := strconv.Atoi(matches[2])
 
-	data := map[string]interface{}{
+	data := map[string]any{
 		"round_number": roundNumber,
 	}
 
@@ -454,7 +454,7 @@ func (p *EventParser) parseRoundEnd(line string, timestamp time.Time, serverID s
 	winningTeam, _ := strconv.Atoi(matches[3])
 	winReason := strings.TrimSpace(matches[4])
 
-	data := map[string]interface{}{
+	data := map[string]any{
 		"round_number": roundNumber,
 		"winning_team": winningTeam,
 		"win_reason":   winReason,
@@ -479,7 +479,7 @@ func (p *EventParser) parseGameOver(line string, timestamp time.Time, serverID s
 		Type:       EventGameOver,
 		Timestamp:  timestamp,
 		ServerID:   serverID,
-		Data:       map[string]interface{}{},
+		Data:       map[string]any{},
 		RawLogLine: line,
 	}
 }
@@ -500,7 +500,7 @@ func (p *EventParser) parseMapLoad(line string, timestamp time.Time, serverID st
 	scenario = strings.ReplaceAll(scenario, "Scenario_", "")
 	scenario = strings.ReplaceAll(scenario, "_", " ")
 
-	data := map[string]interface{}{
+	data := map[string]any{
 		"map_name":    mapName,
 		"scenario":    scenario,
 		"max_players": maxPlayers,
@@ -525,7 +525,7 @@ func (p *EventParser) parseDifficultyChange(line string, timestamp time.Time, se
 
 	difficulty, _ := strconv.ParseFloat(matches[2], 64)
 
-	data := map[string]interface{}{
+	data := map[string]any{
 		"difficulty": difficulty,
 	}
 
@@ -548,7 +548,7 @@ func (p *EventParser) parseMapVote(line string, timestamp time.Time, serverID st
 		Type:       EventMapVote,
 		Timestamp:  timestamp,
 		ServerID:   serverID,
-		Data:       map[string]interface{}{},
+		Data:       map[string]any{},
 		RawLogLine: line,
 	}
 }
@@ -576,7 +576,7 @@ func (p *EventParser) parseChatCommand(line string, timestamp time.Time, serverI
 		arguments = parts[1:]
 	}
 
-	data := map[string]interface{}{
+	data := map[string]any{
 		"player_name": playerName,
 		"steam_id":    steamID,
 		"command":     command,
@@ -603,7 +603,7 @@ func (p *EventParser) parseRconCommand(line string, timestamp time.Time, serverI
 	client := strings.TrimSpace(matches[2])
 	command := strings.TrimSpace(matches[3])
 
-	data := map[string]interface{}{
+	data := map[string]any{
 		"client":  client,
 		"command": command,
 	}

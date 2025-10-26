@@ -147,7 +147,7 @@ func TestWriteEventToDB_KillEvent(t *testing.T) {
 	event := &GameEvent{
 		Type:      EventPlayerKill,
 		Timestamp: time.Now(),
-		Data: map[string]interface{}{
+		Data: map[string]any{
 			"killers":     []Killer{{Name: "TestKiller", SteamID: "123456"}},
 			"victim_name": "TestVictim",
 			"weapon":      "TestWeapon",

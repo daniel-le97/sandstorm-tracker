@@ -25,12 +25,12 @@ type Killer struct {
 
 // GameEvent represents a parsed game event
 type GameEvent struct {
-	ID         string                 `json:"id"`
-	Type       EventType              `json:"type"`
-	Timestamp  time.Time              `json:"timestamp"`
-	ServerID   string                 `json:"server_id"`
-	Data       map[string]interface{} `json:"data"`
-	RawLogLine string                 `json:"raw_log_line"`
+	ID         string         `json:"id"`
+	Type       EventType      `json:"type"`
+	Timestamp  time.Time      `json:"timestamp"`
+	ServerID   string         `json:"server_id"`
+	Data       map[string]any `json:"data"`
+	RawLogLine string         `json:"raw_log_line"`
 }
 
 // PlayerStats represents aggregated player statistics
