@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	"sandstorm-tracker/db"
+	"sandstorm-tracker/internal/db"
 )
 
 // CheckDatabase checks the contents of the database and prints statistics

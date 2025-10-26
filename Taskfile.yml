@@ -37,12 +37,3 @@ tasks:
     desc: Remove built binaries
     cmds:
       - go clean
-  tail:
-    desc: Tail the log file
-    cmds:
-      - go run ./cmd/tail.go -file="C:\Users\danie\code\sandstorm-admin-wrapper\sandstorm-server\Insurgency\Saved\Logs\60844f66-b93b-4fe1-afc4-a0a91b493865.log" -f
-  tailmulti:
-    desc: Tail multiple log files
-    cmds:
-      - go run ./cmd/tail.go  -file="C:\Users\danie\code\go\sandstorm-trackerv2\hc.log" -f -writer="C:\Users\danie\code\go\sandstorm-trackerv2\hc.log"
-    
