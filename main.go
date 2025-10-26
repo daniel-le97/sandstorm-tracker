@@ -6,7 +6,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"sandstorm-tracker/db"
+	"sandstorm-tracker/internal/db"
 	"sandstorm-tracker/internal/config"
 	"sandstorm-tracker/internal/utils"
 	"sandstorm-tracker/internal/watcher"

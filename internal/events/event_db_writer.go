@@ -2,7 +2,7 @@ package events
 
 import (
 	"context"
-	db "sandstorm-tracker/db/generated"
+	db "sandstorm-tracker/internal/db/generated"
 )
 
 // WriteEventToDB writes a parsed GameEvent to the database using the new /db schema and sqlc queries.

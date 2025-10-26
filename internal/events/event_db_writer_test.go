@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	db "sandstorm-tracker/db"
-	gen "sandstorm-tracker/db/generated"
+	db "sandstorm-tracker/internal/db"
+	gen "sandstorm-tracker/internal/db/generated"
 )
 
 func TestParseAndWriteLogToDB_HCLog(t *testing.T) {

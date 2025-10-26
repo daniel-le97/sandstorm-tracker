@@ -26,7 +26,7 @@ tasks:
       - go test ./...
   sqlc:
     desc: Generate Go code from SQL queries
-    dir: db
+    dir: internal/db
     cmds:
       - sqlc generate
   fmt:

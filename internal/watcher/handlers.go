@@ -8,7 +8,7 @@ import (
 
 	// "strconv"
 
-	generated "sandstorm-tracker/db/generated"
+	generated "sandstorm-tracker/internal/db/generated"
 
 	"sandstorm-tracker/internal/events"
 	"sandstorm-tracker/internal/rcon"

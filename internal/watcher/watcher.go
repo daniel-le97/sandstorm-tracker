@@ -11,8 +11,8 @@ import (
 	"strings"
 	"sync"
 
-	"sandstorm-tracker/db"
-	generated "sandstorm-tracker/db/generated"
+	"sandstorm-tracker/internal/db"
+	generated "sandstorm-tracker/internal/db/generated"
 	"sandstorm-tracker/internal/config"
 	"sandstorm-tracker/internal/events"
 	"sandstorm-tracker/internal/rcon"
