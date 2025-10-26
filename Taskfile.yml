@@ -26,8 +26,9 @@ tasks:
       - go test ./...
   sqlc:
     desc: Generate Go code from SQL queries
+    dir: db
     cmds:
-      - cd db; sqlc generate
+      - sqlc generate
   fmt:
     desc: Run gofmt on all Go files
     cmds:
@@ -44,3 +45,4 @@ tasks:
     desc: Tail multiple log files
     cmds:
       - go run ./cmd/tail.go  -file="C:\Users\danie\code\go\sandstorm-trackerv2\hc.log" -f -writer="C:\Users\danie\code\go\sandstorm-trackerv2\hc.log"
+    

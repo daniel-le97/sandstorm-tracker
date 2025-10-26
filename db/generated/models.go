@@ -8,31 +8,10 @@ import (
 	"time"
 )
 
-type Kill struct {
-	ID                 int64
-	ServerID           int64
-	MatchID            *int64
-	MatchParticipantID *int64
-	WeaponName         *string
-	CreatedAt          *time.Time
-	KillerID           *int64
-	VictimName         *string
-	KillType           int64
-	Multiplier         float64
-}
-
-type Map struct {
-	ID        int64
-	MapName   string
-	Scenario  *string
-	CreatedAt *time.Time
-	UpdatedAt *time.Time
-}
-
 type Match struct {
 	ID         int64
 	ServerID   int64
-	MapID      *int64
+	Map        *string
 	WinnerTeam *int64
 	StartTime  *time.Time
 	EndTime    *time.Time
@@ -41,14 +20,9 @@ type Match struct {
 	UpdatedAt  *time.Time
 }
 
-type MatchParticipant struct {
-	ID        int64
-	PlayerID  int64
-	MatchID   int64
-	JoinTime  *time.Time
-	LeaveTime *time.Time
-	Team      *int64
-	CreatedAt *time.Time
+type MatchPlayer struct {
+	MatchID  int64
+	PlayerID int64
 }
 
 type Player struct {
@@ -59,18 +33,20 @@ type Player struct {
 	UpdatedAt  *time.Time
 }
 
-type PlayerLife struct {
-	ID                 int64
-	MatchParticipantID int64
-	SpawnTime          time.Time
-	DeathTime          *time.Time
-	CauseOfDeath       *string
-}
-
-type SchemaVersion struct {
-	ID        int64
-	Version   int64
-	AppliedAt *time.Time
+type PlayerStat struct {
+	ID                string
+	PlayerID          int64
+	ServerID          int64
+	GamesPlayed       *int64
+	Wins              *int64
+	Losses            *int64
+	TotalScore        *int64
+	TotalPlayTime     *int64
+	LastLogin         *string
+	TotalKills        *int64
+	TotalDeaths       *int64
+	FriendlyFireKills *int64
+	HighestScore      *int64
 }
 
 type Server struct {
@@ -82,13 +58,9 @@ type Server struct {
 	UpdatedAt  *time.Time
 }
 
-type ServerLog struct {
-	ID             int64
-	ServerID       int64
-	OpenTime       time.Time
-	LogPath        string
-	LinesProcessed *int64
-	FileSizeBytes  *int64
-	CreatedAt      *time.Time
-	UpdatedAt      *time.Time
+type WeaponStat struct {
+	PlayerStatsID string
+	WeaponName    string
+	Kills         *int64
+	Assists       *int64
 }

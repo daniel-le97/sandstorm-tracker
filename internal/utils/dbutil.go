@@ -22,7 +22,7 @@ func CheckDatabase(dbPath string) {
 	ctx := context.Background()
 
 	// Get player count
-	players, err := queries.ListAllPlayers(ctx)
+	players, err := queries.ListPlayers(ctx)
 	if err != nil {
 		log.Printf("Error getting players: %v", err)
 		return
@@ -30,38 +30,30 @@ func CheckDatabase(dbPath string) {
 
 	fmt.Printf("Total players: %d\n\n", len(players))
 
-	// List all players
+	// List all players and their stats
 	fmt.Println("Players in database:")
 	for _, player := range players {
 		fmt.Printf("ID: %d, Name: %s, SteamID: %s\n", player.ID, player.Name, player.ExternalID)
-	}
-
-	// Get kill count
-	kills, err := queries.ListAllKills(ctx)
-	if err != nil {
-		log.Printf("Error getting kills: %v", err)
-		return
-	}
-
-	fmt.Printf("\nTotal kills: %d\n", len(kills))
-
-	// Count kills by player
-	killCounts := make(map[string]int)
-	for _, kill := range kills {
-		if kill.KillerID != nil {
-			for _, player := range players {
-				if player.ID == *kill.KillerID {
-					killCounts[player.Name]++
-					break
+		stats, err := queries.GetPlayerStatsByPlayerID(ctx, player.ID)
+		if err == nil {
+			fmt.Printf("  Stats: Kills=%v, Deaths=%v, FF Kills=%v, Highest Score=%v\n",
+				derefInt64(stats.TotalKills), derefInt64(stats.TotalDeaths), derefInt64(stats.FriendlyFireKills), derefInt64(stats.HighestScore))
+			weaponStats, err := queries.GetWeaponStatsForPlayerStats(ctx, stats.ID)
+			if err == nil && len(weaponStats) > 0 {
+				fmt.Println("  Weapon stats:")
+				for _, ws := range weaponStats {
+					fmt.Printf("    Weapon: %s, Kills: %v, Assists: %v\n", ws.WeaponName, derefInt64(ws.Kills), derefInt64(ws.Assists))
 				}
 			}
 		}
 	}
+}
 
-	fmt.Println("\nKill counts by player:")
-	for playerName, count := range killCounts {
-		fmt.Printf("%s: %d kills\n", playerName, count)
+func derefInt64(ptr *int64) int64 {
+	if ptr == nil {
+		return 0
 	}
+	return *ptr
 }
 
 func GetServerIdFromPath(path string) (string, error) {

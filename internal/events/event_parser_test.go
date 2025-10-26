@@ -236,8 +236,15 @@ func TestPlayerJoinRegex(t *testing.T) {
 					t.Fatalf("Expected regex to match but got no matches for: %s", tt.logLine)
 				}
 
-				if matches[2] != tt.player {
-					t.Errorf("Expected player %q, got %q", tt.player, matches[2])
+				// The regex now has two possible capture groups for player name/steamID
+				got := ""
+				if len(matches) > 2 && matches[2] != "" {
+					got = matches[2]
+				} else if len(matches) > 3 && matches[3] != "" {
+					got = matches[3]
+				}
+				if got != tt.player {
+					t.Errorf("Expected player %q, got %q", tt.player, got)
 				}
 			} else {
 				if len(matches) > 0 {
@@ -281,7 +288,6 @@ func TestPlayerDisconnectRegex(t *testing.T) {
 		})
 	}
 }
-
 
 func TestRoundEndRegex(t *testing.T) {
 	patterns := NewLogPatterns()

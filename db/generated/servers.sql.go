@@ -9,28 +9,98 @@ import (
 	"context"
 )
 
-const getAllServers = `-- name: GetAllServers :many
-SELECT id, external_id, name
-FROM servers 
-ORDER BY name
+const createServer = `-- name: CreateServer :one
+INSERT INTO servers (external_id, name, path)
+VALUES (?, ?, ?)
+RETURNING id, external_id, name, path, created_at, updated_at
 `
 
-type GetAllServersRow struct {
-	ID         int64
+type CreateServerParams struct {
 	ExternalID string
 	Name       string
+	Path       *string
 }
 
-func (q *Queries) GetAllServers(ctx context.Context) ([]GetAllServersRow, error) {
-	rows, err := q.db.QueryContext(ctx, getAllServers)
+func (q *Queries) CreateServer(ctx context.Context, arg CreateServerParams) (Server, error) {
+	row := q.db.QueryRowContext(ctx, createServer, arg.ExternalID, arg.Name, arg.Path)
+	var i Server
+	err := row.Scan(
+		&i.ID,
+		&i.ExternalID,
+		&i.Name,
+		&i.Path,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const deleteServer = `-- name: DeleteServer :exec
+DELETE FROM servers WHERE id = ?
+`
+
+func (q *Queries) DeleteServer(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, deleteServer, id)
+	return err
+}
+
+const getServerByExternalID = `-- name: GetServerByExternalID :one
+SELECT id, external_id, name, path, created_at, updated_at FROM servers WHERE external_id = ?
+`
+
+func (q *Queries) GetServerByExternalID(ctx context.Context, externalID string) (Server, error) {
+	row := q.db.QueryRowContext(ctx, getServerByExternalID, externalID)
+	var i Server
+	err := row.Scan(
+		&i.ID,
+		&i.ExternalID,
+		&i.Name,
+		&i.Path,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getServerByID = `-- name: GetServerByID :one
+SELECT id, external_id, name, path, created_at, updated_at FROM servers WHERE id = ?
+`
+
+func (q *Queries) GetServerByID(ctx context.Context, id int64) (Server, error) {
+	row := q.db.QueryRowContext(ctx, getServerByID, id)
+	var i Server
+	err := row.Scan(
+		&i.ID,
+		&i.ExternalID,
+		&i.Name,
+		&i.Path,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const listServers = `-- name: ListServers :many
+SELECT id, external_id, name, path, created_at, updated_at FROM servers ORDER BY id
+`
+
+func (q *Queries) ListServers(ctx context.Context) ([]Server, error) {
+	rows, err := q.db.QueryContext(ctx, listServers)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []GetAllServersRow
+	var items []Server
 	for rows.Next() {
-		var i GetAllServersRow
-		if err := rows.Scan(&i.ID, &i.ExternalID, &i.Name); err != nil {
+		var i Server
+		if err := rows.Scan(
+			&i.ID,
+			&i.ExternalID,
+			&i.Name,
+			&i.Path,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -44,39 +114,21 @@ func (q *Queries) GetAllServers(ctx context.Context) ([]GetAllServersRow, error)
 	return items, nil
 }
 
-const getServerByConfigId = `-- name: GetServerByConfigId :one
-SELECT id, external_id, name, path
-FROM servers 
-WHERE external_id = ?
+const updateServer = `-- name: UpdateServer :one
+UPDATE servers
+SET name = ?, path = ?, updated_at = CURRENT_TIMESTAMP
+WHERE id = ?
+RETURNING id, external_id, name, path, created_at, updated_at
 `
 
-type GetServerByConfigIdRow struct {
-	ID         int64
-	ExternalID string
-	Name       string
-	Path       *string
+type UpdateServerParams struct {
+	Name string
+	Path *string
+	ID   int64
 }
 
-func (q *Queries) GetServerByConfigId(ctx context.Context, externalID string) (GetServerByConfigIdRow, error) {
-	row := q.db.QueryRowContext(ctx, getServerByConfigId, externalID)
-	var i GetServerByConfigIdRow
-	err := row.Scan(
-		&i.ID,
-		&i.ExternalID,
-		&i.Name,
-		&i.Path,
-	)
-	return i, err
-}
-
-const getServerByUuid = `-- name: GetServerByUuid :one
-SELECT id, external_id, name, path, created_at, updated_at
-FROM servers 
-WHERE external_id = ?
-`
-
-func (q *Queries) GetServerByUuid(ctx context.Context, externalID string) (Server, error) {
-	row := q.db.QueryRowContext(ctx, getServerByUuid, externalID)
+func (q *Queries) UpdateServer(ctx context.Context, arg UpdateServerParams) (Server, error) {
+	row := q.db.QueryRowContext(ctx, updateServer, arg.Name, arg.Path, arg.ID)
 	var i Server
 	err := row.Scan(
 		&i.ID,
@@ -87,40 +139,4 @@ func (q *Queries) GetServerByUuid(ctx context.Context, externalID string) (Serve
 		&i.UpdatedAt,
 	)
 	return i, err
-}
-
-const updateServerEnabled = `-- name: UpdateServerEnabled :exec
-UPDATE servers 
-SET updated_at = CURRENT_TIMESTAMP 
-WHERE id = ?
-`
-
-func (q *Queries) UpdateServerEnabled(ctx context.Context, id int64) error {
-	_, err := q.db.ExecContext(ctx, updateServerEnabled, id)
-	return err
-}
-
-const upsertServer = `-- name: UpsertServer :one
-
-INSERT INTO servers (external_id, name, path)
-VALUES (?, ?, ?)
-ON CONFLICT(external_id) DO UPDATE SET
-    name = excluded.name,
-    path = excluded.path,
-    updated_at = CURRENT_TIMESTAMP
-RETURNING id
-`
-
-type UpsertServerParams struct {
-	ExternalID string
-	Name       string
-	Path       *string
-}
-
-// Server management queries
-func (q *Queries) UpsertServer(ctx context.Context, arg UpsertServerParams) (int64, error) {
-	row := q.db.QueryRowContext(ctx, upsertServer, arg.ExternalID, arg.Name, arg.Path)
-	var id int64
-	err := row.Scan(&id)
-	return id, err
 }

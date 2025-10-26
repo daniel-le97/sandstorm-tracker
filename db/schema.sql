@@ -1,5 +1,3 @@
--- Simplified schema for Sandstorm tracker (based on schema.md)
-
 -- Servers
 CREATE TABLE IF NOT EXISTS servers (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -8,19 +6,6 @@ CREATE TABLE IF NOT EXISTS servers (
     path TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-
--- Server logs
-CREATE TABLE IF NOT EXISTS server_logs (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    server_id INTEGER NOT NULL,
-    open_time DATETIME NOT NULL,
-    log_path TEXT NOT NULL,
-    lines_processed INTEGER DEFAULT 0,
-    file_size_bytes INTEGER DEFAULT 0,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (server_id) REFERENCES servers(id) ON DELETE CASCADE
 );
 
 -- Players (global list)
@@ -32,76 +17,52 @@ CREATE TABLE IF NOT EXISTS players (
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
--- Matches
+-- Player stats table
+CREATE TABLE IF NOT EXISTS player_stats (
+    id TEXT PRIMARY KEY,
+    player_id INTEGER NOT NULL UNIQUE,
+    server_id INTEGER NOT NULL,
+    games_played INTEGER DEFAULT 0,
+    wins INTEGER DEFAULT 0,
+    losses INTEGER DEFAULT 0,
+    total_score INTEGER DEFAULT 0,
+    total_play_time INTEGER DEFAULT 0, -- store as seconds
+    last_login TEXT, -- ISO8601 string
+    total_kills INTEGER DEFAULT 0,
+    total_deaths INTEGER DEFAULT 0,
+    friendly_fire_kills INTEGER DEFAULT 0,
+    highest_score INTEGER DEFAULT 0,
+    FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE,
+    FOREIGN KEY (server_id) REFERENCES servers(id) ON DELETE CASCADE
+);
+
+-- Weapon stats (one row per player per weapon)
+CREATE TABLE IF NOT EXISTS weapon_stats (
+    player_stats_id TEXT NOT NULL,
+    weapon_name TEXT NOT NULL,
+    kills INTEGER DEFAULT 0,
+    assists INTEGER DEFAULT 0,
+    PRIMARY KEY (player_stats_id, weapon_name),
+    FOREIGN KEY (player_stats_id) REFERENCES player_stats(id) ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS matches (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     server_id INTEGER NOT NULL,
-    map_id INTEGER,
+    map TEXT,
     winner_team INTEGER,
     start_time DATETIME,
     end_time DATETIME,
     mode TEXT NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (server_id) REFERENCES servers(id) ON DELETE CASCADE,
-    FOREIGN KEY (map_id) REFERENCES maps(id) ON DELETE SET NULL
+    FOREIGN KEY (server_id) REFERENCES servers(id) ON DELETE CASCADE
 );
 
--- Match participants
-CREATE TABLE IF NOT EXISTS match_participant (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    player_id INTEGER NOT NULL,
+CREATE TABLE IF NOT EXISTS match_players (
     match_id INTEGER NOT NULL,
-    join_time DATETIME,
-    leave_time DATETIME,
-    team INTEGER,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE,
-    FOREIGN KEY (match_id) REFERENCES matches(id) ON DELETE CASCADE
+    player_id INTEGER NOT NULL,
+    PRIMARY KEY (match_id, player_id),
+    FOREIGN KEY (match_id) REFERENCES matches(id) ON DELETE CASCADE,
+    FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE
 );
-
--- Kills
-CREATE TABLE IF NOT EXISTS kills (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    server_id INTEGER NOT NULL,
-    match_id INTEGER,
-    match_participant_id INTEGER,
-    weapon_name TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    killer_id INTEGER,
-    victim_name TEXT,
-    kill_type INTEGER NOT NULL CHECK (kill_type IN (0, 1, 2)), -- 0=regular, 1=suicide, 2=teamkill
-    multiplier REAL NOT NULL DEFAULT 1.0,
-    FOREIGN KEY (server_id) REFERENCES servers(id) ON DELETE CASCADE,
-    FOREIGN KEY (killer_id) REFERENCES players(id) ON DELETE SET NULL,
-    FOREIGN KEY (match_id) REFERENCES matches(id) ON DELETE SET NULL,
-    FOREIGN KEY (match_participant_id) REFERENCES match_participant(id) ON DELETE SET NULL
-);
-
--- Player lives
-CREATE TABLE IF NOT EXISTS player_lives (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    match_participant_id INTEGER NOT NULL,
-    spawn_time DATETIME NOT NULL,
-    death_time DATETIME, -- NULL if still alive or disconnected
-    cause_of_death TEXT, -- optional: e.g., killed, disconnected, etc.
-    FOREIGN KEY (match_participant_id) REFERENCES match_participant(id) ON DELETE CASCADE
-);
-
--- Optional maps table (some queries may reference it)
-CREATE TABLE IF NOT EXISTS maps (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    map_name TEXT NOT NULL,
-    scenario TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-
--- Schema version
-CREATE TABLE IF NOT EXISTS schema_version (
-    id INTEGER PRIMARY KEY,
-    version INTEGER NOT NULL,
-    applied_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-
-INSERT OR IGNORE INTO schema_version (id, version) VALUES (1, 1);

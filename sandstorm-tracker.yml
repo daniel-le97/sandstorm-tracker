@@ -5,6 +5,10 @@ servers:
     rconPassword: "hzZR1BfpM0eDYnLcfaqwM7Rq43QYwpLGdVuky0QZZxfuQFst"
     enabled: true
 
+
+adminConfig:
+  path: 'C:\\Users\\danie\\code\\sandstorm-admin-wrapper\\admin-interface\\config'
+
 database:
   path: "sandstorm-tracker.db"
   enableWAL: true

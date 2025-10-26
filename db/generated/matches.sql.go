@@ -10,48 +10,82 @@ import (
 	"time"
 )
 
-const abortMatch = `-- name: AbortMatch :exec
-UPDATE matches
-SET end_time = ?, updated_at = CURRENT_TIMESTAMP
-WHERE id = ? AND server_id = ?
+const createMatch = `-- name: CreateMatch :one
+INSERT INTO matches (
+    server_id, map, winner_team, start_time, end_time, mode
+) VALUES (?, ?, ?, ?, ?, ?)
+RETURNING id, server_id, map, winner_team, start_time, end_time, mode, created_at, updated_at
 `
 
-type AbortMatchParams struct {
-	EndTime  *time.Time
-	ID       int64
-	ServerID int64
+type CreateMatchParams struct {
+	ServerID   int64
+	Map        *string
+	WinnerTeam *int64
+	StartTime  *time.Time
+	EndTime    *time.Time
+	Mode       string
 }
 
-func (q *Queries) AbortMatch(ctx context.Context, arg AbortMatchParams) error {
-	_, err := q.db.ExecContext(ctx, abortMatch, arg.EndTime, arg.ID, arg.ServerID)
+func (q *Queries) CreateMatch(ctx context.Context, arg CreateMatchParams) (Match, error) {
+	row := q.db.QueryRowContext(ctx, createMatch,
+		arg.ServerID,
+		arg.Map,
+		arg.WinnerTeam,
+		arg.StartTime,
+		arg.EndTime,
+		arg.Mode,
+	)
+	var i Match
+	err := row.Scan(
+		&i.ID,
+		&i.ServerID,
+		&i.Map,
+		&i.WinnerTeam,
+		&i.StartTime,
+		&i.EndTime,
+		&i.Mode,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const deleteMatch = `-- name: DeleteMatch :exec
+DELETE FROM matches WHERE id = ?
+`
+
+func (q *Queries) DeleteMatch(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, deleteMatch, id)
 	return err
 }
 
-const endMatch = `-- name: EndMatch :exec
-UPDATE matches
-SET end_time = ?, updated_at = CURRENT_TIMESTAMP
-WHERE id = ? AND server_id = ?
+const getMatchByID = `-- name: GetMatchByID :one
+SELECT id, server_id, map, winner_team, start_time, end_time, mode, created_at, updated_at FROM matches WHERE id = ?
 `
 
-type EndMatchParams struct {
-	EndTime  *time.Time
-	ID       int64
-	ServerID int64
+func (q *Queries) GetMatchByID(ctx context.Context, id int64) (Match, error) {
+	row := q.db.QueryRowContext(ctx, getMatchByID, id)
+	var i Match
+	err := row.Scan(
+		&i.ID,
+		&i.ServerID,
+		&i.Map,
+		&i.WinnerTeam,
+		&i.StartTime,
+		&i.EndTime,
+		&i.Mode,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
 }
 
-func (q *Queries) EndMatch(ctx context.Context, arg EndMatchParams) error {
-	_, err := q.db.ExecContext(ctx, endMatch, arg.EndTime, arg.ID, arg.ServerID)
-	return err
-}
-
-const getActiveMatches = `-- name: GetActiveMatches :many
-SELECT id, server_id, map_id, winner_team, start_time, end_time, mode, created_at, updated_at FROM matches
-WHERE server_id = ? AND end_time IS NULL
-ORDER BY start_time DESC
+const listMatches = `-- name: ListMatches :many
+SELECT id, server_id, map, winner_team, start_time, end_time, mode, created_at, updated_at FROM matches ORDER BY id DESC
 `
 
-func (q *Queries) GetActiveMatches(ctx context.Context, serverID int64) ([]Match, error) {
-	rows, err := q.db.QueryContext(ctx, getActiveMatches, serverID)
+func (q *Queries) ListMatches(ctx context.Context) ([]Match, error) {
+	rows, err := q.db.QueryContext(ctx, listMatches)
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +96,7 @@ func (q *Queries) GetActiveMatches(ctx context.Context, serverID int64) ([]Match
 		if err := rows.Scan(
 			&i.ID,
 			&i.ServerID,
-			&i.MapID,
+			&i.Map,
 			&i.WinnerTeam,
 			&i.StartTime,
 			&i.EndTime,
@@ -81,150 +115,4 @@ func (q *Queries) GetActiveMatches(ctx context.Context, serverID int64) ([]Match
 		return nil, err
 	}
 	return items, nil
-}
-
-const getMatchDetails = `-- name: GetMatchDetails :one
-SELECT
-    m.id, m.server_id, m.map_id, m.winner_team, m.start_time, m.end_time, m.mode, m.created_at, m.updated_at,
-    (SELECT COUNT(*) FROM match_participant WHERE match_id = m.id) as participant_count
-FROM matches m
-WHERE m.id = ? AND m.server_id = ?
-`
-
-type GetMatchDetailsParams struct {
-	ID       int64
-	ServerID int64
-}
-
-type GetMatchDetailsRow struct {
-	ID               int64
-	ServerID         int64
-	MapID            *int64
-	WinnerTeam       *int64
-	StartTime        *time.Time
-	EndTime          *time.Time
-	Mode             string
-	CreatedAt        *time.Time
-	UpdatedAt        *time.Time
-	ParticipantCount int64
-}
-
-func (q *Queries) GetMatchDetails(ctx context.Context, arg GetMatchDetailsParams) (GetMatchDetailsRow, error) {
-	row := q.db.QueryRowContext(ctx, getMatchDetails, arg.ID, arg.ServerID)
-	var i GetMatchDetailsRow
-	err := row.Scan(
-		&i.ID,
-		&i.ServerID,
-		&i.MapID,
-		&i.WinnerTeam,
-		&i.StartTime,
-		&i.EndTime,
-		&i.Mode,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-		&i.ParticipantCount,
-	)
-	return i, err
-}
-
-const getMatchHistory = `-- name: GetMatchHistory :many
-SELECT
-    m.id, m.server_id, m.map_id, m.winner_team, m.start_time, m.end_time, m.mode, m.created_at, m.updated_at,
-    COUNT(DISTINCT mp.player_id) as participant_count
-FROM matches m
-LEFT JOIN match_participant mp ON m.id = mp.match_id
-WHERE m.server_id = ?
-GROUP BY m.id
-ORDER BY m.start_time DESC
-LIMIT ?
-`
-
-type GetMatchHistoryParams struct {
-	ServerID int64
-	Limit    int64
-}
-
-type GetMatchHistoryRow struct {
-	ID               int64
-	ServerID         int64
-	MapID            *int64
-	WinnerTeam       *int64
-	StartTime        *time.Time
-	EndTime          *time.Time
-	Mode             string
-	CreatedAt        *time.Time
-	UpdatedAt        *time.Time
-	ParticipantCount int64
-}
-
-func (q *Queries) GetMatchHistory(ctx context.Context, arg GetMatchHistoryParams) ([]GetMatchHistoryRow, error) {
-	rows, err := q.db.QueryContext(ctx, getMatchHistory, arg.ServerID, arg.Limit)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []GetMatchHistoryRow
-	for rows.Next() {
-		var i GetMatchHistoryRow
-		if err := rows.Scan(
-			&i.ID,
-			&i.ServerID,
-			&i.MapID,
-			&i.WinnerTeam,
-			&i.StartTime,
-			&i.EndTime,
-			&i.Mode,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-			&i.ParticipantCount,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const startMatch = `-- name: StartMatch :one
-
-INSERT INTO matches (server_id, map_id, start_time)
-VALUES (?, ?, ?)
-RETURNING id
-`
-
-type StartMatchParams struct {
-	ServerID  int64
-	MapID     *int64
-	StartTime *time.Time
-}
-
-// Match management queries
-func (q *Queries) StartMatch(ctx context.Context, arg StartMatchParams) (int64, error) {
-	row := q.db.QueryRowContext(ctx, startMatch, arg.ServerID, arg.MapID, arg.StartTime)
-	var id int64
-	err := row.Scan(&id)
-	return id, err
-}
-
-const updateMatchPlayerCount = `-- name: UpdateMatchPlayerCount :exec
-UPDATE matches
-SET updated_at = CURRENT_TIMESTAMP
-WHERE id = ? AND server_id = ?
-`
-
-type UpdateMatchPlayerCountParams struct {
-	ID       int64
-	ServerID int64
-}
-
-// simplified schema does not track counts here; placeholder
-func (q *Queries) UpdateMatchPlayerCount(ctx context.Context, arg UpdateMatchPlayerCountParams) error {
-	_, err := q.db.ExecContext(ctx, updateMatchPlayerCount, arg.ID, arg.ServerID)
-	return err
 }

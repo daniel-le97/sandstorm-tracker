@@ -184,9 +184,10 @@ func NewLogPatterns() *LogPatterns {
 		// PlayerKill: timestamp, killerSection, victimName, victimSteam, victimTeam, weapon
 		PlayerKill: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\s*\d+\]LogGameplayEvents: Display: (.+?) killed ([^\[]+)\[([^,\]]*), team (\d+)\] with (.+)$`),
 
-		// Player connection events - handles both LogNet and LogGameMode formats
-		// Updated to match LogEOSAntiCheat: Display: ServerRegisterClient: Client: (STEAMID) Result: (EOS_Success)
-		PlayerJoin: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\d+\]LogEOSAntiCheat: Display: ServerRegisterClient: Client: \((\d+)\) Result: \(EOS_Success\)`),
+		// Player connection events - handles both LogNet and LogEOSAntiCheat formats
+		// 1. [timestamp][id]LogNet: Join succeeded: PlayerName
+		// 2. [timestamp][id]LogEOSAntiCheat: Display: ServerRegisterClient: Client: (STEAMID) Result: (EOS_Success)
+		PlayerJoin: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\d+\](?:LogNet: Join succeeded: ([^\r\n]+)|LogEOSAntiCheat: Display: ServerRegisterClient: Client: \((\d+)\) Result: \(EOS_Success\))`),
 
 		PlayerDisconnect: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\d+\]LogEOSAntiCheat: Display: ServerUnregisterClient: UserId \((\d+)\), Result: \(EOS_Success\)`),
 

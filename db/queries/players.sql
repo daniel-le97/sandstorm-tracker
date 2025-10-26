@@ -1,36 +1,22 @@
--- Player management queries
+-- name: CreatePlayer :one
+INSERT INTO players (external_id, name)
+VALUES (?, ?)
+RETURNING *;
 
--- name: UpsertPlayer :one
-INSERT INTO players (external_id, name, created_at)
-VALUES (?, ?, CURRENT_TIMESTAMP)
-ON CONFLICT(external_id) DO UPDATE SET
-    name = excluded.name,
-    updated_at = CURRENT_TIMESTAMP
-RETURNING id;
+-- name: GetPlayerByID :one
+SELECT * FROM players WHERE id = ?;
 
--- name: GetPlayer :one
-SELECT * FROM players 
-WHERE external_id = ?;
+-- name: GetPlayerByExternalID :one
+SELECT * FROM players WHERE external_id = ?;
 
--- name: GetPlayerByName :one
-SELECT * FROM players 
-WHERE name = ?;
+-- name: ListPlayers :many
+SELECT * FROM players ORDER BY id;
 
--- name: GetPlayerGlobal :many
-SELECT * FROM players 
-WHERE external_id = ?;
-
--- name: UpdatePlayerSteamId :exec
-UPDATE players 
-SET external_id = ?, updated_at = CURRENT_TIMESTAMP 
-WHERE id = ?;
-
--- name: UpdatePlayerPlaytime :exec
--- note: simplified schema does not track total_playtime_minutes by default
--- keep a no-op placeholder to preserve call sites
+-- name: UpdatePlayer :one
 UPDATE players
-SET updated_at = CURRENT_TIMESTAMP
-WHERE id = ?;
+SET name = ?, updated_at = CURRENT_TIMESTAMP
+WHERE id = ?
+RETURNING *;
 
--- name: ListAllPlayers :many
-SELECT * FROM players ORDER BY name;
+-- name: DeletePlayer :exec
+DELETE FROM players WHERE id = ?;

@@ -9,157 +9,127 @@ import (
 	"context"
 )
 
-const getPlayer = `-- name: GetPlayer :one
-SELECT id, external_id, name, created_at, updated_at FROM players 
-WHERE external_id = ?
+const createPlayer = `-- name: CreatePlayer :one
+INSERT INTO players (external_id, name)
+VALUES (?, ?)
+RETURNING id, external_id, name, created_at, updated_at
 `
 
-func (q *Queries) GetPlayer(ctx context.Context, externalID string) (Player, error) {
-	row := q.db.QueryRowContext(ctx, getPlayer, externalID)
-	var i Player
-	err := row.Scan(
-		&i.ID,
-		&i.ExternalID,
-		&i.Name,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-	)
-	return i, err
-}
-
-const getPlayerByName = `-- name: GetPlayerByName :one
-SELECT id, external_id, name, created_at, updated_at FROM players 
-WHERE name = ?
-`
-
-func (q *Queries) GetPlayerByName(ctx context.Context, name string) (Player, error) {
-	row := q.db.QueryRowContext(ctx, getPlayerByName, name)
-	var i Player
-	err := row.Scan(
-		&i.ID,
-		&i.ExternalID,
-		&i.Name,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-	)
-	return i, err
-}
-
-const getPlayerGlobal = `-- name: GetPlayerGlobal :many
-SELECT id, external_id, name, created_at, updated_at FROM players 
-WHERE external_id = ?
-`
-
-func (q *Queries) GetPlayerGlobal(ctx context.Context, externalID string) ([]Player, error) {
-	rows, err := q.db.QueryContext(ctx, getPlayerGlobal, externalID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []Player
-	for rows.Next() {
-		var i Player
-		if err := rows.Scan(
-			&i.ID,
-			&i.ExternalID,
-			&i.Name,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const listAllPlayers = `-- name: ListAllPlayers :many
-SELECT id, external_id, name, created_at, updated_at FROM players ORDER BY name
-`
-
-func (q *Queries) ListAllPlayers(ctx context.Context) ([]Player, error) {
-	rows, err := q.db.QueryContext(ctx, listAllPlayers)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []Player
-	for rows.Next() {
-		var i Player
-		if err := rows.Scan(
-			&i.ID,
-			&i.ExternalID,
-			&i.Name,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const updatePlayerPlaytime = `-- name: UpdatePlayerPlaytime :exec
-UPDATE players
-SET updated_at = CURRENT_TIMESTAMP
-WHERE id = ?
-`
-
-// note: simplified schema does not track total_playtime_minutes by default
-// keep a no-op placeholder to preserve call sites
-func (q *Queries) UpdatePlayerPlaytime(ctx context.Context, id int64) error {
-	_, err := q.db.ExecContext(ctx, updatePlayerPlaytime, id)
-	return err
-}
-
-const updatePlayerSteamId = `-- name: UpdatePlayerSteamId :exec
-UPDATE players 
-SET external_id = ?, updated_at = CURRENT_TIMESTAMP 
-WHERE id = ?
-`
-
-type UpdatePlayerSteamIdParams struct {
-	ExternalID string
-	ID         int64
-}
-
-func (q *Queries) UpdatePlayerSteamId(ctx context.Context, arg UpdatePlayerSteamIdParams) error {
-	_, err := q.db.ExecContext(ctx, updatePlayerSteamId, arg.ExternalID, arg.ID)
-	return err
-}
-
-const upsertPlayer = `-- name: UpsertPlayer :one
-
-INSERT INTO players (external_id, name, created_at)
-VALUES (?, ?, CURRENT_TIMESTAMP)
-ON CONFLICT(external_id) DO UPDATE SET
-    name = excluded.name,
-    updated_at = CURRENT_TIMESTAMP
-RETURNING id
-`
-
-type UpsertPlayerParams struct {
+type CreatePlayerParams struct {
 	ExternalID string
 	Name       string
 }
 
-// Player management queries
-func (q *Queries) UpsertPlayer(ctx context.Context, arg UpsertPlayerParams) (int64, error) {
-	row := q.db.QueryRowContext(ctx, upsertPlayer, arg.ExternalID, arg.Name)
-	var id int64
-	err := row.Scan(&id)
-	return id, err
+func (q *Queries) CreatePlayer(ctx context.Context, arg CreatePlayerParams) (Player, error) {
+	row := q.db.QueryRowContext(ctx, createPlayer, arg.ExternalID, arg.Name)
+	var i Player
+	err := row.Scan(
+		&i.ID,
+		&i.ExternalID,
+		&i.Name,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const deletePlayer = `-- name: DeletePlayer :exec
+DELETE FROM players WHERE id = ?
+`
+
+func (q *Queries) DeletePlayer(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, deletePlayer, id)
+	return err
+}
+
+const getPlayerByExternalID = `-- name: GetPlayerByExternalID :one
+SELECT id, external_id, name, created_at, updated_at FROM players WHERE external_id = ?
+`
+
+func (q *Queries) GetPlayerByExternalID(ctx context.Context, externalID string) (Player, error) {
+	row := q.db.QueryRowContext(ctx, getPlayerByExternalID, externalID)
+	var i Player
+	err := row.Scan(
+		&i.ID,
+		&i.ExternalID,
+		&i.Name,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getPlayerByID = `-- name: GetPlayerByID :one
+SELECT id, external_id, name, created_at, updated_at FROM players WHERE id = ?
+`
+
+func (q *Queries) GetPlayerByID(ctx context.Context, id int64) (Player, error) {
+	row := q.db.QueryRowContext(ctx, getPlayerByID, id)
+	var i Player
+	err := row.Scan(
+		&i.ID,
+		&i.ExternalID,
+		&i.Name,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const listPlayers = `-- name: ListPlayers :many
+SELECT id, external_id, name, created_at, updated_at FROM players ORDER BY id
+`
+
+func (q *Queries) ListPlayers(ctx context.Context) ([]Player, error) {
+	rows, err := q.db.QueryContext(ctx, listPlayers)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Player
+	for rows.Next() {
+		var i Player
+		if err := rows.Scan(
+			&i.ID,
+			&i.ExternalID,
+			&i.Name,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const updatePlayer = `-- name: UpdatePlayer :one
+UPDATE players
+SET name = ?, updated_at = CURRENT_TIMESTAMP
+WHERE id = ?
+RETURNING id, external_id, name, created_at, updated_at
+`
+
+type UpdatePlayerParams struct {
+	Name string
+	ID   int64
+}
+
+func (q *Queries) UpdatePlayer(ctx context.Context, arg UpdatePlayerParams) (Player, error) {
+	row := q.db.QueryRowContext(ctx, updatePlayer, arg.Name, arg.ID)
+	var i Player
+	err := row.Scan(
+		&i.ID,
+		&i.ExternalID,
+		&i.Name,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
 }

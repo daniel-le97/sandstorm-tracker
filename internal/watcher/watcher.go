@@ -3,12 +3,11 @@ package watcher
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
 	"path/filepath"
-	"encoding/json"
-	// "strconv"
 	"strings"
 	"sync"
 
@@ -34,7 +33,7 @@ type FileWatcher struct {
 	rconClients   map[string]*rcon.RconClient    // serverID -> RCON client
 	rconMu        sync.Mutex                     // Protect rconClients
 	serverConfigs map[string]config.ServerConfig // serverID -> ServerConfig
-	offsetsPath string // Path to save offsets
+	offsetsPath   string // Path to save offsets
 }
 
 func NewFileWatcher(dbService *db.DatabaseService, serverConfigs []config.ServerConfig) (*FileWatcher, error) {
@@ -56,11 +55,12 @@ func NewFileWatcher(dbService *db.DatabaseService, serverConfigs []config.Server
 		scMap[serverID] = sc
 	}
 
-	cwd , err := os.Getwd()
+	cwd, err := os.Getwd()
 	if err != nil {
 		cancel()
 		return nil, fmt.Errorf("failed to get current working directory: %w", err)
 	}
+
 	fw := &FileWatcher{
 		watcher:       watcher,
 		parser:        events.NewEventParser(),
@@ -312,10 +312,21 @@ func extractServerIDFromPath(filePath string) string {
 }
 
 func (fw *FileWatcher) ensureServer(ctx context.Context, serverID, logPath string) (int64, error) {
-	return fw.db.GetQueries().UpsertServer(ctx, generated.UpsertServerParams{
+	queries := fw.db.GetQueries()
+	// Try to get by external_id first
+	server, err := queries.GetServerByExternalID(ctx, serverID)
+	if err == nil {
+		return server.ID, nil
+	}
+	// If not found, create
+	created, err := queries.CreateServer(ctx, generated.CreateServerParams{
 		ExternalID: serverID,
 		Name:       serverID,
 		Path:       &logPath,
 	})
+	if err != nil {
+		return 0, err
+	}
+	return created.ID, nil
 }
 

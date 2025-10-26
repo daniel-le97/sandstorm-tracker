@@ -50,6 +50,7 @@ coverage.out
 # Misc
 .env
 
+badger*
 
 sandstorm-tracker.json
 
