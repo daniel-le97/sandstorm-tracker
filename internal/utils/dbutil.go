@@ -36,8 +36,13 @@ func CheckDatabase(dbPath string) {
 		fmt.Printf("ID: %d, Name: %s, SteamID: %s\n", player.ID, player.Name, player.ExternalID)
 		stats, err := queries.GetPlayerStatsByPlayerID(ctx, player.ID)
 		if err == nil {
+			// Get total kills using SQL aggregation
+			totalKills, killsErr := queries.GetTotalKillsForPlayerStats(ctx, stats.ID)
+			if killsErr != nil {
+				totalKills = 0
+			}
 			fmt.Printf("  Stats: Kills=%v, Deaths=%v, FF Kills=%v, Highest Score=%v\n",
-				derefInt64(stats.TotalKills), derefInt64(stats.TotalDeaths), derefInt64(stats.FriendlyFireKills), derefInt64(stats.HighestScore))
+				totalKills, derefInt64(stats.TotalDeaths), derefInt64(stats.FriendlyFireKills), derefInt64(stats.HighestScore))
 			weaponStats, err := queries.GetWeaponStatsForPlayerStats(ctx, stats.ID)
 			if err == nil && len(weaponStats) > 0 {
 				fmt.Println("  Weapon stats:")

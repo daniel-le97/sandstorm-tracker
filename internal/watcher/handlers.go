@@ -50,7 +50,6 @@ func (fw *FileWatcher) handleKillEvent(ctx context.Context, event *events.GameEv
 				TotalScore:        nil,
 				TotalPlayTime:     nil,
 				LastLogin:         nil,
-				TotalKills:        nil,
 				TotalDeaths:       nil,
 				FriendlyFireKills: nil,
 				HighestScore:      nil,
@@ -150,11 +149,9 @@ func (fw *FileWatcher) handleChatCommand(ctx context.Context, event *events.Game
 
 	// !kdr command
 	if command == "!kdr" {
-		kills := int64(0)
+		// Calculate total kills from weapon stats
+		kills := fw.calculateTotalKills(ctx, stats.ID)
 		deaths := int64(0)
-		if stats.TotalKills != nil {
-			kills = *stats.TotalKills
-		}
 		if stats.TotalDeaths != nil {
 			deaths = *stats.TotalDeaths
 		}
@@ -224,12 +221,10 @@ func (fw *FileWatcher) handleChatCommand(ctx context.Context, event *events.Game
 
 	// !stats command
 	if command == "!stats" {
-		kills := int64(0)
+		// Calculate total kills from weapon stats
+		kills := fw.calculateTotalKills(ctx, stats.ID)
 		deaths := int64(0)
 		ff := int64(0)
-		if stats.TotalKills != nil {
-			kills = *stats.TotalKills
-		}
 		if stats.TotalDeaths != nil {
 			deaths = *stats.TotalDeaths
 		}
@@ -283,4 +278,13 @@ func (fw *FileWatcher) handleChatCommand(ctx context.Context, event *events.Game
 
 	// Add more command handling as needed
 	return nil
+}
+
+// calculateTotalKills gets total kills from weapon_stats using SQL aggregation
+func (fw *FileWatcher) calculateTotalKills(ctx context.Context, playerStatsID string) int64 {
+	totalKills, err := fw.db.GetQueries().GetTotalKillsForPlayerStats(ctx, playerStatsID)
+	if err != nil {
+		return 0
+	}
+	return totalKills
 }

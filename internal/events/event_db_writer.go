@@ -2,6 +2,7 @@ package events
 
 import (
 	"context"
+	"fmt"
 	db "sandstorm-tracker/internal/db/generated"
 )
 
@@ -16,6 +17,10 @@ func WriteEventToDB(ctx context.Context, queries *db.Queries, event *GameEvent, 
 		killers, _ := event.Data["killers"].([]Killer)
 		weapon, _ := event.Data["weapon"].(string)
 		for _, killer := range killers {
+			// Skip bots (they have SteamID "INVALID")
+			if killer.SteamID == "INVALID" {
+				continue
+			}
 			// Upsert player (by SteamID if available, else by name)
 			externalID := killer.SteamID
 			if externalID == "" {
@@ -55,7 +60,6 @@ func WriteEventToDB(ctx context.Context, queries *db.Queries, event *GameEvent, 
 					TotalScore:        nil,
 					TotalPlayTime:     nil,
 					LastLogin:         nil,
-					TotalKills:        nil,
 					TotalDeaths:       nil,
 					FriendlyFireKills: nil,
 					HighestScore:      nil,
@@ -64,33 +68,28 @@ func WriteEventToDB(ctx context.Context, queries *db.Queries, event *GameEvent, 
 					return err
 				}
 			}
+			// Note: No need to update player_stats for kills since we track kills in weapon_stats
 
 			// Calculate multiplier before inserting (if needed for other logic)
 			// multiplier := calculateKillMultiplier(event, &killer)
 
 			// Insert or update weapon stats
+			weaponName := weapon
+			if weaponName == "" {
+				weaponName = "Unknown" // Handle cases where weapon is not specified
+			}
 			one := int64(1)
 			zero := int64(0)
-			_, _ = queries.UpsertWeaponStats(ctx, db.UpsertWeaponStatsParams{
+			_, err = queries.UpsertWeaponStats(ctx, db.UpsertWeaponStatsParams{
 				PlayerStatsID: playerStats.ID,
-				WeaponName:    weapon,
+				WeaponName:    weaponName,
 				Kills:         &one,
 				Assists:       &zero,
 			})
+			if err != nil {
+				return fmt.Errorf("failed to upsert weapon stats: %w", err)
+			}
 		}
 	}
 	return nil
-}
-
-// calculateKillMultiplier determines the multiplier for a kill event and killer.
-// Extend this logic as needed for your game rules (e.g., fire support, headshot, etc.)
-func calculateKillMultiplier(event *GameEvent, killer *Killer) float64 {
-	multiplier := 1.0
-	if event.Data["fire_support"] == true {
-		multiplier = 2.0
-	}
-	if event.Data["headshot"] == true {
-		multiplier *= 1.5
-	}
-	return multiplier
 }

@@ -43,7 +43,6 @@ type PlayerStat struct {
 	TotalScore        *int64
 	TotalPlayTime     *int64
 	LastLogin         *string
-	TotalKills        *int64
 	TotalDeaths       *int64
 	FriendlyFireKills *int64
 	HighestScore      *int64

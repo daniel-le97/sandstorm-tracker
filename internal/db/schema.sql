@@ -28,7 +28,6 @@ CREATE TABLE IF NOT EXISTS player_stats (
     total_score INTEGER DEFAULT 0,
     total_play_time INTEGER DEFAULT 0, -- store as seconds
     last_login TEXT, -- ISO8601 string
-    total_kills INTEGER DEFAULT 0,
     total_deaths INTEGER DEFAULT 0,
     friendly_fire_kills INTEGER DEFAULT 0,
     highest_score INTEGER DEFAULT 0,

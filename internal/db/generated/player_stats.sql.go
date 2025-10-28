@@ -12,9 +12,9 @@ import (
 const createPlayerStats = `-- name: CreatePlayerStats :one
 INSERT INTO player_stats (
     id, player_id, server_id, games_played, wins, losses, total_score,
-    total_play_time, last_login, total_kills, total_deaths, friendly_fire_kills, highest_score
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-RETURNING id, player_id, server_id, games_played, wins, losses, total_score, total_play_time, last_login, total_kills, total_deaths, friendly_fire_kills, highest_score
+    total_play_time, last_login, total_deaths, friendly_fire_kills, highest_score
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+RETURNING id, player_id, server_id, games_played, wins, losses, total_score, total_play_time, last_login, total_deaths, friendly_fire_kills, highest_score
 `
 
 type CreatePlayerStatsParams struct {
@@ -27,7 +27,6 @@ type CreatePlayerStatsParams struct {
 	TotalScore        *int64
 	TotalPlayTime     *int64
 	LastLogin         *string
-	TotalKills        *int64
 	TotalDeaths       *int64
 	FriendlyFireKills *int64
 	HighestScore      *int64
@@ -44,7 +43,6 @@ func (q *Queries) CreatePlayerStats(ctx context.Context, arg CreatePlayerStatsPa
 		arg.TotalScore,
 		arg.TotalPlayTime,
 		arg.LastLogin,
-		arg.TotalKills,
 		arg.TotalDeaths,
 		arg.FriendlyFireKills,
 		arg.HighestScore,
@@ -60,7 +58,6 @@ func (q *Queries) CreatePlayerStats(ctx context.Context, arg CreatePlayerStatsPa
 		&i.TotalScore,
 		&i.TotalPlayTime,
 		&i.LastLogin,
-		&i.TotalKills,
 		&i.TotalDeaths,
 		&i.FriendlyFireKills,
 		&i.HighestScore,
@@ -78,7 +75,7 @@ func (q *Queries) DeletePlayerStats(ctx context.Context, id string) error {
 }
 
 const getPlayerStatsByID = `-- name: GetPlayerStatsByID :one
-SELECT id, player_id, server_id, games_played, wins, losses, total_score, total_play_time, last_login, total_kills, total_deaths, friendly_fire_kills, highest_score FROM player_stats WHERE id = ?
+SELECT id, player_id, server_id, games_played, wins, losses, total_score, total_play_time, last_login, total_deaths, friendly_fire_kills, highest_score FROM player_stats WHERE id = ?
 `
 
 func (q *Queries) GetPlayerStatsByID(ctx context.Context, id string) (PlayerStat, error) {
@@ -94,7 +91,6 @@ func (q *Queries) GetPlayerStatsByID(ctx context.Context, id string) (PlayerStat
 		&i.TotalScore,
 		&i.TotalPlayTime,
 		&i.LastLogin,
-		&i.TotalKills,
 		&i.TotalDeaths,
 		&i.FriendlyFireKills,
 		&i.HighestScore,
@@ -103,7 +99,7 @@ func (q *Queries) GetPlayerStatsByID(ctx context.Context, id string) (PlayerStat
 }
 
 const getPlayerStatsByPlayerID = `-- name: GetPlayerStatsByPlayerID :one
-SELECT id, player_id, server_id, games_played, wins, losses, total_score, total_play_time, last_login, total_kills, total_deaths, friendly_fire_kills, highest_score FROM player_stats WHERE player_id = ?
+SELECT id, player_id, server_id, games_played, wins, losses, total_score, total_play_time, last_login, total_deaths, friendly_fire_kills, highest_score FROM player_stats WHERE player_id = ?
 `
 
 func (q *Queries) GetPlayerStatsByPlayerID(ctx context.Context, playerID int64) (PlayerStat, error) {
@@ -119,7 +115,6 @@ func (q *Queries) GetPlayerStatsByPlayerID(ctx context.Context, playerID int64) 
 		&i.TotalScore,
 		&i.TotalPlayTime,
 		&i.LastLogin,
-		&i.TotalKills,
 		&i.TotalDeaths,
 		&i.FriendlyFireKills,
 		&i.HighestScore,
@@ -128,7 +123,7 @@ func (q *Queries) GetPlayerStatsByPlayerID(ctx context.Context, playerID int64) 
 }
 
 const getTopPlayersByScorePerMin = `-- name: GetTopPlayersByScorePerMin :many
-SELECT ps.id, ps.player_id, ps.server_id, ps.games_played, ps.wins, ps.losses, ps.total_score, ps.total_play_time, ps.last_login, ps.total_kills, ps.total_deaths, ps.friendly_fire_kills, ps.highest_score, p.name as player_name
+SELECT ps.id, ps.player_id, ps.server_id, ps.games_played, ps.wins, ps.losses, ps.total_score, ps.total_play_time, ps.last_login, ps.total_deaths, ps.friendly_fire_kills, ps.highest_score, p.name as player_name
 FROM player_stats ps
 JOIN players p ON ps.player_id = p.id
 WHERE ps.server_id = ?
@@ -147,7 +142,6 @@ type GetTopPlayersByScorePerMinRow struct {
 	TotalScore        *int64
 	TotalPlayTime     *int64
 	LastLogin         *string
-	TotalKills        *int64
 	TotalDeaths       *int64
 	FriendlyFireKills *int64
 	HighestScore      *int64
@@ -173,7 +167,6 @@ func (q *Queries) GetTopPlayersByScorePerMin(ctx context.Context, serverID int64
 			&i.TotalScore,
 			&i.TotalPlayTime,
 			&i.LastLogin,
-			&i.TotalKills,
 			&i.TotalDeaths,
 			&i.FriendlyFireKills,
 			&i.HighestScore,
@@ -195,9 +188,9 @@ func (q *Queries) GetTopPlayersByScorePerMin(ctx context.Context, serverID int64
 const updatePlayerStats = `-- name: UpdatePlayerStats :one
 UPDATE player_stats
 SET games_played = ?, wins = ?, losses = ?, total_score = ?, total_play_time = ?,
-    last_login = ?, total_kills = ?, total_deaths = ?, friendly_fire_kills = ?, highest_score = ?
+    last_login = ?, total_deaths = ?, friendly_fire_kills = ?, highest_score = ?
 WHERE id = ?
-RETURNING id, player_id, server_id, games_played, wins, losses, total_score, total_play_time, last_login, total_kills, total_deaths, friendly_fire_kills, highest_score
+RETURNING id, player_id, server_id, games_played, wins, losses, total_score, total_play_time, last_login, total_deaths, friendly_fire_kills, highest_score
 `
 
 type UpdatePlayerStatsParams struct {
@@ -207,7 +200,6 @@ type UpdatePlayerStatsParams struct {
 	TotalScore        *int64
 	TotalPlayTime     *int64
 	LastLogin         *string
-	TotalKills        *int64
 	TotalDeaths       *int64
 	FriendlyFireKills *int64
 	HighestScore      *int64
@@ -222,7 +214,6 @@ func (q *Queries) UpdatePlayerStats(ctx context.Context, arg UpdatePlayerStatsPa
 		arg.TotalScore,
 		arg.TotalPlayTime,
 		arg.LastLogin,
-		arg.TotalKills,
 		arg.TotalDeaths,
 		arg.FriendlyFireKills,
 		arg.HighestScore,
@@ -239,7 +230,6 @@ func (q *Queries) UpdatePlayerStats(ctx context.Context, arg UpdatePlayerStatsPa
 		&i.TotalScore,
 		&i.TotalPlayTime,
 		&i.LastLogin,
-		&i.TotalKills,
 		&i.TotalDeaths,
 		&i.FriendlyFireKills,
 		&i.HighestScore,
