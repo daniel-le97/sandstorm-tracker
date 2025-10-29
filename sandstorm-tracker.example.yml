@@ -2,12 +2,14 @@ servers:
   - name: "Main Server"
     logPath: "/opt/sandstorm/Insurgency/Saved/Logs"
     rconAddress: "127.0.0.1:27015"
-    rconPassword: "MyRconPassword"
+    rconPassword: "your_rcon_password_here"
+    queryAddress: "127.0.0.1:27016" # Optional: A2S query port (game port + 1)
     enabled: true
   - name: "Secondary Server"
     logPath: "/opt/sandstorm2/Insurgency/Saved/Logs"
     rconAddress: "127.0.0.1:27014"
-    rconPassword: "MyRconPassword2"
+    rconPassword: "your_rcon_password_here"
+    queryAddress: "127.0.0.1:27015" # Optional: A2S query port
     enabled: false
 
 database:
@@ -18,3 +20,14 @@ database:
 logging:
   level: "info"
   enableServerLogs: true
+# This is an EXAMPLE configuration file for sandstorm-tracker
+#
+# Usage:
+#   sandstorm-tracker --config path/to/your-config.yml
+#   sandstorm-tracker -c myconfig.yml
+#
+# Security Notes:
+# - Keep your actual config file secure (file permissions 600 on Linux/Mac)
+# - Use strong, unique RCON passwords for each server
+# - Store config files outside of web-accessible directories
+# - Consider using environment variables for sensitive values: ${RCON_PASSWORD}

@@ -33,10 +33,20 @@ vendor/
 # Go build cache
 *.out
 
-# Config files (if you want to keep them local only)
+# Config files (user-provided at runtime, not in version control)
 config.json
 config.yaml
+config.yml
 sandstorm-tracker.json
+sandstorm-tracker.yml
+sandstorm-tracker.toml
+secrets.yml
+secrets.yaml
+secrets.toml
+.env
+.env.local
+
+# Only the .example files should be in git
 
 sandstorm-tracker.exe
 
