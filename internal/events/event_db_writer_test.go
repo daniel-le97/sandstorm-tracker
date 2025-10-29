@@ -19,7 +19,7 @@ func TestParseAndWriteLogToDB_HCLog(t *testing.T) {
 	}
 	defer func() {
 		dbService.Close()
-		// _ = os.Remove(dbPath)
+		_ = os.Remove(dbPath)
 	}()
 	queries := dbService.GetQueries()
 	ctx := context.Background()

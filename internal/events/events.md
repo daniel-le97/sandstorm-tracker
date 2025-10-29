@@ -1,5 +1,5 @@
 // game over
-[2025.10.04-15.23.38:790][979]LogGameplayEvents: Display: Game over
+[2025.10.21-20.11.43:567][930]LogSession: Display: AINSGameSession::HandleMatchHasEnded
 
 // player joined
 [2025.10.12-17.21.07:564][668]LogEOSAntiCheat: Display: ServerRegisterClient: Client: (76561198995742987) Result: (EOS_Success)

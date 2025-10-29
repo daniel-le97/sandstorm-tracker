@@ -349,8 +349,13 @@ func TestGameOverRegex(t *testing.T) {
 	}{
 		{
 			name:        "Game over",
-			logLine:     "[2025.10.04-15.23.38:790][979]LogGameplayEvents: Display: Game over",
+			logLine:     "[2025.10.21-20.11.43:567][930]LogSession: Display: AINSGameSession::HandleMatchHasEnded",
 			shouldMatch: true,
+		},
+		{
+			name:        "Old game over format should not match",
+			logLine:     "[2025.10.04-15.23.38:790][979]LogGameplayEvents: Display: Game over",
+			shouldMatch: false,
 		},
 	}
 
@@ -361,6 +366,10 @@ func TestGameOverRegex(t *testing.T) {
 			if tt.shouldMatch {
 				if len(matches) == 0 {
 					t.Fatalf("Expected regex to match but got no matches for: %s", tt.logLine)
+				}
+			} else {
+				if len(matches) != 0 {
+					t.Fatalf("Expected regex NOT to match but got matches for: %s", tt.logLine)
 				}
 			}
 		})
@@ -556,5 +565,28 @@ func TestChatCommandRegex(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestGameOverEventParsing(t *testing.T) {
+	parser := NewEventParser()
+
+	logLine := "[2025.10.21-20.11.43:567][930]LogSession: Display: AINSGameSession::HandleMatchHasEnded"
+	event, err := parser.ParseLine(logLine, "test-server")
+
+	if err != nil {
+		t.Fatalf("Expected no error, got: %v", err)
+	}
+
+	if event == nil {
+		t.Fatalf("Expected event to be parsed, got nil")
+	}
+
+	if event.Type != EventGameOver {
+		t.Errorf("Expected EventGameOver, got %v", event.Type)
+	}
+
+	if event.RawLogLine != logLine {
+		t.Errorf("Expected RawLogLine to be '%s', got '%s'", logLine, event.RawLogLine)
 	}
 }
