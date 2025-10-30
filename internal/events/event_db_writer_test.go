@@ -139,29 +139,29 @@ func TestParseAndWriteLogToDB_HCLog(t *testing.T) {
 		}
 	})
 	t.Run("Rabbit kills from DB", func(t *testing.T) {
-		if rabbitKills != 53 {
-			t.Errorf("Expected 53 Rabbit kills from DB, got %d", rabbitKills)
+		if rabbitKills != 51 {
+			t.Errorf("Expected 51 Rabbit kills from DB, got %d", rabbitKills)
 		}
 	})
 	t.Run("0rigin kills from DB", func(t *testing.T) {
-		if originKills != 36 {
-			t.Errorf("Expected 36 0rigin kills from DB, got %d", originKills)
+		if originKills != 25 {
+			t.Errorf("Expected 25 0rigin kills from DB, got %d", originKills)
 		}
 	})
 	t.Run("ArmoredBear kills from DB", func(t *testing.T) {
-		if armoredBearKills != 19 {
-			t.Errorf("Expected 19 ArmoredBear kills from DB, got %d", armoredBearKills)
+		if armoredBearKills != 18 {
+			t.Errorf("Expected 18 ArmoredBear kills from DB, got %d", armoredBearKills)
 		}
 	})
 	t.Run("Blue kills from DB", func(t *testing.T) {
-		if blueKills != 9 {
-			t.Errorf("Expected 9 Blue kills from DB, got %d", blueKills)
+		if blueKills != 8 {
+			t.Errorf("Expected 8 Blue kills from DB, got %d", blueKills)
 		}
 	})
 	t.Run("total parsed kills from DB", func(t *testing.T) {
 		total := rabbitKills + originKills + armoredBearKills + blueKills
-		if total != 117 {
-			t.Errorf("Expected 117 total parsed kills from DB, got %d", total)
+		if total != 102 {
+			t.Errorf("Expected 102 total parsed kills from DB (excluding assists), got %d", total)
 		}
 	})
 	t.Run("all expected players found", func(t *testing.T) {
@@ -395,6 +395,125 @@ func TestGetTotalKillsForPlayerStats(t *testing.T) {
 
 	if totalKills2 != 0 {
 		t.Errorf("Expected 0 total kills for player with no weapon stats, got %d", totalKills2)
+	}
+}
+
+func TestWriteEventToDB_MultiKillAssists(t *testing.T) {
+	dbPath := "test_multi_kill_assists.sqlite"
+	_ = os.Remove(dbPath)
+	dbService, err := db.NewDatabaseService(dbPath)
+	if err != nil {
+		t.Fatalf("failed to create db: %v", err)
+	}
+	defer func() {
+		dbService.Close()
+		_ = os.Remove(dbPath)
+	}()
+	queries := dbService.GetQueries()
+	ctx := context.Background()
+
+	// Insert a server
+	serverPath := "test/path"
+	server, err := queries.CreateServer(ctx, gen.CreateServerParams{
+		ExternalID: "test-server-multi",
+		Name:       "Test Server Multi",
+		Path:       &serverPath,
+	})
+	if err != nil {
+		t.Fatalf("failed to insert server: %v", err)
+	}
+	serverID := server.ID
+
+	// Simulate a multi-kill event where 3 players kill 1 bot
+	// Player1 should get the kill, Player2 and Player3 should get assists
+	multiKillEvent := &GameEvent{
+		Type:      EventPlayerKill,
+		Timestamp: time.Now(),
+		Data: map[string]any{
+			"killers": []Killer{
+				{Name: "Player1", SteamID: "111111", Team: 0},
+				{Name: "Player2", SteamID: "222222", Team: 0},
+				{Name: "Player3", SteamID: "333333", Team: 0},
+			},
+			"victim_name":     "Rifleman",
+			"victim_steam_id": "INVALID", // Bot victim
+			"weapon":          "AK-74",
+		},
+	}
+	var matchID *int64 = nil
+
+	err = WriteEventToDB(ctx, queries, multiKillEvent, serverID, matchID)
+	if err != nil {
+		t.Fatalf("WriteEventToDB failed: %v", err)
+	}
+
+	// Verify Player1 has 1 kill, 0 assists
+	player1, err := queries.GetPlayerByExternalID(ctx, "111111")
+	if err != nil {
+		t.Fatalf("GetPlayerByExternalID failed for Player1: %v", err)
+	}
+	stats1, err := queries.GetPlayerStatsByPlayerID(ctx, player1.ID)
+	if err != nil {
+		t.Fatalf("GetPlayerStatsByPlayerID failed for Player1: %v", err)
+	}
+	weaponStats1, err := queries.GetWeaponStatsForPlayerStats(ctx, stats1.ID)
+	if err != nil {
+		t.Fatalf("GetWeaponStatsForPlayerStats failed for Player1: %v", err)
+	}
+	if len(weaponStats1) != 1 {
+		t.Fatalf("Expected 1 weapon stat for Player1, got %d", len(weaponStats1))
+	}
+	if *weaponStats1[0].Kills != 1 {
+		t.Errorf("Expected Player1 to have 1 kill, got %d", *weaponStats1[0].Kills)
+	}
+	if *weaponStats1[0].Assists != 0 {
+		t.Errorf("Expected Player1 to have 0 assists, got %d", *weaponStats1[0].Assists)
+	}
+
+	// Verify Player2 has 0 kills, 1 assist
+	player2, err := queries.GetPlayerByExternalID(ctx, "222222")
+	if err != nil {
+		t.Fatalf("GetPlayerByExternalID failed for Player2: %v", err)
+	}
+	stats2, err := queries.GetPlayerStatsByPlayerID(ctx, player2.ID)
+	if err != nil {
+		t.Fatalf("GetPlayerStatsByPlayerID failed for Player2: %v", err)
+	}
+	weaponStats2, err := queries.GetWeaponStatsForPlayerStats(ctx, stats2.ID)
+	if err != nil {
+		t.Fatalf("GetWeaponStatsForPlayerStats failed for Player2: %v", err)
+	}
+	if len(weaponStats2) != 1 {
+		t.Fatalf("Expected 1 weapon stat for Player2, got %d", len(weaponStats2))
+	}
+	if *weaponStats2[0].Kills != 0 {
+		t.Errorf("Expected Player2 to have 0 kills, got %d", *weaponStats2[0].Kills)
+	}
+	if *weaponStats2[0].Assists != 1 {
+		t.Errorf("Expected Player2 to have 1 assist, got %d", *weaponStats2[0].Assists)
+	}
+
+	// Verify Player3 has 0 kills, 1 assist
+	player3, err := queries.GetPlayerByExternalID(ctx, "333333")
+	if err != nil {
+		t.Fatalf("GetPlayerByExternalID failed for Player3: %v", err)
+	}
+	stats3, err := queries.GetPlayerStatsByPlayerID(ctx, player3.ID)
+	if err != nil {
+		t.Fatalf("GetPlayerStatsByPlayerID failed for Player3: %v", err)
+	}
+	weaponStats3, err := queries.GetWeaponStatsForPlayerStats(ctx, stats3.ID)
+	if err != nil {
+		t.Fatalf("GetWeaponStatsForPlayerStats failed for Player3: %v", err)
+	}
+	if len(weaponStats3) != 1 {
+		t.Fatalf("Expected 1 weapon stat for Player3, got %d", len(weaponStats3))
+	}
+	if *weaponStats3[0].Kills != 0 {
+		t.Errorf("Expected Player3 to have 0 kills, got %d", *weaponStats3[0].Kills)
+	}
+	if *weaponStats3[0].Assists != 1 {
+		t.Errorf("Expected Player3 to have 1 assist, got %d", *weaponStats3[0].Assists)
 	}
 }
 

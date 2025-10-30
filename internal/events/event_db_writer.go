@@ -16,7 +16,9 @@ func WriteEventToDB(ctx context.Context, queries *db.Queries, event *GameEvent, 
 	case EventPlayerKill, EventFriendlyFire, EventSuicide:
 		killers, _ := event.Data["killers"].([]Killer)
 		weapon, _ := event.Data["weapon"].(string)
-		for _, killer := range killers {
+
+		// First killer gets the kill, the rest get assists
+		for i, killer := range killers {
 			// Skip bots (they have SteamID "INVALID")
 			if killer.SteamID == "INVALID" {
 				continue
@@ -78,13 +80,27 @@ func WriteEventToDB(ctx context.Context, queries *db.Queries, event *GameEvent, 
 			if weaponName == "" {
 				weaponName = "Unknown" // Handle cases where weapon is not specified
 			}
+
+			// First player gets the kill, rest get assists
+			var kills, assists *int64
 			one := int64(1)
 			zero := int64(0)
+
+			if i == 0 {
+				// First killer gets the kill
+				kills = &one
+				assists = &zero
+			} else {
+				// Subsequent killers get assists
+				kills = &zero
+				assists = &one
+			}
+
 			_, err = queries.UpsertWeaponStats(ctx, db.UpsertWeaponStatsParams{
 				PlayerStatsID: playerStats.ID,
 				WeaponName:    weaponName,
-				Kills:         &one,
-				Assists:       &zero,
+				Kills:         kills,
+				Assists:       assists,
 			})
 			if err != nil {
 				return fmt.Errorf("failed to upsert weapon stats: %w", err)
