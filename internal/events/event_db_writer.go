@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	db "sandstorm-tracker/internal/db/generated"
+	"time"
 )
 
 // WriteEventToDB writes a parsed GameEvent to the database using the new /db schema and sqlc queries.
@@ -96,6 +97,7 @@ func WriteEventToDB(ctx context.Context, queries *db.Queries, event *GameEvent, 
 				assists = &one
 			}
 
+			// Update lifetime weapon stats
 			_, err = queries.UpsertWeaponStats(ctx, db.UpsertWeaponStatsParams{
 				PlayerStatsID: playerStats.ID,
 				WeaponName:    weaponName,
@@ -104,6 +106,54 @@ func WriteEventToDB(ctx context.Context, queries *db.Queries, event *GameEvent, 
 			})
 			if err != nil {
 				return fmt.Errorf("failed to upsert weapon stats: %w", err)
+			}
+
+			// Update daily weapon stats (for rolling time windows)
+			now := time.Now()
+			today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+			_, err = queries.UpsertDailyWeaponStats(ctx, db.UpsertDailyWeaponStatsParams{
+				PlayerID:   player.ID,
+				ServerID:   serverID,
+				Date:       today,
+				WeaponName: weaponName,
+				Kills:      kills,
+				Assists:    assists,
+			})
+			if err != nil {
+				return fmt.Errorf("failed to upsert daily weapon stats: %w", err)
+			}
+
+			// Update daily player stats (one update per killer, not per weapon)
+			if i == 0 {
+				// Only count the kill once in daily_player_stats (not per weapon)
+				_, err = queries.UpsertDailyPlayerStats(ctx, db.UpsertDailyPlayerStatsParams{
+					PlayerID:    player.ID,
+					ServerID:    serverID,
+					Date:        today,
+					Kills:       kills,
+					Assists:     &zero,
+					Deaths:      &zero,
+					GamesPlayed: &zero,
+					TotalScore:  &zero,
+				})
+				if err != nil {
+					return fmt.Errorf("failed to upsert daily player stats: %w", err)
+				}
+			} else {
+				// Assist only
+				_, err = queries.UpsertDailyPlayerStats(ctx, db.UpsertDailyPlayerStatsParams{
+					PlayerID:    player.ID,
+					ServerID:    serverID,
+					Date:        today,
+					Kills:       &zero,
+					Assists:     assists,
+					Deaths:      &zero,
+					GamesPlayed: &zero,
+					TotalScore:  &zero,
+				})
+				if err != nil {
+					return fmt.Errorf("failed to upsert daily player stats: %w", err)
+				}
 			}
 		}
 	}

@@ -8,6 +8,26 @@ import (
 	"time"
 )
 
+type DailyPlayerStat struct {
+	PlayerID    int64
+	ServerID    int64
+	Date        time.Time
+	Kills       *int64
+	Assists     *int64
+	Deaths      *int64
+	GamesPlayed *int64
+	TotalScore  *int64
+}
+
+type DailyWeaponStat struct {
+	PlayerID   int64
+	ServerID   int64
+	Date       time.Time
+	WeaponName string
+	Kills      *int64
+	Assists    *int64
+}
+
 type Match struct {
 	ID         int64
 	ServerID   int64

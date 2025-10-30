@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS player_stats (
     FOREIGN KEY (server_id) REFERENCES servers(id) ON DELETE CASCADE
 );
 
--- Weapon stats (one row per player per weapon)
+-- Weapon stats (one row per player per weapon - lifetime totals)
 CREATE TABLE IF NOT EXISTS weapon_stats (
     player_stats_id TEXT NOT NULL,
     weapon_name TEXT NOT NULL,
@@ -44,6 +44,40 @@ CREATE TABLE IF NOT EXISTS weapon_stats (
     PRIMARY KEY (player_stats_id, weapon_name),
     FOREIGN KEY (player_stats_id) REFERENCES player_stats(id) ON DELETE CASCADE
 );
+
+-- Daily player stats (for rolling time windows like "last 30 days")
+CREATE TABLE IF NOT EXISTS daily_player_stats (
+    player_id INTEGER NOT NULL,
+    server_id INTEGER NOT NULL,
+    date DATE NOT NULL,
+    kills INTEGER DEFAULT 0,
+    assists INTEGER DEFAULT 0,
+    deaths INTEGER DEFAULT 0,
+    games_played INTEGER DEFAULT 0,
+    total_score INTEGER DEFAULT 0,
+    PRIMARY KEY (player_id, server_id, date),
+    FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE,
+    FOREIGN KEY (server_id) REFERENCES servers(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_daily_player_stats_date ON daily_player_stats(date);
+CREATE INDEX idx_daily_player_stats_player ON daily_player_stats(player_id, date);
+
+-- Daily weapon stats (for rolling time windows like "last 30 days")
+CREATE TABLE IF NOT EXISTS daily_weapon_stats (
+    player_id INTEGER NOT NULL,
+    server_id INTEGER NOT NULL,
+    date DATE NOT NULL,
+    weapon_name TEXT NOT NULL,
+    kills INTEGER DEFAULT 0,
+    assists INTEGER DEFAULT 0,
+    PRIMARY KEY (player_id, server_id, date, weapon_name),
+    FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE,
+    FOREIGN KEY (server_id) REFERENCES servers(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_daily_weapon_stats_date ON daily_weapon_stats(date);
+CREATE INDEX idx_daily_weapon_stats_player ON daily_weapon_stats(player_id, date);
 
 CREATE TABLE IF NOT EXISTS matches (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
