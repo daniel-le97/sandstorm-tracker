@@ -6,17 +6,15 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"sandstorm-tracker/internal/app"
 	"sandstorm-tracker/internal/db"
-	"sandstorm-tracker/internal/config"
-	"sandstorm-tracker/internal/utils"
-	"sandstorm-tracker/internal/watcher"
 	"strings"
 	"syscall"
 )
 
 func main() {
 	// Initialize configuration
-	appConfig, err := config.InitConfig()
+	appConfig, err := app.InitConfig()
 
 	// ...existing code...
 	var (
@@ -27,7 +25,7 @@ func main() {
 	flag.Parse()
 
 	if *checkDB {
-		utils.CheckDatabase(*dbPath)
+		app.CheckDatabase(*dbPath)
 		return
 	}
 
@@ -38,7 +36,7 @@ func main() {
 	paths := strings.Split(*pathsStr, ",")
 	for i, path := range paths {
 		paths[i] = strings.TrimSpace(path)
-		_, err := utils.GetServerIdFromPath(paths[i])
+		_, err := app.GetServerIdFromPath(paths[i])
 		if err != nil {
 			log.Printf("Warning: Failed to get server ID from path %s: %v", paths[i], err)
 			continue
@@ -57,7 +55,7 @@ func main() {
 	defer dbService.Close()
 
 	log.Println("Database initialized successfully")
-	fw, err := watcher.NewFileWatcher(dbService, appConfig.Servers)
+	fw, err := app.NewWatcher(dbService, appConfig.Servers)
 	if err != nil {
 		log.Fatalf("Failed to create file watcher: %v", err)
 	}

@@ -1,0 +1,30 @@
+[MAP_LOAD] [2025.10.21-20.08.39:379][  0]LogLoad: LoadMap: /Game/Maps/Ministry/Ministry?Name=Player?Scenario=Scenario_Ministry_Checkpoint_Security?MaxPlayers=8?Lighting=Day
+[DIFFICULTY] [2025.10.21-20.08.40:399][  0]LogAI: Warning: AI difficulty set to 0.5
+[DIFFICULTY] [2025.10.21-20.08.40:665][  6]LogAI: Warning: AI difficulty set to 0.5
+[JOIN] [2025.10.21-20.09.02:593][305]LogEOSAntiCheat: Display: ServerRegisterClient: Client: (76561198995742987) Result: (EOS_Success)
+[JOIN] [2025.10.21-20.09.02:593][305]LogNet: Join succeeded: ArmoredBear
+[DIFFICULTY] [2025.10.21-20.09.17:652][208]LogAI: Warning: AI difficulty set to 0.5
+[ROUND_START] [2025.10.21-20.09.17:679][208]LogGameplayEvents: Display: Pre-round 1 started
+[CHAT_CMD] [2025.10.21-20.09.21:472][427]LogChat: Display: ArmoredBear(76561198995742987) Global Chat: !stats
+[KILL] [2025.10.21-20.09.39:219][486]LogGameplayEvents: Display: ArmoredBear[76561198995742987, team 0] killed Marksman[INVALID, team 1] with BP_Firearm_PF940_C_2147481693
+[KILL] [2025.10.21-20.09.55:716][477]LogGameplayEvents: Display: ArmoredBear[76561198995742987, team 0] killed ArmoredBear[76561198995742987, team 0] with BP_Projectile_Molotov_C_2147480917
+[ROUND_END] [2025.10.21-20.09.55:810][482]LogGameMode: Display: Round Over: Team 1 won (win reason: Elimination)
+[ROUND_END] [2025.10.21-20.09.55:810][482]LogGameplayEvents: Display: Round 1 Over: Team 1 won (win reason: Elimination)
+[CHAT_CMD] [2025.10.21-20.10.00:497][763]LogChat: Display: ArmoredBear(76561198995742987) Global Chat: !stats
+[DIFFICULTY] [2025.10.21-20.10.15:832][683]LogAI: Warning: AI difficulty set to 0.5
+[ROUND_START] [2025.10.21-20.10.15:854][683]LogGameplayEvents: Display: Pre-round 2 started
+[CHAT_CMD] [2025.10.21-20.10.31:940][644]LogChat: Display: ArmoredBear(76561198995742987) Global Chat: !stats
+[KILL] [2025.10.21-20.10.42:040][251]LogGameplayEvents: Display: ArmoredBear[76561198995742987, team 0] killed ArmoredBear[76561198995742987, team 0] with BP_Projectile_Molotov_C_2147480575
+[ROUND_END] [2025.10.21-20.10.42:287][265]LogGameMode: Display: Round Over: Team 1 won (win reason: Elimination)
+[ROUND_END] [2025.10.21-20.10.42:287][265]LogGameplayEvents: Display: Round 2 Over: Team 1 won (win reason: Elimination)
+[DIFFICULTY] [2025.10.21-20.11.02:314][466]LogAI: Warning: AI difficulty set to 0.5
+[ROUND_START] [2025.10.21-20.11.02:342][466]LogGameplayEvents: Display: Pre-round 3 started
+[KILL] [2025.10.21-20.11.23:354][719]LogGameplayEvents: Display: ArmoredBear[76561198995742987, team 0] killed ArmoredBear[76561198995742987, team 0] with BP_Projectile_Molotov_C_2147480261
+[ROUND_END] [2025.10.21-20.11.23:560][731]LogGameMode: Display: Round Over: Team 1 won (win reason: Elimination)
+[ROUND_END] [2025.10.21-20.11.23:560][731]LogGameplayEvents: Display: Round 3 Over: Team 1 won (win reason: Elimination)
+[CHAT_CMD] [2025.10.21-20.11.38:472][625]LogChat: Display: ArmoredBear(76561198995742987) Global Chat: !stats
+[GAME_OVER] [2025.10.21-20.11.43:567][930]LogSession: Display: AINSGameSession::HandleMatchHasEnded
+[MAP_VOTE] [2025.10.21-20.12.03:589][132]LogMapVoteManager: Display: Existing Vote Options:
+[MAP_VOTE] [2025.10.21-20.12.03:589][132]LogMapVoteManager: Display: New Vote Options:
+[CHAT_CMD] [2025.10.21-20.12.05:910][272]LogChat: Display: ArmoredBear(76561198995742987) Global Chat: !stats
+[DISCONNECT] [2025.10.21-20.12.11:775][624]LogEOSAntiCheat: Display: ServerUnregisterClient: UserId (76561198995742987), Result: (EOS_Success)

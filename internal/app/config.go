@@ -1,17 +1,6 @@
-package config
+package app
 
 import (
-	// "flag"
-	// "fmt"
-	// "log"
-	// "os"
-	// "os/signal"
-	// "sandstorm-tracker/internal/db"
-	// "sandstorm-tracker/internal/utils"
-	// "sandstorm-tracker/internal/watcher"
-	// "strings"
-	// "syscall"
-
 	"github.com/spf13/viper"
 )
 
