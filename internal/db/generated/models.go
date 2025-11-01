@@ -8,26 +8,6 @@ import (
 	"time"
 )
 
-type DailyPlayerStat struct {
-	PlayerID    int64
-	ServerID    int64
-	Date        time.Time
-	Kills       *int64
-	Assists     *int64
-	Deaths      *int64
-	GamesPlayed *int64
-	TotalScore  *int64
-}
-
-type DailyWeaponStat struct {
-	PlayerID   int64
-	ServerID   int64
-	Date       time.Time
-	WeaponName string
-	Kills      *int64
-	Assists    *int64
-}
-
 type Match struct {
 	ID         int64
 	ServerID   int64
@@ -40,9 +20,32 @@ type Match struct {
 	UpdatedAt  *time.Time
 }
 
-type MatchPlayer struct {
-	MatchID  int64
-	PlayerID int64
+type MatchPlayerStat struct {
+	MatchID              int64
+	PlayerID             int64
+	Team                 *int64
+	Kills                *int64
+	Assists              *int64
+	Deaths               *int64
+	FriendlyFireKills    *int64
+	Score                *int64
+	ObjectivesCaptured   *int64
+	ObjectivesDestroyed  *int64
+	TotalPlayTime        *int64
+	SessionCount         *int64
+	FirstJoinedAt        *time.Time
+	LastLeftAt           *time.Time
+	IsCurrentlyConnected *int64
+	CreatedAt            *time.Time
+	UpdatedAt            *time.Time
+}
+
+type MatchWeaponStat struct {
+	MatchID    int64
+	PlayerID   int64
+	WeaponName string
+	Kills      *int64
+	Assists    *int64
 }
 
 type Player struct {
@@ -53,21 +56,6 @@ type Player struct {
 	UpdatedAt  *time.Time
 }
 
-type PlayerStat struct {
-	ID                string
-	PlayerID          int64
-	ServerID          int64
-	GamesPlayed       *int64
-	Wins              *int64
-	Losses            *int64
-	TotalScore        *int64
-	TotalPlayTime     *int64
-	LastLogin         *string
-	TotalDeaths       *int64
-	FriendlyFireKills *int64
-	HighestScore      *int64
-}
-
 type Server struct {
 	ID         int64
 	ExternalID string
@@ -75,11 +63,4 @@ type Server struct {
 	Path       *string
 	CreatedAt  *time.Time
 	UpdatedAt  *time.Time
-}
-
-type WeaponStat struct {
-	PlayerStatsID string
-	WeaponName    string
-	Kills         *int64
-	Assists       *int64
 }

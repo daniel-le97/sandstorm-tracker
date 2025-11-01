@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"sandstorm-tracker/internal/db"
+	generated "sandstorm-tracker/internal/db/generated"
 )
 
 // CheckDatabase checks the contents of the database and prints statistics
@@ -30,25 +31,42 @@ func CheckDatabase(dbPath string) {
 
 	fmt.Printf("Total players: %d\n\n", len(players))
 
-	// List all players and their stats
+	// Get match count
+	matches, err := queries.ListMatches(ctx)
+	if err != nil {
+		log.Printf("Error getting matches: %v", err)
+	} else {
+		fmt.Printf("Total matches: %d\n\n", len(matches))
+	}
+
+	// List all players and their all-time stats (aggregated from matches)
 	fmt.Println("Players in database:")
 	for _, player := range players {
 		fmt.Printf("ID: %d, Name: %s, SteamID: %s\n", player.ID, player.Name, player.ExternalID)
-		stats, err := queries.GetPlayerStatsByPlayerID(ctx, player.ID)
+
+		// Get player's best match
+		bestMatch, err := queries.GetPlayerBestMatch(ctx, player.ID)
 		if err == nil {
-			// Get total kills using SQL aggregation
-			totalKills, killsErr := queries.GetTotalKillsForPlayerStats(ctx, stats.ID)
-			if killsErr != nil {
-				totalKills = 0
-			}
-			fmt.Printf("  Stats: Kills=%v, Deaths=%v, FF Kills=%v, Highest Score=%v\n",
-				totalKills, derefInt64(stats.TotalDeaths), derefInt64(stats.FriendlyFireKills), derefInt64(stats.HighestScore))
-			weaponStats, err := queries.GetWeaponStatsForPlayerStats(ctx, stats.ID)
-			if err == nil && len(weaponStats) > 0 {
-				fmt.Println("  Weapon stats:")
-				for _, ws := range weaponStats {
-					fmt.Printf("    Weapon: %s, Kills: %v, Assists: %v\n", ws.WeaponName, derefInt64(ws.Kills), derefInt64(ws.Assists))
-				}
+			fmt.Printf("  Best Match: %v kills on %s (%s)\n",
+				derefInt64(bestMatch.Kills),
+				derefString(bestMatch.Map),
+				bestMatch.Mode)
+		}
+
+		// Get last 10 matches
+		matchHistory, err := queries.GetPlayerMatchHistory(ctx, generated.GetPlayerMatchHistoryParams{
+			PlayerID: player.ID,
+			Limit:    10,
+		})
+		if err == nil && len(matchHistory) > 0 {
+			fmt.Printf("  Last %d matches:\n", len(matchHistory))
+			for _, match := range matchHistory {
+				fmt.Printf("    Match %d: %v kills, %v deaths, %v assists on %s\n",
+					match.MatchID,
+					derefInt64(match.Kills),
+					derefInt64(match.Deaths),
+					derefInt64(match.Assists),
+					derefString(match.Map))
 			}
 		}
 	}
@@ -57,6 +75,13 @@ func CheckDatabase(dbPath string) {
 func derefInt64(ptr *int64) int64 {
 	if ptr == nil {
 		return 0
+	}
+	return *ptr
+}
+
+func derefString(ptr *string) string {
+	if ptr == nil {
+		return "Unknown"
 	}
 	return *ptr
 }

@@ -200,7 +200,7 @@ LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings
 LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Mutators.ST_Mutators' 'StrikeTitleUpper'. Did you forget to add a string table redirector?
 LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Mutators.ST_Mutators' 'TacticalVoiceChatTitle'. Did you forget to add a string table redirector?
 LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Mutators.ST_Mutators' 'TieBreakerTitle'. Did you forget to add a string table redirector?
-LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Mutators.ST_Mutators' 'WarlordsTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table enFtry for '/Game/UI/Strings/ST_Mutators.ST_Mutators' 'WarlordsTitle'. Did you forget to add a string table redirector?
 LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Mutators.ST_Mutators' 'WelrodsTitle'. Did you forget to add a string table redirector?
 LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Mutators.ST_Mutators' 'WelrodsOnlyTitle'. Did you forget to add a string table redirector?
 LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Playlists.ST_Playlists' 'CompFirefightTitle'. Did you forget to add a string table redirector?

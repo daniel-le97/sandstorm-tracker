@@ -232,7 +232,7 @@ func (w *Watcher) processFile(filePath string) {
 		line := scanner.Text()
 
 		// Parse and process directly - no intermediate structs
-		if err := w.parser.ParseAndProcess(w.ctx, line, serverDBID); err != nil {
+		if err := w.parser.ParseAndProcess(w.ctx, line, serverDBID, filePath); err != nil {
 			log.Printf("Error processing line: %v", err)
 		}
 

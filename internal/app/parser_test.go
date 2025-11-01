@@ -58,7 +58,7 @@ func TestParseAndWriteLogToDB_HCLog(t *testing.T) {
 		linesProcessed++
 
 		// Process the line (parse and write to DB)
-		if err := parser.ParseAndProcess(ctx, line, serverID); err != nil {
+		if err := parser.ParseAndProcess(ctx, line, serverID, "test.log"); err != nil {
 			errorCount++
 			t.Logf("Warning: error processing line %d: %v", linesProcessed, err)
 		}
@@ -76,42 +76,26 @@ func TestParseAndWriteLogToDB_HCLog(t *testing.T) {
 	}
 
 	// Count kills from database for each tracked player
-	rabbitKills := 0
-	originKills := 0
-	armoredBearKills := 0
-	blueKills := 0
+	rabbitKills := int64(0)
+	originKills := int64(0)
+	armoredBearKills := int64(0)
+	blueKills := int64(0)
 	foundPlayers := map[string]bool{}
 
 	for _, player := range players {
 		playerName := player.Name
 		if strings.Contains(playerName, "Rabbit") {
 			foundPlayers["Rabbit"] = true
-			stats, err := queries.GetPlayerStatsByPlayerID(ctx, player.ID)
-			if err != nil {
-				t.Fatalf("GetPlayerStatsByPlayerID failed for Rabbit: %v", err)
-			}
-			rabbitKills = calculateTotalKillsFromWeaponStats(ctx, queries, stats.ID)
+			rabbitKills = calculateTotalKillsFromMatchStats(ctx, queries, player.ID)
 		} else if strings.Contains(playerName, "0rigin") {
 			foundPlayers["0rigin"] = true
-			stats, err := queries.GetPlayerStatsByPlayerID(ctx, player.ID)
-			if err != nil {
-				t.Fatalf("GetPlayerStatsByPlayerID failed for 0rigin: %v", err)
-			}
-			originKills = calculateTotalKillsFromWeaponStats(ctx, queries, stats.ID)
+			originKills = calculateTotalKillsFromMatchStats(ctx, queries, player.ID)
 		} else if strings.Contains(playerName, "ArmoredBear") {
 			foundPlayers["ArmoredBear"] = true
-			stats, err := queries.GetPlayerStatsByPlayerID(ctx, player.ID)
-			if err != nil {
-				t.Fatalf("GetPlayerStatsByPlayerID failed for ArmoredBear: %v", err)
-			}
-			armoredBearKills = calculateTotalKillsFromWeaponStats(ctx, queries, stats.ID)
+			armoredBearKills = calculateTotalKillsFromMatchStats(ctx, queries, player.ID)
 		} else if strings.Contains(playerName, "Blue") {
 			foundPlayers["Blue"] = true
-			stats, err := queries.GetPlayerStatsByPlayerID(ctx, player.ID)
-			if err != nil {
-				t.Fatalf("GetPlayerStatsByPlayerID failed for Blue: %v", err)
-			}
-			blueKills = calculateTotalKillsFromWeaponStats(ctx, queries, stats.ID)
+			blueKills = calculateTotalKillsFromMatchStats(ctx, queries, player.ID)
 		}
 	}
 
@@ -343,11 +327,23 @@ func TestExtractAllEventsFromNormalLog(t *testing.T) {
 	t.Logf("\nExtracted events written to: extracted_events_normal.log")
 }
 
-// Helper function to calculate total kills from weapon stats using SQL aggregation
-func calculateTotalKillsFromWeaponStats(ctx context.Context, queries *gen.Queries, playerStatsID string) int {
-	totalKills, err := queries.GetTotalKillsForPlayerStats(ctx, playerStatsID)
+// Helper function to calculate total kills from match stats
+func calculateTotalKillsFromMatchStats(ctx context.Context, queries *gen.Queries, playerID int64) int64 {
+	// Get all match player stats for this player
+	matches, err := queries.GetPlayerMatchHistory(ctx, gen.GetPlayerMatchHistoryParams{
+		PlayerID: playerID,
+		Limit:    1000, // Get all matches
+	})
 	if err != nil {
 		return 0
 	}
-	return int(totalKills)
+
+	var totalKills int64
+	for _, match := range matches {
+		if match.Kills != nil {
+			totalKills += *match.Kills
+		}
+	}
+
+	return totalKills
 }

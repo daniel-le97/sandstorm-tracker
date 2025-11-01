@@ -34,6 +34,16 @@ func InitConfig() (*AppConfig, error) {
 	viper.SetConfigType("yml")               // or viper.SetConfigType("json")
 	viper.AddConfigPath(".")                 // look for config in the working directory
 
+	// Enable automatic environment variable reading
+	viper.AutomaticEnv()
+	viper.SetEnvPrefix("SANDSTORM") // Optional: all env vars must start with SANDSTORM_
+
+	// Bind specific environment variables to config keys
+	// Format: SANDSTORM_SERVERS_0_RCONPASSWORD will override servers[0].rconPassword
+	viper.BindEnv("servers.0.rconPassword", "RCON_PASSWORD_MAIN")
+	viper.BindEnv("servers.1.rconPassword", "RCON_PASSWORD_SECONDARY")
+	viper.BindEnv("database.path", "DB_PATH")
+
 	err := viper.ReadInConfig()
 	if err != nil {
 		viper.SetConfigType("toml")

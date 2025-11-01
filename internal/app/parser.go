@@ -1,9 +1,11 @@
 package app
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"log"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -80,7 +82,7 @@ func NewLogParser(queries *db.Queries) *LogParser {
 }
 
 // ParseAndProcess parses a log line and writes to database if it's a recognized event
-func (p *LogParser) ParseAndProcess(ctx context.Context, line string, serverID int64) error {
+func (p *LogParser) ParseAndProcess(ctx context.Context, line string, serverID int64, logFilePath string) error {
 	line = strings.TrimSpace(line)
 	if line == "" {
 		return nil
@@ -98,7 +100,11 @@ func (p *LogParser) ParseAndProcess(ctx context.Context, line string, serverID i
 	}
 
 	// Try each event type and process immediately
-	if p.tryProcessKillEvent(ctx, line, timestamp, serverID) {
+	if p.tryProcessMapLoad(ctx, line, timestamp, serverID) {
+		return nil
+	}
+
+	if p.tryProcessKillEvent(ctx, line, timestamp, serverID, logFilePath) {
 		return nil
 	}
 
@@ -110,14 +116,14 @@ func (p *LogParser) ParseAndProcess(ctx context.Context, line string, serverID i
 		return nil
 	}
 
-	// Add other event types as needed (round start/end, map load, etc.)
+	// Add other event types as needed (round start/end, etc.)
 	// For now, we're focusing on the core stat-tracking events
 
 	return nil
 }
 
 // tryProcessKillEvent parses and processes kill events
-func (p *LogParser) tryProcessKillEvent(ctx context.Context, line string, timestamp time.Time, serverID int64) bool {
+func (p *LogParser) tryProcessKillEvent(ctx context.Context, line string, timestamp time.Time, serverID int64, logFilePath string) bool {
 	matches := p.patterns.PlayerKill.FindStringSubmatch(line)
 	if len(matches) < 7 {
 		return false
@@ -139,9 +145,43 @@ func (p *LogParser) tryProcessKillEvent(ctx context.Context, line string, timest
 		return true // Parsed but ignored (PvP)
 	}
 
-	// Get today's date for daily stats
-	now := time.Now()
-	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+	// Get or create the current active match for this server
+	activeMatch, err := p.queries.GetActiveMatch(ctx, serverID)
+	if err != nil {
+		// No active match found - search backwards in log for last map load event
+		log.Printf("No active match found for kill event on server %d, searching for last map load...", serverID)
+
+		mapName, scenario, mapLoadTime, err := p.findLastMapLoadEvent(logFilePath, timestamp)
+		if err != nil {
+			log.Printf("Failed to find last map load event: %v, creating match with unknown map", err)
+			// Create match with unknown map info
+			activeMatch, err = p.queries.CreateMatch(ctx, db.CreateMatchParams{
+				ServerID:   serverID,
+				Map:        nil,
+				WinnerTeam: nil,
+				StartTime:  &timestamp,
+				EndTime:    nil,
+				Mode:       "Unknown",
+			})
+		} else {
+			log.Printf("Found last map load: %s (%s) at %v", mapName, scenario, mapLoadTime)
+			// Create match with proper map info
+			activeMatch, err = p.queries.CreateMatch(ctx, db.CreateMatchParams{
+				ServerID:   serverID,
+				Map:        &mapName,
+				WinnerTeam: nil,
+				StartTime:  &mapLoadTime,
+				EndTime:    nil,
+				Mode:       scenario,
+			})
+		}
+
+		if err != nil {
+			log.Printf("Failed to create match for kill event: %v", err)
+			return true // Can't track without a match
+		}
+		log.Printf("Created new match %d for server %d", activeMatch.ID, serverID)
+	}
 
 	// Process each killer (first gets kill, rest get assists)
 	for i, killer := range killers {
@@ -162,82 +202,58 @@ func (p *LogParser) tryProcessKillEvent(ctx context.Context, line string, timest
 			}
 		}
 
-		// Upsert player_stats
-		playerStats, err := p.queries.GetPlayerStatsByPlayerID(ctx, player.ID)
+		// Ensure player is in the match (upsert creates row if needed)
+		team := int64(killer.Team)
+		err = p.queries.UpsertMatchPlayerStats(ctx, db.UpsertMatchPlayerStatsParams{
+			MatchID:       activeMatch.ID,
+			PlayerID:      player.ID,
+			Team:          &team,
+			FirstJoinedAt: &timestamp,
+		})
 		if err != nil {
-			playerStats, err = p.queries.CreatePlayerStats(ctx, db.CreatePlayerStatsParams{
-				ID:       killer.SteamID,
-				PlayerID: player.ID,
-				ServerID: serverID,
-			})
-			if err != nil {
-				log.Printf("Failed to create player_stats for %s: %v", killer.Name, err)
-				continue
-			}
+			log.Printf("Failed to upsert player %s into match: %v", killer.Name, err)
+			continue
 		}
 
 		// Determine if this is a kill or assist
-		one := int64(1)
-		zero := int64(0)
-		var kills, assists *int64
 		if i == 0 {
-			kills = &one
-			assists = &zero
+			// Primary killer - increment kills
+			err = p.queries.IncrementMatchPlayerKills(ctx, db.IncrementMatchPlayerKillsParams{
+				MatchID:  activeMatch.ID,
+				PlayerID: player.ID,
+			})
+			if err != nil {
+				log.Printf("Failed to increment kills for %s: %v", killer.Name, err)
+			}
 		} else {
-			kills = &zero
-			assists = &one
+			// Assisting player - increment assists
+			err = p.queries.IncrementMatchPlayerAssists(ctx, db.IncrementMatchPlayerAssistsParams{
+				MatchID:  activeMatch.ID,
+				PlayerID: player.ID,
+			})
+			if err != nil {
+				log.Printf("Failed to increment assists for %s: %v", killer.Name, err)
+			}
 		}
 
-		// Update lifetime weapon stats
-		_, err = p.queries.UpsertWeaponStats(ctx, db.UpsertWeaponStatsParams{
-			PlayerStatsID: playerStats.ID,
-			WeaponName:    weapon,
-			Kills:         kills,
-			Assists:       assists,
-		})
-		if err != nil {
-			log.Printf("Failed to update weapon stats: %v", err)
+		// Update weapon stats for this match
+		killCount := int64(0)
+		assistCount := int64(0)
+		if i == 0 {
+			killCount = 1
+		} else {
+			assistCount = 1
 		}
 
-		// Update daily weapon stats
-		_, err = p.queries.UpsertDailyWeaponStats(ctx, db.UpsertDailyWeaponStatsParams{
+		err = p.queries.UpsertMatchWeaponStats(ctx, db.UpsertMatchWeaponStatsParams{
+			MatchID:    activeMatch.ID,
 			PlayerID:   player.ID,
-			ServerID:   serverID,
-			Date:       today,
 			WeaponName: weapon,
-			Kills:      kills,
-			Assists:    assists,
+			Kills:      &killCount,
+			Assists:    &assistCount,
 		})
 		if err != nil {
-			log.Printf("Failed to update daily weapon stats: %v", err)
-		}
-
-		// Update daily player stats (only once per player, not per weapon)
-		if i == 0 {
-			_, err = p.queries.UpsertDailyPlayerStats(ctx, db.UpsertDailyPlayerStatsParams{
-				PlayerID:    player.ID,
-				ServerID:    serverID,
-				Date:        today,
-				Kills:       kills,
-				Assists:     &zero,
-				Deaths:      &zero,
-				GamesPlayed: &zero,
-				TotalScore:  &zero,
-			})
-		} else {
-			_, err = p.queries.UpsertDailyPlayerStats(ctx, db.UpsertDailyPlayerStatsParams{
-				PlayerID:    player.ID,
-				ServerID:    serverID,
-				Date:        today,
-				Kills:       &zero,
-				Assists:     assists,
-				Deaths:      &zero,
-				GamesPlayed: &zero,
-				TotalScore:  &zero,
-			})
-		}
-		if err != nil {
-			log.Printf("Failed to update daily player stats: %v", err)
+			log.Printf("Failed to update weapon stats for %s: %v", weapon, err)
 		}
 	}
 
@@ -286,6 +302,74 @@ func (p *LogParser) tryProcessPlayerDisconnect(ctx context.Context, line string,
 	}
 
 	// Note: Player disconnect tracking could be added here if needed
+	return true
+}
+
+// tryProcessMapLoad parses and processes map load events
+// When a new map loads, we check for any unfinished match on this server and force-end it
+func (p *LogParser) tryProcessMapLoad(ctx context.Context, line string, timestamp time.Time, serverID int64) bool {
+	matches := p.patterns.MapLoad.FindStringSubmatch(line)
+	if len(matches) < 5 {
+		return false
+	}
+
+	mapName := strings.TrimSpace(matches[2])
+	scenario := strings.TrimSpace(matches[3])
+	// maxPlayers := strings.TrimSpace(matches[4])
+	// lighting := strings.TrimSpace(matches[5])
+
+	log.Printf("Map load detected: %s (scenario: %s) on server %d", mapName, scenario, serverID)
+
+	// Check if there's an active match that never ended (server crash or restart)
+	activeMatch, err := p.queries.GetActiveMatch(ctx, serverID)
+	if err == nil {
+		log.Printf("Found unfinished match %d on server %d, force-ending it before new match",
+			activeMatch.ID, serverID)
+
+		// Determine the best end time: use last player activity, or fall back to match start time
+		endTime := activeMatch.StartTime // Default fallback
+		if activeMatch.UpdatedAt != nil {
+			// Use the last time the match record was updated (typically from player activity)
+			endTime = activeMatch.UpdatedAt
+		}
+
+		// Get all players in the match to find the last activity time
+		playersInMatch, err := p.queries.GetAllPlayersInMatch(ctx, activeMatch.ID)
+		if err == nil && len(playersInMatch) > 0 {
+			// Find the most recent player activity
+			for _, player := range playersInMatch {
+				if player.UpdatedAt != nil && player.UpdatedAt.After(*endTime) {
+					endTime = player.UpdatedAt
+				}
+			}
+			log.Printf("Using last player activity as end time: %v", endTime)
+		}
+
+		// Force-end the old match using the last known activity time
+		err = p.queries.EndMatch(ctx, db.EndMatchParams{
+			ID:         activeMatch.ID,
+			EndTime:    endTime,
+			WinnerTeam: nil, // Unknown winner due to crash/restart
+		})
+		if err != nil {
+			log.Printf("Failed to force-end match %d: %v", activeMatch.ID, err)
+		}
+
+		// Disconnect all players still marked as connected in that match
+		err = p.queries.DisconnectAllPlayersInMatch(ctx, db.DisconnectAllPlayersInMatchParams{
+			MatchID:    activeMatch.ID,
+			LastLeftAt: endTime,
+		})
+		if err != nil {
+			log.Printf("Failed to disconnect players from match %d: %v", activeMatch.ID, err)
+		} else {
+			log.Printf("Successfully closed stale match %d", activeMatch.ID)
+		}
+	}
+
+	// TODO: Create new match record here when match tracking is fully implemented
+	// For now, we're just cleaning up stale matches
+
 	return true
 }
 
@@ -359,4 +443,55 @@ func parseTimestamp(ts string) (time.Time, error) {
 
 	// Add milliseconds to the parsed time
 	return dt.Add(time.Duration(ms) * time.Millisecond), nil
+}
+
+// findLastMapLoadEvent searches backwards through a log file to find the most recent map load event
+// Returns map name, scenario, and timestamp, or error if not found
+func (p *LogParser) findLastMapLoadEvent(logFilePath string, beforeTime time.Time) (mapName, scenario string, timestamp time.Time, err error) {
+	file, err := os.Open(logFilePath)
+	if err != nil {
+		return "", "", time.Time{}, fmt.Errorf("failed to open log file: %w", err)
+	}
+	defer file.Close()
+
+	// Read file in reverse to find the last map load event before the given time
+	// For simplicity, we'll read all lines and process from end to start
+	var lines []string
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		lines = append(lines, scanner.Text())
+	}
+	if err := scanner.Err(); err != nil {
+		return "", "", time.Time{}, fmt.Errorf("failed to read log file: %w", err)
+	}
+
+	// Search backwards through lines
+	for i := len(lines) - 1; i >= 0; i-- {
+		line := lines[i]
+
+		// Try to match map load pattern
+		matches := p.patterns.MapLoad.FindStringSubmatch(line)
+		if len(matches) < 5 {
+			continue
+		}
+
+		// Parse timestamp
+		ts, err := parseTimestamp(matches[1])
+		if err != nil {
+			continue
+		}
+
+		// Only consider events before the target time
+		if ts.After(beforeTime) {
+			continue
+		}
+
+		// Found it!
+		mapName = strings.TrimSpace(matches[2])
+		scenario = strings.TrimSpace(matches[3])
+		timestamp = ts
+		return mapName, scenario, timestamp, nil
+	}
+
+	return "", "", time.Time{}, fmt.Errorf("no map load event found before %v", beforeTime)
 }

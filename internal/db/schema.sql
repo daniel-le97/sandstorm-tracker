@@ -17,68 +17,7 @@ CREATE TABLE IF NOT EXISTS players (
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
--- Player stats table
-CREATE TABLE IF NOT EXISTS player_stats (
-    id TEXT PRIMARY KEY,
-    player_id INTEGER NOT NULL UNIQUE,
-    server_id INTEGER NOT NULL,
-    games_played INTEGER DEFAULT 0,
-    wins INTEGER DEFAULT 0,
-    losses INTEGER DEFAULT 0,
-    total_score INTEGER DEFAULT 0,
-    total_play_time INTEGER DEFAULT 0, -- store as seconds
-    last_login TEXT, -- ISO8601 string
-    total_deaths INTEGER DEFAULT 0,
-    friendly_fire_kills INTEGER DEFAULT 0,
-    highest_score INTEGER DEFAULT 0,
-    FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE,
-    FOREIGN KEY (server_id) REFERENCES servers(id) ON DELETE CASCADE
-);
-
--- Weapon stats (one row per player per weapon - lifetime totals)
-CREATE TABLE IF NOT EXISTS weapon_stats (
-    player_stats_id TEXT NOT NULL,
-    weapon_name TEXT NOT NULL,
-    kills INTEGER DEFAULT 0,
-    assists INTEGER DEFAULT 0,
-    PRIMARY KEY (player_stats_id, weapon_name),
-    FOREIGN KEY (player_stats_id) REFERENCES player_stats(id) ON DELETE CASCADE
-);
-
--- Daily player stats (for rolling time windows like "last 30 days")
-CREATE TABLE IF NOT EXISTS daily_player_stats (
-    player_id INTEGER NOT NULL,
-    server_id INTEGER NOT NULL,
-    date DATE NOT NULL,
-    kills INTEGER DEFAULT 0,
-    assists INTEGER DEFAULT 0,
-    deaths INTEGER DEFAULT 0,
-    games_played INTEGER DEFAULT 0,
-    total_score INTEGER DEFAULT 0,
-    PRIMARY KEY (player_id, server_id, date),
-    FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE,
-    FOREIGN KEY (server_id) REFERENCES servers(id) ON DELETE CASCADE
-);
-
-CREATE INDEX idx_daily_player_stats_date ON daily_player_stats(date);
-CREATE INDEX idx_daily_player_stats_player ON daily_player_stats(player_id, date);
-
--- Daily weapon stats (for rolling time windows like "last 30 days")
-CREATE TABLE IF NOT EXISTS daily_weapon_stats (
-    player_id INTEGER NOT NULL,
-    server_id INTEGER NOT NULL,
-    date DATE NOT NULL,
-    weapon_name TEXT NOT NULL,
-    kills INTEGER DEFAULT 0,
-    assists INTEGER DEFAULT 0,
-    PRIMARY KEY (player_id, server_id, date, weapon_name),
-    FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE,
-    FOREIGN KEY (server_id) REFERENCES servers(id) ON DELETE CASCADE
-);
-
-CREATE INDEX idx_daily_weapon_stats_date ON daily_weapon_stats(date);
-CREATE INDEX idx_daily_weapon_stats_player ON daily_weapon_stats(player_id, date);
-
+-- Matches
 CREATE TABLE IF NOT EXISTS matches (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     server_id INTEGER NOT NULL,
@@ -92,10 +31,66 @@ CREATE TABLE IF NOT EXISTS matches (
     FOREIGN KEY (server_id) REFERENCES servers(id) ON DELETE CASCADE
 );
 
-CREATE TABLE IF NOT EXISTS match_players (
+-- Performance indexes for matches
+CREATE INDEX IF NOT EXISTS idx_matches_server ON matches(server_id);
+CREATE INDEX IF NOT EXISTS idx_matches_start_time ON matches(start_time);
+CREATE INDEX IF NOT EXISTS idx_matches_end_time ON matches(end_time);
+-- Composite index for active match queries (WHERE server_id AND end_time IS NULL)
+CREATE INDEX IF NOT EXISTS idx_matches_server_end_time ON matches(server_id, end_time);
+-- Composite index for time-based queries per server
+CREATE INDEX IF NOT EXISTS idx_matches_server_start_time ON matches(server_id, start_time DESC);
+
+-- Match player stats (one row per player per match, reused across reconnects)
+CREATE TABLE IF NOT EXISTS match_player_stats (
     match_id INTEGER NOT NULL,
     player_id INTEGER NOT NULL,
+    team INTEGER,
+    
+    -- Combat stats (aggregated across all sessions if player reconnects)
+    kills INTEGER DEFAULT 0,
+    assists INTEGER DEFAULT 0,
+    deaths INTEGER DEFAULT 0,
+    friendly_fire_kills INTEGER DEFAULT 0,
+    score INTEGER DEFAULT 0,
+    objectives_captured INTEGER DEFAULT 0,
+    objectives_destroyed INTEGER DEFAULT 0,
+    
+    -- Session tracking
+    total_play_time INTEGER DEFAULT 0,  -- Total seconds in match (sum of all sessions)
+    session_count INTEGER DEFAULT 1,     -- How many times they joined this match
+    first_joined_at DATETIME,
+    last_left_at DATETIME,
+    is_currently_connected INTEGER DEFAULT 1,  -- 0 = disconnected, 1 = connected
+    
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    
     PRIMARY KEY (match_id, player_id),
     FOREIGN KEY (match_id) REFERENCES matches(id) ON DELETE CASCADE,
     FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE
 );
+
+CREATE INDEX IF NOT EXISTS idx_match_player_stats_match ON match_player_stats(match_id);
+CREATE INDEX IF NOT EXISTS idx_match_player_stats_player ON match_player_stats(player_id);
+-- Index for connection status queries
+CREATE INDEX IF NOT EXISTS idx_match_player_stats_connected ON match_player_stats(is_currently_connected);
+-- Composite index for stale connection detection (WHERE is_currently_connected = 1)
+CREATE INDEX IF NOT EXISTS idx_match_player_stats_match_connected ON match_player_stats(match_id, is_currently_connected);
+
+-- Match weapon stats (weapon usage per player per match)
+CREATE TABLE IF NOT EXISTS match_weapon_stats (
+    match_id INTEGER NOT NULL,
+    player_id INTEGER NOT NULL,
+    weapon_name TEXT NOT NULL,
+    kills INTEGER DEFAULT 0,
+    assists INTEGER DEFAULT 0,
+    PRIMARY KEY (match_id, player_id, weapon_name),
+    FOREIGN KEY (match_id, player_id) REFERENCES match_player_stats(match_id, player_id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_match_weapon_stats_match ON match_weapon_stats(match_id);
+CREATE INDEX IF NOT EXISTS idx_match_weapon_stats_player ON match_weapon_stats(player_id);
+-- Index for weapon-specific queries
+CREATE INDEX IF NOT EXISTS idx_match_weapon_stats_weapon ON match_weapon_stats(weapon_name);
+-- Composite index for player weapon stats across matches
+CREATE INDEX IF NOT EXISTS idx_match_weapon_stats_player_weapon ON match_weapon_stats(player_id, weapon_name);

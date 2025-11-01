@@ -59,6 +59,125 @@ func (q *Queries) DeleteMatch(ctx context.Context, id int64) error {
 	return err
 }
 
+const disconnectPlayersInMatch = `-- name: DisconnectPlayersInMatch :exec
+UPDATE match_player_stats
+SET 
+    is_currently_connected = 0,
+    last_left_at = COALESCE(last_left_at, CURRENT_TIMESTAMP),
+    updated_at = CURRENT_TIMESTAMP
+WHERE match_id = ? AND is_currently_connected = 1
+`
+
+func (q *Queries) DisconnectPlayersInMatch(ctx context.Context, matchID int64) error {
+	_, err := q.db.ExecContext(ctx, disconnectPlayersInMatch, matchID)
+	return err
+}
+
+const endMatch = `-- name: EndMatch :exec
+UPDATE matches 
+SET 
+    end_time = ?,
+    winner_team = ?,
+    updated_at = CURRENT_TIMESTAMP
+WHERE id = ?
+`
+
+type EndMatchParams struct {
+	EndTime    *time.Time
+	WinnerTeam *int64
+	ID         int64
+}
+
+func (q *Queries) EndMatch(ctx context.Context, arg EndMatchParams) error {
+	_, err := q.db.ExecContext(ctx, endMatch, arg.EndTime, arg.WinnerTeam, arg.ID)
+	return err
+}
+
+const forceEndStaleMatches = `-- name: ForceEndStaleMatches :exec
+UPDATE matches 
+SET 
+    end_time = COALESCE(
+        (SELECT MAX(updated_at) 
+         FROM match_player_stats 
+         WHERE match_id = matches.id),
+        start_time
+    ),
+    updated_at = CURRENT_TIMESTAMP
+WHERE end_time IS NULL 
+  AND start_time < ?
+`
+
+// Force-end matches that have been running for more than X hours (likely crashed)
+// Also disconnects all players in those matches
+func (q *Queries) ForceEndStaleMatches(ctx context.Context, startTime *time.Time) error {
+	_, err := q.db.ExecContext(ctx, forceEndStaleMatches, startTime)
+	return err
+}
+
+const getActiveMatch = `-- name: GetActiveMatch :one
+SELECT id, server_id, map, winner_team, start_time, end_time, mode, created_at, updated_at FROM matches 
+WHERE server_id = ? 
+  AND end_time IS NULL 
+ORDER BY start_time DESC 
+LIMIT 1
+`
+
+func (q *Queries) GetActiveMatch(ctx context.Context, serverID int64) (Match, error) {
+	row := q.db.QueryRowContext(ctx, getActiveMatch, serverID)
+	var i Match
+	err := row.Scan(
+		&i.ID,
+		&i.ServerID,
+		&i.Map,
+		&i.WinnerTeam,
+		&i.StartTime,
+		&i.EndTime,
+		&i.Mode,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getActiveMatches = `-- name: GetActiveMatches :many
+SELECT id, server_id, map, winner_team, start_time, end_time, mode, created_at, updated_at FROM matches 
+WHERE end_time IS NULL 
+ORDER BY start_time DESC
+`
+
+func (q *Queries) GetActiveMatches(ctx context.Context) ([]Match, error) {
+	rows, err := q.db.QueryContext(ctx, getActiveMatches)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Match
+	for rows.Next() {
+		var i Match
+		if err := rows.Scan(
+			&i.ID,
+			&i.ServerID,
+			&i.Map,
+			&i.WinnerTeam,
+			&i.StartTime,
+			&i.EndTime,
+			&i.Mode,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getMatchByID = `-- name: GetMatchByID :one
 SELECT id, server_id, map, winner_team, start_time, end_time, mode, created_at, updated_at FROM matches WHERE id = ?
 `
