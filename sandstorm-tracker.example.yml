@@ -2,14 +2,14 @@ servers:
   - name: "Main Server"
     logPath: "/opt/sandstorm/Insurgency/Saved/Logs"
     rconAddress: "127.0.0.1:27015"
-    # Password can be overridden with RCON_PASSWORD_MAIN environment variable
+    # Password can be overridden with RCON_PASSWORD_0 environment variable
     rconPassword: "your_rcon_password_here"
     queryAddress: "127.0.0.1:27016" # Optional: A2S query port (game port + 1)
     enabled: true
   - name: "Secondary Server"
     logPath: "/opt/sandstorm2/Insurgency/Saved/Logs"
     rconAddress: "127.0.0.1:27014"
-    # Password can be overridden with RCON_PASSWORD_SECONDARY environment variable
+    # Password can be overridden with RCON_PASSWORD_1 environment variable
     rconPassword: "your_rcon_password_here"
     queryAddress: "127.0.0.1:27015" # Optional: A2S query port
     enabled: false
@@ -25,15 +25,15 @@ logging:
 #
 # Environment Variable Support:
 #   You can override config values with environment variables:
-#   - RCON_PASSWORD_MAIN        - Override first server's RCON password
-#   - RCON_PASSWORD_SECONDARY   - Override second server's RCON password
+#   - RCON_PASSWORD_0        - Override first server's RCON password
+#   - RCON_PASSWORD_1       - Override second server's RCON password
 #
 #   Example (PowerShell):
-#     $env:RCON_PASSWORD_MAIN = "SecurePassword123"
+#     $env:RCON_PASSWORD_0 = "SecurePassword123"
 #     .\sandstorm-tracker.exe
 #
 #   Example (Linux/Bash):
-#     export RCON_PASSWORD_MAIN="SecurePassword123"
+#     export RCON_PASSWORD_0="SecurePassword123"
 #     ./sandstorm-tracker
 #
 # Security Notes:
