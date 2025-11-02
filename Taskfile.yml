@@ -24,11 +24,6 @@ tasks:
     desc: Run all Go tests
     cmds:
       - go test ./...
-  sqlc:
-    desc: Generate Go code from SQL queries
-    dir: internal/db
-    cmds:
-      - sqlc generate
   fmt:
     desc: Run gofmt on all Go files
     cmds:

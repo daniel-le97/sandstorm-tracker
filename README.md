@@ -17,7 +17,6 @@ Sandstorm Tracker is a Go project that tracks kills, playtime, alive time, weapo
 - Insurgency: Sandstorm server(s) with log access
 - ### optional
   - [Task](https://taskfile.dev/#/installation) (only if you want to use the taskfile)
-  - [sqlc](https://docs.sqlc.dev/en/stable/overview/install.html) (only if you are adjusting any .sql files in `/db`)
 
 ## Setup
 
