@@ -1,81 +1,195 @@
 package main
 
 import (
-	"flag"
-	// "fmt"
 	"log"
+	"net/http"
 	"os"
-	"os/signal"
+	"path/filepath"
 	"sandstorm-tracker/internal/app"
-	"sandstorm-tracker/internal/db"
 	"strings"
-	"syscall"
+
+	"github.com/pocketbase/pocketbase"
+	"github.com/pocketbase/pocketbase/apis"
+	"github.com/pocketbase/pocketbase/core"
+	"github.com/pocketbase/pocketbase/plugins/ghupdate"
+	"github.com/pocketbase/pocketbase/plugins/jsvm"
+	"github.com/pocketbase/pocketbase/plugins/migratecmd"
+	"github.com/pocketbase/pocketbase/tools/hook"
+	"github.com/pocketbase/pocketbase/tools/osutils"
 )
 
 func main() {
-	// Initialize configuration
+	// Initialize app configuration
 	appConfig, err := app.InitConfig()
+	if err != nil {
+		log.Fatalf("Failed to initialize config: %v", err)
+	}
 
-	// ...existing code...
-	var (
-		pathsStr = flag.String("paths", "", "Comma-separated list of paths to watch (files or directories)")
-		dbPath   = flag.String("db", "sandstorm-tracker.db", "Path to SQLite database file")
-		checkDB  = flag.Bool("check", false, "Check database contents and exit")
+	pbApp := pocketbase.New()
+
+	// ---------------------------------------------------------------
+	// Optional plugin flags:
+	// ---------------------------------------------------------------
+
+	var hooksDir string
+	pbApp.RootCmd.PersistentFlags().StringVar(
+		&hooksDir,
+		"hooksDir",
+		"",
+		"the directory with the JS app hooks",
 	)
-	flag.Parse()
 
-	if *checkDB {
-		app.CheckDatabase(*dbPath)
-		return
-	}
+	var hooksWatch bool
+	pbApp.RootCmd.PersistentFlags().BoolVar(
+		&hooksWatch,
+		"hooksWatch",
+		true,
+		"auto restart the app on pb_hooks file change; it has no effect on Windows",
+	)
 
-	if *pathsStr == "" {
-		log.Fatal("Please provide at least one path to watch using -paths flag")
-	}
+	var hooksPool int
+	pbApp.RootCmd.PersistentFlags().IntVar(
+		&hooksPool,
+		"hooksPool",
+		15,
+		"the total prewarm goja.Runtime instances for the JS app hooks execution",
+	)
 
-	paths := strings.Split(*pathsStr, ",")
-	for i, path := range paths {
-		paths[i] = strings.TrimSpace(path)
-		_, err := app.GetServerIdFromPath(paths[i])
-		if err != nil {
-			log.Printf("Warning: Failed to get server ID from path %s: %v", paths[i], err)
-			continue
+	var migrationsDir string
+	pbApp.RootCmd.PersistentFlags().StringVar(
+		&migrationsDir,
+		"migrationsDir",
+		"",
+		"the directory with the user defined migrations",
+	)
+
+	var automigrate bool
+	pbApp.RootCmd.PersistentFlags().BoolVar(
+		&automigrate,
+		"automigrate",
+		true,
+		"enable/disable auto migrations",
+	)
+
+	var publicDir string
+	pbApp.RootCmd.PersistentFlags().StringVar(
+		&publicDir,
+		"publicDir",
+		defaultPublicDir(),
+		"the directory to serve static files",
+	)
+
+	var indexFallback bool
+	pbApp.RootCmd.PersistentFlags().BoolVar(
+		&indexFallback,
+		"indexFallback",
+		true,
+		"fallback the request to index.html on missing static path, e.g. when pretty urls are used with SPA",
+	)
+
+	// Sandstorm tracker specific flags
+	var pathsStr string
+	pbApp.RootCmd.PersistentFlags().StringVar(
+		&pathsStr,
+		"paths",
+		"",
+		"comma-separated list of paths to watch (files or directories)",
+	)
+
+	pbApp.RootCmd.ParseFlags(os.Args[1:])
+
+	// ---------------------------------------------------------------
+	// Plugins and hooks:
+	// ---------------------------------------------------------------
+
+	// load jsvm (pb_hooks and pb_migrations)
+	jsvm.MustRegister(pbApp, jsvm.Config{
+		MigrationsDir: migrationsDir,
+		HooksDir:      hooksDir,
+		HooksWatch:    hooksWatch,
+		HooksPoolSize: hooksPool,
+	})
+
+	// migrate command (with js templates)
+	migratecmd.MustRegister(pbApp, pbApp.RootCmd, migratecmd.Config{
+		TemplateLang: migratecmd.TemplateLangJS,
+		Automigrate:  automigrate,
+		Dir:          migrationsDir,
+	})
+
+	// GitHub selfupdate
+	ghupdate.MustRegister(pbApp, pbApp.RootCmd, ghupdate.Config{})
+
+	// ---------------------------------------------------------------
+	// Sandstorm Tracker Integration:
+	// ---------------------------------------------------------------
+
+	var fileWatcher *app.Watcher
+
+	// Initialize file watcher after PocketBase is ready
+	pbApp.OnServe().Bind(&hook.Handler[*core.ServeEvent]{
+		Func: func(e *core.ServeEvent) error {
+			// Set up file watcher if paths were provided
+			if pathsStr != "" {
+				paths := strings.Split(pathsStr, ",")
+				for i, path := range paths {
+					paths[i] = strings.TrimSpace(path)
+					_, err := app.GetServerIdFromPath(paths[i])
+					if err != nil {
+						log.Printf("Warning: Failed to get server ID from path %s: %v", paths[i], err)
+						continue
+					}
+				}
+
+				log.Printf("Starting Sandstorm log watcher")
+				log.Printf("Watching paths: %v", paths)
+
+				fileWatcher, err = app.NewWatcher(pbApp, appConfig.Servers)
+				if err != nil {
+					return err
+				}
+
+				for _, path := range paths {
+					if err := fileWatcher.AddPath(path); err != nil {
+						log.Printf("Warning: Failed to add path %s: %v", path, err)
+					}
+				}
+
+				fileWatcher.Start()
+				log.Println("File watcher started")
+			}
+
+			// static route to serves files from the provided public dir
+			// (if publicDir exists and the route path is not already defined)
+			if !e.Router.HasRoute(http.MethodGet, "/{path...}") {
+				e.Router.GET("/{path...}", apis.Static(os.DirFS(publicDir), indexFallback))
+			}
+
+			return e.Next()
+		},
+		Priority: 999, // execute as latest as possible to allow users to provide their own route
+	})
+
+	// Handle graceful shutdown of file watcher
+	pbApp.OnTerminate().BindFunc(func(e *core.TerminateEvent) error {
+		if fileWatcher != nil {
+			log.Println("Stopping file watcher...")
+			fileWatcher.Stop()
+			log.Println("File watcher stopped")
 		}
-		// log.Printf("Found server ID %s for path %s", id, paths[i])
+		return e.Next()
+	})
+
+	if err := pbApp.Start(); err != nil {
+		log.Fatal(err)
+	}
+}
+
+// the default pb_public dir location is relative to the executable
+func defaultPublicDir() string {
+	if osutils.IsProbablyGoRun() {
+		return "./pb_public"
 	}
 
-	log.Printf("Starting Sandstorm log watcher")
-	log.Printf("Watching paths: %v", paths)
-	log.Printf("Database: %s", *dbPath)
-
-	dbService, err := db.NewDatabaseService(*dbPath)
-	if err != nil {
-		log.Fatalf("Failed to initialize database: %v", err)
-	}
-	defer dbService.Close()
-
-	log.Println("Database initialized successfully")
-	fw, err := app.NewWatcher(dbService, appConfig.Servers)
-	if err != nil {
-		log.Fatalf("Failed to create file watcher: %v", err)
-	}
-
-	for _, path := range paths {
-		if err := fw.AddPath(path); err != nil {
-			log.Printf("Warning: Failed to add path %s: %v", path, err)
-		}
-	}
-
-	fw.Start()
-
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-
-	log.Println("File watcher started. Press Ctrl+C to stop.")
-
-	<-sigChan
-	log.Println("Shutting down...")
-
-	fw.Stop()
-	log.Println("File watcher stopped.")
+	return filepath.Join(os.Args[0], "../pb_public")
 }

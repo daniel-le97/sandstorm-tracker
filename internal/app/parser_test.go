@@ -5,38 +5,60 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"strings"
+	"path/filepath"
 	"testing"
 
-	db "sandstorm-tracker/internal/db"
-	gen "sandstorm-tracker/internal/db/generated"
+	"github.com/pocketbase/pocketbase/core"
+	"github.com/pocketbase/pocketbase/plugins/jsvm"
+	"github.com/pocketbase/pocketbase/tests"
 )
 
-func TestParseAndWriteLogToDB_HCLog(t *testing.T) {
-	dbPath := "test_parse_and_write_hclog_v2.sqlite"
-	dbService, err := db.NewDatabaseService(dbPath)
-	if err != nil {
-		t.Fatalf("failed to create db: %v", err)
+const testDataDir = "./test_pb_data"
+
+// setupTestCollections runs migrations to create collections
+func setupTestCollections(t *testing.T, testApp *tests.TestApp) {
+	// Register jsvm plugin to enable JavaScript migrations
+	migrationsDir := filepath.Join(testDataDir, "pb_migrations")
+	jsvm.MustRegister(testApp, jsvm.Config{
+		MigrationsDir: migrationsDir,
+	})
+
+	// Run migrations to create the collections
+	if err := testApp.RunAllMigrations(); err != nil {
+		t.Fatalf("Failed to run migrations: %v", err)
 	}
-	defer func() {
-		dbService.Close()
-		_ = os.Remove(dbPath)
-	}()
-	queries := dbService.GetQueries()
+
+	t.Log("✓ Migrations completed")
+
+	// Verify collections exist
+	collections := []string{"servers", "players", "matches", "match_player_stats", "match_weapon_stats"}
+	for _, name := range collections {
+		if _, err := testApp.FindCollectionByNameOrId(name); err != nil {
+			t.Fatalf("Collection %s not found after migration: %v", name, err)
+		}
+	}
+	t.Log("✓ All test collections verified")
+}
+
+func TestParseAndWriteLogToDB_HCLog(t *testing.T) {
+	// Create test PocketBase app
+	testApp, err := tests.NewTestApp(testDataDir)
+	if err != nil {
+		t.Fatalf("failed to create test app: %v", err)
+	}
+	defer testApp.Cleanup()
+
+	// Create collections
+	setupTestCollections(t, testApp)
+
 	ctx := context.Background()
 
-	// Insert a server row so serverID is valid for foreign key constraints
-	serverPath := "test/path"
-	serverParams := gen.CreateServerParams{
-		ExternalID: "test-server-1",
-		Name:       "Test Server",
-		Path:       &serverPath,
-	}
-	server, err := queries.CreateServer(ctx, serverParams)
+	// Create a test server using PocketBase Record API
+	serverExternalID := "test-server-1"
+	_, err = GetOrCreateServer(ctx, testApp, serverExternalID, "test/path")
 	if err != nil {
-		t.Fatalf("failed to insert server: %v", err)
+		t.Fatalf("failed to create server: %v", err)
 	}
-	serverID := server.ID
 
 	// Open hc.log
 	file, err := os.Open("hc.log")
@@ -45,8 +67,8 @@ func TestParseAndWriteLogToDB_HCLog(t *testing.T) {
 	}
 	defer file.Close()
 
-	// Create parser with queries
-	parser := NewLogParser(queries)
+	// Create parser with PocketBase app
+	parser := NewLogParser(testApp)
 	scanner := bufio.NewScanner(file)
 
 	// Parse and write all events
@@ -58,7 +80,8 @@ func TestParseAndWriteLogToDB_HCLog(t *testing.T) {
 		linesProcessed++
 
 		// Process the line (parse and write to DB)
-		if err := parser.ParseAndProcess(ctx, line, serverID, "test.log"); err != nil {
+		// Note: ParseAndProcess expects external_id as serverID parameter
+		if err := parser.ParseAndProcess(ctx, line, serverExternalID, "test.log"); err != nil {
 			errorCount++
 			t.Logf("Warning: error processing line %d: %v", linesProcessed, err)
 		}
@@ -69,63 +92,102 @@ func TestParseAndWriteLogToDB_HCLog(t *testing.T) {
 		t.Fatalf("Error scanning hc.log: %v", err)
 	}
 
-	// Now verify the database contains the expected data by querying
-	players, err := queries.ListPlayers(ctx)
-	if err != nil {
-		t.Fatalf("ListPlayers failed: %v", err)
+	// Verify kill counts were recorded correctly
+	// Expected kills (only counting first killer in multi-killer events):
+	// These are the correct values when only the first killer gets credit
+	expectedKills := map[string]int{
+		"Rabbit":      51,
+		"0rigin":      25,
+		"ArmoredBear": 18,
+		"Blue":        8,
 	}
 
-	// Count kills from database for each tracked player
-	rabbitKills := int64(0)
-	originKills := int64(0)
-	armoredBearKills := int64(0)
-	blueKills := int64(0)
-	foundPlayers := map[string]bool{}
+	actualKills := make(map[string]int)
+	foundPlayers := make(map[string]bool)
 
-	for _, player := range players {
-		playerName := player.Name
-		if strings.Contains(playerName, "Rabbit") {
-			foundPlayers["Rabbit"] = true
-			rabbitKills = calculateTotalKillsFromMatchStats(ctx, queries, player.ID)
-		} else if strings.Contains(playerName, "0rigin") {
-			foundPlayers["0rigin"] = true
-			originKills = calculateTotalKillsFromMatchStats(ctx, queries, player.ID)
-		} else if strings.Contains(playerName, "ArmoredBear") {
-			foundPlayers["ArmoredBear"] = true
-			armoredBearKills = calculateTotalKillsFromMatchStats(ctx, queries, player.ID)
-		} else if strings.Contains(playerName, "Blue") {
-			foundPlayers["Blue"] = true
-			blueKills = calculateTotalKillsFromMatchStats(ctx, queries, player.ID)
+	// Query each player's total kills from match_weapon_stats
+	for playerName := range expectedKills {
+		// Find player by name (contains the name)
+		players, err := testApp.FindRecordsByFilter(
+			"players",
+			"name ~ {:name}",
+			"-created",
+			100,
+			0,
+			map[string]any{"name": playerName},
+		)
+		if err != nil {
+			t.Logf("Warning: Error finding player %s: %v", playerName, err)
+			continue
 		}
+
+		if len(players) == 0 {
+			t.Logf("Warning: Player %s not found in database", playerName)
+			continue
+		}
+
+		// Mark player as found
+		foundPlayers[playerName] = true
+
+		// Get the player record
+		player := players[0]
+		playerID := player.Id
+
+		// Sum kills from match_weapon_stats
+		weaponStats, err := testApp.FindRecordsByFilter(
+			"match_weapon_stats",
+			"player = {:playerID}",
+			"",
+			-1,
+			0,
+			map[string]any{"playerID": playerID},
+		)
+		if err != nil {
+			t.Logf("Warning: Error getting weapon stats for %s: %v", playerName, err)
+			continue
+		}
+
+		totalKills := 0
+		for _, stat := range weaponStats {
+			kills := stat.GetInt("kills")
+			totalKills += kills
+		}
+
+		actualKills[playerName] = totalKills
 	}
 
-	// Run the same assertions as the original test
+	// Run individual tests for each player
 	t.Run("Rabbit kills from DB", func(t *testing.T) {
-		if rabbitKills != 51 {
-			t.Errorf("Expected 51 Rabbit kills from DB, got %d", rabbitKills)
+		if actualKills["Rabbit"] != 51 {
+			t.Errorf("Expected 51 Rabbit kills from DB, got %d", actualKills["Rabbit"])
 		}
 	})
+
 	t.Run("0rigin kills from DB", func(t *testing.T) {
-		if originKills != 25 {
-			t.Errorf("Expected 25 0rigin kills from DB, got %d", originKills)
+		if actualKills["0rigin"] != 25 {
+			t.Errorf("Expected 25 0rigin kills from DB, got %d", actualKills["0rigin"])
 		}
 	})
+
 	t.Run("ArmoredBear kills from DB", func(t *testing.T) {
-		if armoredBearKills != 18 {
-			t.Errorf("Expected 18 ArmoredBear kills from DB, got %d", armoredBearKills)
+		if actualKills["ArmoredBear"] != 18 {
+			t.Errorf("Expected 18 ArmoredBear kills from DB, got %d", actualKills["ArmoredBear"])
 		}
 	})
+
 	t.Run("Blue kills from DB", func(t *testing.T) {
-		if blueKills != 8 {
-			t.Errorf("Expected 8 Blue kills from DB, got %d", blueKills)
+		if actualKills["Blue"] != 8 {
+			t.Errorf("Expected 8 Blue kills from DB, got %d", actualKills["Blue"])
 		}
 	})
+
 	t.Run("total parsed kills from DB", func(t *testing.T) {
-		total := rabbitKills + originKills + armoredBearKills + blueKills
+		total := actualKills["Rabbit"] + actualKills["0rigin"] + actualKills["ArmoredBear"] + actualKills["Blue"]
 		if total != 102 {
 			t.Errorf("Expected 102 total parsed kills from DB (excluding assists), got %d", total)
 		}
 	})
+
 	t.Run("all expected players found", func(t *testing.T) {
 		expectedPlayers := []string{"Rabbit", "0rigin", "ArmoredBear", "Blue"}
 		for _, name := range expectedPlayers {
@@ -328,21 +390,24 @@ func TestExtractAllEventsFromNormalLog(t *testing.T) {
 }
 
 // Helper function to calculate total kills from match stats
-func calculateTotalKillsFromMatchStats(ctx context.Context, queries *gen.Queries, playerID int64) int64 {
+func calculateTotalKillsFromMatchStats(ctx context.Context, app core.App, playerID string) int64 {
 	// Get all match player stats for this player
-	matches, err := queries.GetPlayerMatchHistory(ctx, gen.GetPlayerMatchHistoryParams{
-		PlayerID: playerID,
-		Limit:    1000, // Get all matches
-	})
+	matchStats, err := app.FindRecordsByFilter(
+		"match_player_stats",
+		"player = {:playerID}",
+		"-created",
+		-1,
+		0,
+		map[string]any{"playerID": playerID},
+	)
 	if err != nil {
 		return 0
 	}
 
 	var totalKills int64
-	for _, match := range matches {
-		if match.Kills != nil {
-			totalKills += *match.Kills
-		}
+	for _, stat := range matchStats {
+		kills := stat.GetInt("kills")
+		totalKills += int64(kills)
 	}
 
 	return totalKills

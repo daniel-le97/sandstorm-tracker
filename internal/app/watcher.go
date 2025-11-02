@@ -13,18 +13,17 @@ import (
 	"sync"
 	"time"
 
-	"sandstorm-tracker/internal/db"
-	generated "sandstorm-tracker/internal/db/generated"
 	"sandstorm-tracker/internal/rcon"
 
 	"github.com/fsnotify/fsnotify"
+	"github.com/pocketbase/pocketbase/core"
 )
 
 // Watcher monitors log files and processes events
 type Watcher struct {
 	watcher       *fsnotify.Watcher
 	parser        *LogParser
-	db            *db.DatabaseService
+	pbApp         core.App
 	ctx           context.Context
 	cancel        context.CancelFunc
 	wg            sync.WaitGroup
@@ -37,7 +36,7 @@ type Watcher struct {
 }
 
 // NewWatcher creates a new file watcher
-func NewWatcher(dbService *db.DatabaseService, serverConfigs []ServerConfig) (*Watcher, error) {
+func NewWatcher(pbApp core.App, serverConfigs []ServerConfig) (*Watcher, error) {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create file watcher: %w", err)
@@ -63,8 +62,8 @@ func NewWatcher(dbService *db.DatabaseService, serverConfigs []ServerConfig) (*W
 
 	w := &Watcher{
 		watcher:       watcher,
-		parser:        NewLogParser(dbService.GetQueries()),
-		db:            dbService,
+		parser:        NewLogParser(pbApp),
+		pbApp:         pbApp,
 		ctx:           ctx,
 		cancel:        cancel,
 		offsetsPath:   filepath.Join(cwd, "sandstorm-tracker-offsets.json"),
@@ -260,25 +259,15 @@ func (w *Watcher) extractServerIDFromPath(filePath string) string {
 	return strings.TrimSuffix(base, filepath.Ext(base))
 }
 
-func (w *Watcher) getOrCreateServerDBID(serverID, logPath string) (int64, error) {
+func (w *Watcher) getOrCreateServerDBID(serverID, logPath string) (string, error) {
 	ctx := context.Background()
-	queries := w.db.GetQueries()
 
-	server, err := queries.GetServerByExternalID(ctx, serverID)
+	serverRecordID, err := GetOrCreateServer(ctx, w.pbApp, serverID, logPath)
 	if err != nil {
-		// Create server
-		server, err = queries.CreateServer(ctx, generated.CreateServerParams{
-			ExternalID: serverID,
-			Name:       serverID,
-			Path:       &logPath,
-		})
-		if err != nil {
-			return 0, fmt.Errorf("failed to create server: %w", err)
-		}
-		log.Printf("Created server in DB: %s (ID: %d)", serverID, server.ID)
+		return "", fmt.Errorf("failed to get or create server: %w", err)
 	}
 
-	return server.ID, nil
+	return serverRecordID, nil
 }
 
 // GetRconClient returns the RCON client for a server, creating it if needed
