@@ -25,14 +25,14 @@ func main() {
 		log.Fatalf("Failed to initialize config: %v", err)
 	}
 
-	pbApp := pocketbase.New()
+	pb := pocketbase.New()
 
 	// ---------------------------------------------------------------
 	// Optional plugin flags:
 	// ---------------------------------------------------------------
 
 	var hooksDir string
-	pbApp.RootCmd.PersistentFlags().StringVar(
+	pb.RootCmd.PersistentFlags().StringVar(
 		&hooksDir,
 		"hooksDir",
 		"",
@@ -40,7 +40,7 @@ func main() {
 	)
 
 	var hooksWatch bool
-	pbApp.RootCmd.PersistentFlags().BoolVar(
+	pb.RootCmd.PersistentFlags().BoolVar(
 		&hooksWatch,
 		"hooksWatch",
 		true,
@@ -48,7 +48,7 @@ func main() {
 	)
 
 	var hooksPool int
-	pbApp.RootCmd.PersistentFlags().IntVar(
+	pb.RootCmd.PersistentFlags().IntVar(
 		&hooksPool,
 		"hooksPool",
 		15,
@@ -56,7 +56,7 @@ func main() {
 	)
 
 	var migrationsDir string
-	pbApp.RootCmd.PersistentFlags().StringVar(
+	pb.RootCmd.PersistentFlags().StringVar(
 		&migrationsDir,
 		"migrationsDir",
 		"",
@@ -64,7 +64,7 @@ func main() {
 	)
 
 	var automigrate bool
-	pbApp.RootCmd.PersistentFlags().BoolVar(
+	pb.RootCmd.PersistentFlags().BoolVar(
 		&automigrate,
 		"automigrate",
 		true,
@@ -72,7 +72,7 @@ func main() {
 	)
 
 	var publicDir string
-	pbApp.RootCmd.PersistentFlags().StringVar(
+	pb.RootCmd.PersistentFlags().StringVar(
 		&publicDir,
 		"publicDir",
 		defaultPublicDir(),
@@ -80,7 +80,7 @@ func main() {
 	)
 
 	var indexFallback bool
-	pbApp.RootCmd.PersistentFlags().BoolVar(
+	pb.RootCmd.PersistentFlags().BoolVar(
 		&indexFallback,
 		"indexFallback",
 		true,
@@ -89,21 +89,21 @@ func main() {
 
 	// Sandstorm tracker specific flags
 	var pathsStr string
-	pbApp.RootCmd.PersistentFlags().StringVar(
+	pb.RootCmd.PersistentFlags().StringVar(
 		&pathsStr,
 		"paths",
 		"",
 		"comma-separated list of paths to watch (files or directories)",
 	)
 
-	pbApp.RootCmd.ParseFlags(os.Args[1:])
+	pb.RootCmd.ParseFlags(os.Args[1:])
 
 	// ---------------------------------------------------------------
 	// Plugins and hooks:
 	// ---------------------------------------------------------------
 
 	// load jsvm (pb_hooks and pb_migrations)
-	jsvm.MustRegister(pbApp, jsvm.Config{
+	jsvm.MustRegister(pb, jsvm.Config{
 		MigrationsDir: migrationsDir,
 		HooksDir:      hooksDir,
 		HooksWatch:    hooksWatch,
@@ -111,14 +111,14 @@ func main() {
 	})
 
 	// migrate command (with js templates)
-	migratecmd.MustRegister(pbApp, pbApp.RootCmd, migratecmd.Config{
+	migratecmd.MustRegister(pb, pb.RootCmd, migratecmd.Config{
 		TemplateLang: migratecmd.TemplateLangJS,
 		Automigrate:  automigrate,
 		Dir:          migrationsDir,
 	})
 
 	// GitHub selfupdate
-	ghupdate.MustRegister(pbApp, pbApp.RootCmd, ghupdate.Config{})
+	ghupdate.MustRegister(pb, pb.RootCmd, ghupdate.Config{})
 
 	// ---------------------------------------------------------------
 	// Sandstorm Tracker Integration:
@@ -126,8 +126,11 @@ func main() {
 
 	var fileWatcher *app.Watcher
 
+	// Register web UI routes
+	app.RegisterWebRoutes(pb)
+
 	// Initialize file watcher after PocketBase is ready
-	pbApp.OnServe().Bind(&hook.Handler[*core.ServeEvent]{
+	pb.OnServe().Bind(&hook.Handler[*core.ServeEvent]{
 		Func: func(e *core.ServeEvent) error {
 			// Set up file watcher if paths were provided
 			if pathsStr != "" {
@@ -144,7 +147,7 @@ func main() {
 				log.Printf("Starting Sandstorm log watcher")
 				log.Printf("Watching paths: %v", paths)
 
-				fileWatcher, err = app.NewWatcher(pbApp, appConfig.Servers)
+				fileWatcher, err = app.NewWatcher(pb, appConfig.Servers)
 				if err != nil {
 					return err
 				}
@@ -171,7 +174,7 @@ func main() {
 	})
 
 	// Handle graceful shutdown of file watcher
-	pbApp.OnTerminate().BindFunc(func(e *core.TerminateEvent) error {
+	pb.OnTerminate().BindFunc(func(e *core.TerminateEvent) error {
 		if fileWatcher != nil {
 			log.Println("Stopping file watcher...")
 			fileWatcher.Stop()
@@ -183,12 +186,12 @@ func main() {
 	// ---------------------------------------------------------------
 	// A2S Query Cron Job - Update player scores every minute
 	// ---------------------------------------------------------------
-	pbApp.OnServe().BindFunc(func(e *core.ServeEvent) error {
+	pb.OnServe().BindFunc(func(e *core.ServeEvent) error {
 		app.RegisterA2SCron(e.App, appConfig)
 		return e.Next()
 	})
 
-	if err := pbApp.Start(); err != nil {
+	if err := pb.Start(); err != nil {
 		log.Fatal(err)
 	}
 }

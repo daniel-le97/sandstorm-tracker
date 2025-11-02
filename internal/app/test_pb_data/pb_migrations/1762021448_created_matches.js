@@ -1,4 +1,4 @@
-/// <reference path="../pb_data/types.d.ts" />
+/// <reference path="../types.d.ts" />
 migrate((app) => {
   const collection = new Collection({
     "createRule": null,
@@ -122,12 +122,12 @@ migrate((app) => {
       "CREATE INDEX IF NOT EXISTS `idx_matches_server_end_time` ON `matches` (`server`, `end_time`)",
       "CREATE INDEX IF NOT EXISTS `idx_matches_server_start_time` ON `matches` (`server`, `start_time` DESC)"
     ],
-    "listRule": null,
+    "listRule": "",
     "name": "matches",
     "system": false,
     "type": "base",
     "updateRule": null,
-    "viewRule": null
+    "viewRule": ""
   });
 
   return app.save(collection);

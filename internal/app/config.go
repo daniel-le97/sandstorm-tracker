@@ -13,21 +13,14 @@ type ServerConfig struct {
 	Enabled      bool   `mapstructure:"enabled"`
 }
 
-type DatabaseConfig struct {
-	Path      string `mapstructure:"path"`
-	EnableWAL bool   `mapstructure:"enableWAL"`
-	CacheSize int    `mapstructure:"cacheSize"`
-}
-
 type LoggingConfig struct {
 	Level            string `mapstructure:"level"`
 	EnableServerLogs bool   `mapstructure:"enableServerLogs"`
 }
 
 type AppConfig struct {
-	Servers  []ServerConfig `mapstructure:"servers"`
-	Database DatabaseConfig `mapstructure:"database"`
-	Logging  LoggingConfig  `mapstructure:"logging"`
+	Servers []ServerConfig `mapstructure:"servers"`
+	Logging LoggingConfig  `mapstructure:"logging"`
 }
 
 func InitConfig() (*AppConfig, error) {
@@ -43,7 +36,6 @@ func InitConfig() (*AppConfig, error) {
 	// Format: SANDSTORM_SERVERS_0_RCONPASSWORD will override servers[0].rconPassword
 	viper.BindEnv("servers.0.rconPassword", "RCON_PASSWORD_MAIN")
 	viper.BindEnv("servers.1.rconPassword", "RCON_PASSWORD_SECONDARY")
-	viper.BindEnv("database.path", "DB_PATH")
 
 	err := viper.ReadInConfig()
 	if err != nil {

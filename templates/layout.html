@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{block "title" .}}Sandstorm Tracker{{end}}</title>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+            line-height: 1.6;
+        }
+
+        nav {
+            background-color: #2d2d2d;
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        nav ul {
+            list-style: none;
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        nav .brand {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #ff6b35;
+            margin-right: auto;
+        }
+
+        nav a {
+            color: #e0e0e0;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            transition: background-color 0.2s, color 0.2s;
+        }
+
+        nav a:hover {
+            background-color: #3d3d3d;
+            color: #ff6b35;
+        }
+
+        nav a.active {
+            background-color: #ff6b35;
+            color: #1a1a1a;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        .card {
+            background-color: #2d2d2d;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .card h2 {
+            color: #ff6b35;
+            margin-bottom: 1rem;
+            border-bottom: 2px solid #3d3d3d;
+            padding-bottom: 0.5rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        th {
+            background-color: #3d3d3d;
+            color: #ff6b35;
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        td {
+            padding: 0.875rem 1rem;
+            border-bottom: 1px solid #3d3d3d;
+        }
+
+        tr:hover {
+            background-color: #353535;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .badge-active {
+            background-color: #4caf50;
+            color: white;
+        }
+
+        .badge-inactive {
+            background-color: #757575;
+            color: white;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #999;
+        }
+
+        .htmx-indicator {
+            opacity: 0;
+            transition: opacity 200ms ease-in;
+        }
+
+        .htmx-request .htmx-indicator {
+            opacity: 1;
+        }
+
+        .htmx-request.htmx-indicator {
+            opacity: 1;
+        }
+    </style>
+</head>
+
+<body>
+    <nav>
+        <ul>
+            <li class="brand">🎮 Sandstorm Tracker</li>
+            <li><a href="/" {{if eq .ActivePage "servers" }}class="active" {{end}}>Servers</a></li>
+            <li><a href="/matches" {{if eq .ActivePage "matches" }}class="active" {{end}}>Matches</a></li>
+            <li><a href="/players" {{if eq .ActivePage "players" }}class="active" {{end}}>Players</a></li>
+            <li><a href="/weapons" {{if eq .ActivePage "weapons" }}class="active" {{end}}>Weapons</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        {{block "content" .}}{{end}}
+    </div>
+
+    <script>
+        // Add active class to current page
+        document.addEventListener( 'DOMContentLoaded', function ()
+        {
+            const currentPath = window.location.pathname;
+            document.querySelectorAll( 'nav a' ).forEach( link =>
+            {
+                if ( link.getAttribute( 'href' ) === currentPath )
+                {
+                    link.classList.add( 'active' );
+                }
+            } );
+        } );
+    </script>
+</body>
+
+</html>

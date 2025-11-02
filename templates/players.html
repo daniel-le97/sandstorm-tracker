@@ -1,0 +1,37 @@
+{{define "title"}}Players - Sandstorm Tracker{{end}}
+
+{{define "content"}}
+<div class="card">
+    <h2>Players</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Steam ID / External ID</th>
+                <th>Total Kills</th>
+                <th>Total Deaths</th>
+                <th>K/D Ratio</th>
+                <th>First Seen</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{range .Players}}
+            <tr>
+                <td><strong>{{.Name}}</strong></td>
+                <td><code
+                        style="background: #1a1a1a; padding: 0.25rem 0.5rem; border-radius: 4px;">{{.ExternalID}}</code>
+                </td>
+                <td>{{.TotalKills}}</td>
+                <td>{{.TotalDeaths}}</td>
+                <td>{{.KDRatio}}</td>
+                <td>{{.Created}}</td>
+            </tr>
+            {{else}}
+                <tr>
+                    <td colspan="6" style="text-align: center; color: #999;">No players found</td>
+                </tr>
+                {{end}}
+        </tbody>
+    </table>
+</div>
+{{end}}

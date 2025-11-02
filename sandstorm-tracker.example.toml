@@ -14,11 +14,6 @@ rconAddress = "127.0.0.1:27014"
 rconPassword = "MyRconPassword2"
 enabled = false
 
-[database]
-path = "sandstorm-tracker.db"
-enableWAL = true
-cacheSize = 2000
-
 [logging]
 level = "info"
 enableServerLogs = true

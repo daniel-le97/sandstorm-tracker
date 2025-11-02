@@ -1,0 +1,31 @@
+{{define "title"}}Servers - Sandstorm Tracker{{end}}
+
+{{define "content"}}
+<div class="card">
+    <h2>Servers</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>External ID</th>
+                <th>Path</th>
+                <th>Created</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{range .Servers}}
+            <tr>
+                <td><strong>{{.Get "external_id"}}</strong></td>
+                <td>{{.Id}}</td>
+                <td>{{.GetString "path"}}</td>
+                <td>{{.GetDateTime "created"}}</td>
+            </tr>
+            {{else}}
+                <tr>
+                    <td colspan="4" style="text-align: center; color: #999;">No servers found</td>
+                </tr>
+                {{end}}
+        </tbody>
+    </table>
+</div>
+{{end}}

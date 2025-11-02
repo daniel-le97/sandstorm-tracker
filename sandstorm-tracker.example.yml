@@ -14,11 +14,6 @@ servers:
     queryAddress: "127.0.0.1:27015" # Optional: A2S query port
     enabled: false
 
-database:
-  path: "sandstorm-tracker.db"
-  enableWAL: true
-  cacheSize: 2000
-
 logging:
   level: "info"
   enableServerLogs: true
@@ -32,7 +27,6 @@ logging:
 #   You can override config values with environment variables:
 #   - RCON_PASSWORD_MAIN        - Override first server's RCON password
 #   - RCON_PASSWORD_SECONDARY   - Override second server's RCON password
-#   - DB_PATH                   - Override database path
 #
 #   Example (PowerShell):
 #     $env:RCON_PASSWORD_MAIN = "SecurePassword123"

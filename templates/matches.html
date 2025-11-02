@@ -1,0 +1,47 @@
+{{define "title"}}Matches - Sandstorm Tracker{{end}}
+
+{{define "content"}}
+<div class="card">
+    <h2>Recent Matches</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Server</th>
+                <th>Map</th>
+                <th>Mode</th>
+                <th>Start Time</th>
+                <th>End Time</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{range .Matches}}
+            <tr>
+                <td>{{.ExpandedOne "server"}}</td>
+                <td><strong>{{.GetString "map"}}</strong></td>
+                <td>{{.GetString "mode"}}</td>
+                <td>{{.GetDateTime "start_time"}}</td>
+                <td>
+                    {{if .GetString "end_time"}}
+                    {{.GetDateTime "end_time"}}
+                    {{else}}
+                        <span class="badge badge-active">Active</span>
+                        {{end}}
+                </td>
+                <td>
+                    {{if .GetString "end_time"}}
+                    <span class="badge badge-inactive">Completed</span>
+                    {{else}}
+                        <span class="badge badge-active">In Progress</span>
+                        {{end}}
+                </td>
+            </tr>
+            {{else}}
+                <tr>
+                    <td colspan="6" style="text-align: center; color: #999;">No matches found</td>
+                </tr>
+                {{end}}
+        </tbody>
+    </table>
+</div>
+{{end}}
