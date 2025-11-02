@@ -9,6 +9,7 @@ type ServerConfig struct {
 	LogPath      string `mapstructure:"logPath"`
 	RconAddress  string `mapstructure:"rconAddress"`
 	RconPassword string `mapstructure:"rconPassword"`
+	QueryAddress string `mapstructure:"queryAddress"`
 	Enabled      bool   `mapstructure:"enabled"`
 }
 

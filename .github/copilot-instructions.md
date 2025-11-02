@@ -2,67 +2,89 @@
 
 ## Project Architecture
 
-- **Purpose:** Tracks player stats, weapon usage, and match history for Insurgency: Sandstorm servers by parsing server logs and storing data in a database.
+- **Purpose:** Tracks player stats, weapon usage, and match history for Insurgency: Sandstorm servers by parsing server logs and storing data in PocketBase.
+- **Backend:** PocketBase v0.31.0 - embedded database with real-time subscriptions and admin dashboard
 - **Major Components:**
-  - `main.go`: Entry point, config loading, main event loop
-  - `db/`: Database schema, queries, and access logic (SQLite by default)
-  - `internal/utils/`: Utility functions (e.g., database checks, file helpers)
-  - `internal/watcher/`: File/directory watching and log ingestion
-  - `internal/events/`: Event parsing and processing logic
-  - `internal/config/`: Configuration loading and management using Viper
+  - `main.go`: PocketBase app initialization, plugin registration, watcher setup in OnServe hook
+  - `pb_migrations/`: JavaScript migrations for database schema (servers, players, matches, stats)
+  - `internal/app/`: Core application logic
+    - `watcher.go`: File watching and log ingestion (uses PocketBase app)
+    - `parser.go`: Log parsing and event processing (uses PocketBase Record API)
+    - `db_helpers.go`: PocketBase database helper functions (GetActiveMatch, CreatePlayer, etc.)
+    - `config.go`: Configuration loading using Viper
   - `internal/rcon/`: RCON client for server commands and queries
-  - `internal/tail/`: Log file tailing and processing, unused as watcher package is used instead
-  - `internal/log/`: Centralized logging setup and configuration
-  - `internal/core/`: core needs to tie together the rest of the packages for my app
-  - `cmd/`: CLI tools and commands
+  - `internal/a2s/`: A2S query protocol implementation
 - **Data Flow:**
-  1. Log files are watched and parsed for events.
-  2. Events are processed and stats are updated in the database.
-  3. Configurable via `sandstorm-tracker.json` (see below).
+  1. PocketBase starts and runs migrations to create collections
+  2. Watcher is initialized in OnServe hook with server paths from config
+  3. Log files are watched and parsed for events
+  4. Events are processed and stored using PocketBase Record API
+  5. Stats are queryable via PocketBase API or admin dashboard
 
 ## Configuration & Conventions
 
-- **Config:** All runtime config is loaded from `sandstorm-tracker.json` (or `example-config.json`). Use Viper for config access. Example structure:
-  ```json
-  {
-    "servers": [
-      {
-        "name": "Main Server",
-        "logPath": "/opt/sandstorm/Insurgency/Saved/Logs",
-        "enabled": true
-      }
-    ],
-    "database": {
-      "path": "sandstorm-tracker.db",
-      "enableWAL": true,
-      "cacheSize": 2000
-    },
-    "logging": { "level": "info", "enableServerLogs": true }
-  }
+- **Config:** Runtime config loaded from YAML/TOML files using Viper:
+
+  ```yaml
+  servers:
+    - name: "Main Server"
+      logPath: "/opt/sandstorm/Insurgency/Saved/Logs"
+      enabled: true
+
+  database:
+    path: "./pb_data" # PocketBase data directory
+
+  logging:
+    level: "info"
+    enableServerLogs: true
   ```
-- **Structs:** Use Go structs with `mapstructure` tags for config unmarshalling (see `main.go`).
-- **Testing:** Place tests in `*_test.go` files next to the code they test. Run with `go test ./...`.
-- **Build:** Use `go build -o sandstorm-tracker main.go`, or `task build` if available.
-- **Ignore:** `.gitignore` excludes binaries, logs, local configs, and editor files.
+
+- **PocketBase Collections:**
+  - `servers`: Server records (external_id, path)
+  - `players`: Player records (external_id/Steam ID, name)
+  - `matches`: Match records (server, map, mode, start_time, end_time)
+  - `match_player_stats`: Per-match player stats (kills, deaths, assists)
+  - `match_weapon_stats`: Per-match weapon stats (weapon, kills)
+- **Testing:**
+  - Use `tests.NewTestApp()` for PocketBase tests
+  - Register `jsvm` plugin to run JavaScript migrations in tests
+  - Place tests in `*_test.go` files, run with `go test ./...`
+- **Build:** Standard Go build or use PocketBase CLI
+- **Migrations:** Create new migrations using PocketBase admin dashboard or JS migration files
 
 ## Developer Workflows
 
-- **Add new tracked stats:** Update event parser, database schema, and config structs as needed.
-- **Add a new server:** Edit `sandstorm-tracker.json` and restart the tracker.
-- **Check DB:** Run with `-check` flag to print database stats.
-- **Debugging:** Use log output and database inspection for troubleshooting.
+- **Add new tracked stats:**
+  1. Create migration to add fields to collections
+  2. Update parser to extract new stats from logs
+  3. Update db_helpers to store new stats
+- **Add a new server:** Edit config YAML and restart (or use PocketBase admin UI)
+- **View data:** Access PocketBase admin dashboard at `http://localhost:8090/_/`
+- **Debugging:** Use log output and PocketBase admin dashboard for data inspection
 
 ## Patterns & Integration
 
-- **Event Parsing:** Centralized in the main loop and watcher utilities. Extend by adding new event types and handlers.
-- **Database:** All access via the `db/` package. Do not bypass this layer.
-- **Utilities:** Shared helpers in `internal/utils/`.
-- **External:** Relies on Insurgency: Sandstorm log format and SQLite (or compatible DB).
+- **Event Parsing:** Parser extracts events from logs and uses db_helpers to store in PocketBase
+- **Database Access:** Always use PocketBase Record API through db_helpers functions:
+  - `GetOrCreateServer()` - Find or create server record
+  - `GetActiveMatch()` - Get current active match for a server
+  - `CreateMatch()` - Start new match
+  - `GetPlayerByExternalID()` - Find player by Steam ID
+  - `CreatePlayer()` - Register new player
+  - `UpsertMatchPlayerStats()` - Update player stats in match
+  - `IncrementMatchPlayerKills()` - Increment kill count
+  - `UpsertMatchWeaponStats()` - Update weapon usage stats
+- **PocketBase Hooks:** Use OnServe, OnTerminate for lifecycle management
+- **Kill Attribution:** Only first player in multi-killer events gets kill credit, others get assists
 
 ## Examples
 
-- To add a new stat, update the event parser and extend the database schema in `db/schema.sql`.
-- To support a new server, add its log path to the config and set `enabled: true`.
+- To add a new stat field:
+  1. Create migration: Add field to `match_player_stats` collection
+  2. Update parser: Extract value from log line
+  3. Update helper: Add increment/update function in db_helpers.go
+- To query stats: Use PocketBase Record API filters or admin dashboard
+- To test: Use `tests.NewTestApp("./test_pb_data")` and jsvm plugin for migrations
 
 ---
 

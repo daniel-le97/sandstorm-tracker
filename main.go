@@ -180,6 +180,14 @@ func main() {
 		return e.Next()
 	})
 
+	// ---------------------------------------------------------------
+	// A2S Query Cron Job - Update player scores every minute
+	// ---------------------------------------------------------------
+	pbApp.OnServe().BindFunc(func(e *core.ServeEvent) error {
+		app.RegisterA2SCron(e.App, appConfig)
+		return e.Next()
+	})
+
 	if err := pbApp.Start(); err != nil {
 		log.Fatal(err)
 	}
