@@ -71,6 +71,57 @@ Sandstorm Tracker is a Go project that tracks kills, playtime, alive time, weapo
 
 The tracker accepts configuration via YAML, TOML, or JSON files. See `sandstorm-tracker.example.yml` for a complete example with all available options.
 
+### For sandstorm-admin-wrapper Users
+
+If you're using [sandstorm-admin-wrapper](https://github.com/startersclan/sandstorm-admin-wrapper), your servers share a common log directory with UUID-based log filenames. Here's how to configure:
+
+1. **Find your server's log file:**
+
+   ```sh
+   ls /opt/sandstorm-admin-wrapper/sandstorm-server/Insurgency/Saved/Logs/
+   # You'll see files like: abc123-uuid-uuid-uuid-uuid.log
+   ```
+
+2. **Configure each server with its specific log file:**
+
+   ```yaml
+   servers:
+     - name: "Main Server"
+       logPath: "/opt/sandstorm-admin-wrapper/sandstorm-server/Insurgency/Saved/Logs/abc123-your-uuid.log"
+       rconAddress: "127.0.0.1:27015"
+       rconPassword: "your_rcon_password"
+       queryAddress: "127.0.0.1:27131" # game port + 29
+       enabled: true
+
+     - name: "Secondary Server"
+       logPath: "/opt/sandstorm-admin-wrapper/sandstorm-server/Insurgency/Saved/Logs/def456-your-uuid.log"
+       rconAddress: "127.0.0.1:27115"
+       rconPassword: "your_rcon_password"
+       queryAddress: "127.0.0.1:27231" # game port + 29
+       enabled: true
+   ```
+
+3. **Query port calculation:**
+   - Query port = Game port + 29
+   - If your game port is 27102, query port is 27131
+   - If your game port is 27202, query port is 27231
+
+### For Standalone Server Users
+
+If you're running a single Insurgency: Sandstorm server, you can use the directory path:
+
+```yaml
+servers:
+  - name: "My Server"
+    logPath: "/opt/sandstorm/Insurgency/Saved/Logs" # Directory path
+    rconAddress: "127.0.0.1:27015"
+    rconPassword: "your_rcon_password"
+    queryAddress: "127.0.0.1:27016"
+    enabled: true
+```
+
+The tracker will automatically monitor all `.log` files in that directory.
+
 ### Example Configuration
 
 ```yaml

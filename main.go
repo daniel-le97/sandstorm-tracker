@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"sandstorm-tracker/internal/app"
-	"strings"
 
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/apis"
@@ -87,15 +86,6 @@ func main() {
 		"fallback the request to index.html on missing static path, e.g. when pretty urls are used with SPA",
 	)
 
-	// Sandstorm tracker specific flags
-	var pathsStr string
-	pb.RootCmd.PersistentFlags().StringVar(
-		&pathsStr,
-		"paths",
-		"",
-		"comma-separated list of paths to watch (files or directories)",
-	)
-
 	pb.RootCmd.ParseFlags(os.Args[1:])
 
 	// ---------------------------------------------------------------
@@ -132,34 +122,38 @@ func main() {
 	// Initialize file watcher after PocketBase is ready
 	pb.OnServe().Bind(&hook.Handler[*core.ServeEvent]{
 		Func: func(e *core.ServeEvent) error {
-			// Set up file watcher if paths were provided
-			if pathsStr != "" {
-				paths := strings.Split(pathsStr, ",")
-				for i, path := range paths {
-					paths[i] = strings.TrimSpace(path)
-					_, err := app.GetServerIdFromPath(paths[i])
-					if err != nil {
-						log.Printf("Warning: Failed to get server ID from path %s: %v", paths[i], err)
-						continue
-					}
+			// Ensure all servers from config are in the database
+			if err := appConfig.EnsureServersInDatabase(e.App); err != nil {
+				log.Printf("Warning: Failed to ensure servers in database: %v", err)
+			}
+
+			// Set up file watcher from config
+			var enabledServers []app.ServerConfig
+			for _, server := range appConfig.Servers {
+				if server.Enabled {
+					enabledServers = append(enabledServers, server)
 				}
+			}
 
-				log.Printf("Starting Sandstorm log watcher")
-				log.Printf("Watching paths: %v", paths)
+			if len(enabledServers) > 0 {
+				log.Printf("Starting Sandstorm log watcher for %d enabled server(s)", len(enabledServers))
 
-				fileWatcher, err = app.NewWatcher(pb, appConfig.Servers)
+				fileWatcher, err = app.NewWatcher(pb, enabledServers)
 				if err != nil {
 					return err
 				}
 
-				for _, path := range paths {
-					if err := fileWatcher.AddPath(path); err != nil {
-						log.Printf("Warning: Failed to add path %s: %v", path, err)
+				for _, server := range enabledServers {
+					log.Printf("Watching server '%s' at path: %s", server.Name, server.LogPath)
+					if err := fileWatcher.AddPath(server.LogPath); err != nil {
+						log.Printf("Warning: Failed to add path %s: %v", server.LogPath, err)
 					}
 				}
 
 				fileWatcher.Start()
 				log.Println("File watcher started")
+			} else {
+				log.Println("No enabled servers in config, file watcher not started")
 			}
 
 			// static route to serves files from the provided public dir

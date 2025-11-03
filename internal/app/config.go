@@ -3,6 +3,7 @@ package app
 import (
 	"fmt"
 
+	"github.com/pocketbase/pocketbase/core"
 	"github.com/spf13/viper"
 )
 
@@ -63,4 +64,44 @@ func InitConfig() (*AppConfig, error) {
 	}
 
 	return &config, nil
+}
+
+// EnsureServersInDatabase creates server records in PocketBase for all servers in config
+func (c *AppConfig) EnsureServersInDatabase(pbApp core.App) error {
+	for _, serverCfg := range c.Servers {
+		if !serverCfg.Enabled {
+			continue
+		}
+
+		// Check if server already exists by path
+		exists, err := pbApp.FindRecordsByFilter(
+			"servers",
+			"path = {:path}",
+			"",
+			1,
+			0,
+			map[string]any{"path": serverCfg.LogPath},
+		)
+
+		if err == nil && len(exists) > 0 {
+			// Server already exists
+			continue
+		}
+
+		// Create new server record
+		collection, err := pbApp.FindCollectionByNameOrId("servers")
+		if err != nil {
+			return fmt.Errorf("failed to find servers collection: %w", err)
+		}
+
+		record := core.NewRecord(collection)
+		record.Set("external_id", serverCfg.Name)
+		record.Set("path", serverCfg.LogPath)
+
+		if err := pbApp.Save(record); err != nil {
+			return fmt.Errorf("failed to create server record for %s: %w", serverCfg.Name, err)
+		}
+	}
+
+	return nil
 }

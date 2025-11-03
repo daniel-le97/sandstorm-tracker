@@ -1,17 +1,19 @@
 servers:
   - name: "Main Server"
-    logPath: "/opt/sandstorm/Insurgency/Saved/Logs"
+    # For sandstorm-admin-wrapper: Use full path to specific log file (e.g., /path/to/Logs/abc123-uuid.log)
+    # For standalone servers: Can use directory path (e.g., /opt/sandstorm/Insurgency/Saved/Logs)
+    logPath: "/opt/sandstorm-admin-wrapper/sandstorm-server/Insurgency/Saved/Logs/your-server-uuid.log"
     rconAddress: "127.0.0.1:27015"
     # Password can be overridden with RCON_PASSWORD_0 environment variable
     rconPassword: "your_rcon_password_here"
-    queryAddress: "127.0.0.1:27016" # Optional: A2S query port (game port + 1)
+    queryAddress: "127.0.0.1:27131" # A2S query port (usually game port + 29)
     enabled: true
   - name: "Secondary Server"
-    logPath: "/opt/sandstorm2/Insurgency/Saved/Logs"
-    rconAddress: "127.0.0.1:27014"
+    logPath: "/opt/sandstorm-admin-wrapper/sandstorm-server/Insurgency/Saved/Logs/your-server2-uuid.log"
+    rconAddress: "127.0.0.1:27115"
     # Password can be overridden with RCON_PASSWORD_1 environment variable
     rconPassword: "your_rcon_password_here"
-    queryAddress: "127.0.0.1:27015" # Optional: A2S query port
+    queryAddress: "127.0.0.1:27231" # A2S query port
     enabled: false
 
 logging:
@@ -22,6 +24,16 @@ logging:
 # Usage:
 #   sandstorm-tracker --config path/to/your-config.yml
 #   sandstorm-tracker -c myconfig.yml
+#
+# For sandstorm-admin-wrapper users:
+#   1. Find your server's UUID-based log file in: /opt/sandstorm-admin-wrapper/sandstorm-server/Insurgency/Saved/Logs/
+#   2. The filename will look like: abc123-uuid-uuid-uuid-uuid.log
+#   3. Copy the FULL path to that specific log file for each server's logPath below
+#   4. Each server instance needs its own unique log file path
+#
+# For standalone server users:
+#   - You can use just the directory path (e.g., /opt/sandstorm/Insurgency/Saved/Logs)
+#   - The tracker will automatically find and monitor all .log files in that directory
 #
 # Environment Variable Support:
 #   You can override config values with environment variables:

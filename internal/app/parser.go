@@ -22,6 +22,7 @@ type LogParser struct {
 
 // logPatterns contains compiled regex patterns for log parsing
 type logPatterns struct {
+	CommandLine      *regexp.Regexp
 	PlayerKill       *regexp.Regexp
 	PlayerJoin       *regexp.Regexp
 	PlayerDisconnect *regexp.Regexp
@@ -38,6 +39,7 @@ type logPatterns struct {
 
 func newLogPatterns() *logPatterns {
 	return &logPatterns{
+		CommandLine: regexp.MustCompile(`LogInit: Command Line:\s+(\w+)\?Scenario=([^?]+)\?MaxPlayers=(\d+)\?Game=([^?]+)\?Lighting=(\w+).*?-Hostname="([^"]+)"`),
 		// Kill events - always provide consistent capture groups for killer/victim/weapon fields
 		// PlayerKill: timestamp, killerSection, victimName, victimSteam, victimTeam, weapon
 		PlayerKill: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\s*\d+\]LogGameplayEvents: Display: (.+?) killed ([^\[]+)\[([^,\]]*), team (\d+)\] with (.+)$`),

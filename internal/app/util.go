@@ -3,11 +3,9 @@ package app
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
-
 )
-
-
 
 func derefInt64(ptr *int64) int64 {
 	if ptr == nil {
@@ -23,23 +21,39 @@ func derefString(ptr *string) string {
 	return *ptr
 }
 
+// GetServerIdFromPath determines the server ID from a config path
+// Supports both file paths (e.g., /logs/abc-uuid.log) and directory paths (e.g., /logs)
 func GetServerIdFromPath(path string) (string, error) {
-	// Example path: C:\Games\Steam\steamapps\common\Sandstorm Dedicated Server\Server1\Logs
+	info, err := os.Stat(path)
+	if err != nil {
+		return "", fmt.Errorf("path does not exist: %s - %w", path, err)
+	}
+
+	// If it's a file path, extract server ID from filename
+	if !info.IsDir() {
+		filename := filepath.Base(path)
+		serverID := strings.TrimSuffix(filename, ".log")
+		if serverID == "" {
+			return "", fmt.Errorf("invalid log file name: %s", filename)
+		}
+		return serverID, nil
+	}
+
+	// If it's a directory, find the first .log file (excluding backups)
 	entries, err := os.ReadDir(path)
 	if err != nil {
-		if os.IsNotExist(err) {
-			return "", fmt.Errorf("path does not exist: %s", path)
-		}
+		return "", fmt.Errorf("failed to read directory %s: %w", path, err)
 	}
+
 	for _, entry := range entries {
 		if entry.IsDir() {
 			continue
 		}
 		name := entry.Name()
-		if strings.Contains(name, "backup") {
-			continue
+		if strings.HasSuffix(name, ".log") && !strings.Contains(name, "backup") {
+			return strings.TrimSuffix(name, ".log"), nil
 		}
-		return strings.Trim(name, ".log"), nil
 	}
-	return "", fmt.Errorf("could not determine server ID from path: %s", path)
+
+	return "", fmt.Errorf("no log files found in directory: %s", path)
 }

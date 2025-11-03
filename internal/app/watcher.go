@@ -118,6 +118,9 @@ func (w *Watcher) saveOffsets() {
 }
 
 // AddPath adds a file or directory to watch
+// Supports both:
+//   - File path: /path/to/logs/server-uuid.log (for sandstorm-admin-wrapper)
+//   - Directory path: /path/to/logs (for standalone servers)
 func (w *Watcher) AddPath(path string) error {
 	absPath, err := filepath.Abs(path)
 	if err != nil {
@@ -130,18 +133,42 @@ func (w *Watcher) AddPath(path string) error {
 	}
 
 	if info.IsDir() {
+		// Watch entire directory for .log files
 		err = w.watcher.Add(absPath)
 		if err != nil {
 			return fmt.Errorf("failed to watch directory %s: %w", absPath, err)
 		}
 		log.Printf("Watching directory: %s", absPath)
-	} else {
-		err = w.watcher.Add(absPath)
+
+		// Process existing log files in directory
+		files, err := os.ReadDir(absPath)
 		if err != nil {
-			return fmt.Errorf("failed to watch file %s: %w", absPath, err)
+			return fmt.Errorf("failed to read directory %s: %w", absPath, err)
 		}
+		for _, file := range files {
+			if !file.IsDir() && strings.HasSuffix(file.Name(), ".log") && !strings.Contains(file.Name(), "-backup-") {
+				logFilePath := filepath.Join(absPath, file.Name())
+				w.mu.Lock()
+				if _, exists := w.fileOffsets[logFilePath]; !exists {
+					w.fileOffsets[logFilePath] = 0
+				}
+				w.mu.Unlock()
+				go w.processFile(logFilePath)
+			}
+		}
+	} else {
+		// Watch specific file (sandstorm-admin-wrapper use case)
+		// Also watch the parent directory to catch file changes
+		dir := filepath.Dir(absPath)
+		err = w.watcher.Add(dir)
+		if err != nil {
+			return fmt.Errorf("failed to watch directory %s: %w", dir, err)
+		}
+
 		w.mu.Lock()
-		w.fileOffsets[absPath] = 0
+		if _, exists := w.fileOffsets[absPath]; !exists {
+			w.fileOffsets[absPath] = 0
+		}
 		w.mu.Unlock()
 		go w.processFile(absPath)
 		log.Printf("Watching file: %s (starting from offset %d)", absPath, 0)
