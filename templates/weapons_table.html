@@ -1,0 +1,24 @@
+<table>
+    <thead>
+        <tr>
+            <th>Weapon</th>
+            <th>Total Kills</th>
+            <th>Times Used</th>
+            <th>Avg Kills per Use</th>
+        </tr>
+    </thead>
+    <tbody>
+        {{range .Weapons}}
+        <tr>
+            <td><strong>{{.Weapon}}</strong></td>
+            <td>{{.TotalKills}}</td>
+            <td>{{.TimesUsed}}</td>
+            <td>{{printf "%.2f" .AvgKills}}</td>
+        </tr>
+        {{else}}
+            <tr>
+                <td colspan="4" style="text-align: center; color: #999;">No weapon data found</td>
+            </tr>
+            {{end}}
+    </tbody>
+</table>

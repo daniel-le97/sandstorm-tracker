@@ -3,6 +3,7 @@ package app
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/tools/template"
@@ -36,6 +37,68 @@ func RegisterWebRoutes(app core.App) {
 			return re.HTML(http.StatusOK, html)
 		})
 
+		// Server matches endpoint
+		e.Router.GET("/servers/{id}/matches", func(re *core.RequestEvent) error {
+			serverID := re.Request.PathValue("id")
+
+			// Get server info
+			server, err := re.App.FindRecordById("servers", serverID)
+			if err != nil {
+				return re.NotFoundError("Server not found", err)
+			}
+
+			// Get matches for this server, ordered by start_time DESC (active first, then most recent)
+			matches, err := re.App.FindRecordsByFilter(
+				"matches",
+				"server = {:serverId}",
+				"-end_time, -start_time", // NULL end_time (active) sorts first, then by start_time DESC
+				-1,
+				0,
+				map[string]any{"serverId": serverID},
+			)
+			if err != nil {
+				matches = []*core.Record{}
+			}
+
+			// Format match data
+			type MatchInfo struct {
+				Map       string
+				Mode      string
+				Scenario  string
+				StartTime string
+				EndTime   string
+			}
+
+			matchInfos := make([]MatchInfo, len(matches))
+			for i, match := range matches {
+				endTime := ""
+				if !match.GetDateTime("end_time").IsZero() {
+					endTime = match.GetDateTime("end_time").Time().Format("2006-01-02 15:04")
+				}
+
+				matchInfos[i] = MatchInfo{
+					Map:       match.GetString("map"),
+					Mode:      match.GetString("mode"),
+					Scenario:  match.GetString("scenario"),
+					StartTime: match.GetDateTime("start_time").Time().Format("2006-01-02 15:04"),
+					EndTime:   endTime,
+				}
+			}
+
+			html, err := registry.LoadFiles(
+				"templates/server_matches.html",
+			).Render(map[string]any{
+				"ServerName": server.GetString("external_id"),
+				"Matches":    matchInfos,
+			})
+
+			if err != nil {
+				return re.InternalServerError("Failed to render template", err)
+			}
+
+			return re.HTML(http.StatusOK, html)
+		})
+
 		// Matches page
 		e.Router.GET("/matches", func(re *core.RequestEvent) error {
 			matches, err := re.App.FindRecordsByFilter(
@@ -52,12 +115,45 @@ func RegisterWebRoutes(app core.App) {
 			// Expand server relation
 			re.App.ExpandRecords(matches, []string{"server"}, nil)
 
+			// Format match data
+			type MatchInfo struct {
+				ServerName string
+				Map        string
+				Mode       string
+				StartTime  string
+				EndTime    string
+				IsActive   bool
+			}
+
+			matchInfos := make([]MatchInfo, len(matches))
+			for i, match := range matches {
+				serverName := ""
+				if serverRec := match.ExpandedOne("server"); serverRec != nil {
+					serverName = serverRec.GetString("external_id")
+				}
+
+				endTime := ""
+				isActive := match.GetDateTime("end_time").IsZero()
+				if !isActive {
+					endTime = match.GetDateTime("end_time").Time().Format("2006-01-02 15:04")
+				}
+
+				matchInfos[i] = MatchInfo{
+					ServerName: serverName,
+					Map:        match.GetString("map"),
+					Mode:       match.GetString("mode"),
+					StartTime:  match.GetDateTime("start_time").Time().Format("2006-01-02 15:04"),
+					EndTime:    endTime,
+					IsActive:   isActive,
+				}
+			}
+
 			html, err := registry.LoadFiles(
 				"templates/layout.html",
 				"templates/matches.html",
 			).Render(map[string]any{
 				"ActivePage": "matches",
-				"Matches":    matches,
+				"Matches":    matchInfos,
 			})
 
 			if err != nil {
@@ -69,7 +165,29 @@ func RegisterWebRoutes(app core.App) {
 
 		// Players page
 		e.Router.GET("/players", func(re *core.RequestEvent) error {
-			players, err := re.App.FindAllRecords("players")
+			searchQuery := re.Request.URL.Query().Get("search")
+
+			// Build filter for search (only by name)
+			filter := ""
+			if searchQuery != "" {
+				filter = "name ~ {:search}"
+			}
+
+			var players []*core.Record
+			var err error
+			if filter != "" {
+				players, err = re.App.FindRecordsByFilter(
+					"players",
+					filter,
+					"",
+					-1,
+					0,
+					map[string]any{"search": searchQuery},
+				)
+			} else {
+				players, err = re.App.FindAllRecords("players")
+			}
+
 			if err != nil {
 				players = []*core.Record{}
 			}
@@ -136,13 +254,27 @@ func RegisterWebRoutes(app core.App) {
 				}
 			}
 
-			html, err := registry.LoadFiles(
-				"templates/layout.html",
-				"templates/players.html",
-			).Render(map[string]any{
-				"ActivePage": "players",
-				"Players":    playerStats,
-			})
+			// Check if this is an HTMX request (partial update)
+			isHTMX := re.Request.Header.Get("HX-Request") == "true"
+
+			var html string
+			if isHTMX {
+				// Return just the table for HTMX updates
+				html, err = registry.LoadFiles(
+					"templates/players_table.html",
+				).Render(map[string]any{
+					"Players": playerStats,
+				})
+			} else {
+				// Return full page
+				html, err = registry.LoadFiles(
+					"templates/layout.html",
+					"templates/players.html",
+				).Render(map[string]any{
+					"ActivePage": "players",
+					"Players":    playerStats,
+				})
+			}
 
 			if err != nil {
 				return re.InternalServerError("Failed to render template", err)
@@ -153,6 +285,8 @@ func RegisterWebRoutes(app core.App) {
 
 		// Weapons page
 		e.Router.GET("/weapons", func(re *core.RequestEvent) error {
+			searchQuery := re.Request.URL.Query().Get("search")
+
 			weaponStats, err := re.App.FindAllRecords("match_weapon_stats")
 			if err != nil {
 				weaponStats = []*core.Record{}
@@ -173,6 +307,13 @@ func RegisterWebRoutes(app core.App) {
 
 				if weapon == "" {
 					continue
+				}
+
+				// Apply search filter
+				if searchQuery != "" {
+					if !contains(weapon, searchQuery) {
+						continue
+					}
 				}
 
 				if _, exists := weaponMap[weapon]; !exists {
@@ -203,13 +344,27 @@ func RegisterWebRoutes(app core.App) {
 				}
 			}
 
-			html, err := registry.LoadFiles(
-				"templates/layout.html",
-				"templates/weapons.html",
-			).Render(map[string]any{
-				"ActivePage": "weapons",
-				"Weapons":    weapons,
-			})
+			// Check if this is an HTMX request (partial update)
+			isHTMX := re.Request.Header.Get("HX-Request") == "true"
+
+			var html string
+			if isHTMX {
+				// Return just the table for HTMX updates
+				html, err = registry.LoadFiles(
+					"templates/weapons_table.html",
+				).Render(map[string]any{
+					"Weapons": weapons,
+				})
+			} else {
+				// Return full page
+				html, err = registry.LoadFiles(
+					"templates/layout.html",
+					"templates/weapons.html",
+				).Render(map[string]any{
+					"ActivePage": "weapons",
+					"Weapons":    weapons,
+				})
+			}
 
 			if err != nil {
 				return re.InternalServerError("Failed to render template", err)
@@ -220,4 +375,11 @@ func RegisterWebRoutes(app core.App) {
 
 		return e.Next()
 	})
+}
+
+// contains performs a case-insensitive substring search
+func contains(s, substr string) bool {
+	s = strings.ToLower(s)
+	substr = strings.ToLower(substr)
+	return strings.Contains(s, substr)
 }

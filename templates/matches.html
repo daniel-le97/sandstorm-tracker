@@ -17,22 +17,28 @@
         <tbody>
             {{range .Matches}}
             <tr>
-                <td>{{.ExpandedOne "server"}}</td>
-                <td><strong>{{.GetString "map"}}</strong></td>
-                <td>{{.GetString "mode"}}</td>
-                <td>{{.GetDateTime "start_time"}}</td>
+                <td><strong></strong>{{.ServerName}}</strong></td>
+                <td>{{.Map}}</td>
+                <td>{{.Mode}}</td>
+                <td>{{.StartTime}}</td>
                 <td>
-                    {{if .GetString "end_time"}}
-                    {{.GetDateTime "end_time"}}
+                    {{if .EndTime}}
+                    {{.EndTime}}
                     {{else}}
-                        <span class="badge badge-active">Active</span>
+                        <span style="color: #999;">-</span>
                         {{end}}
                 </td>
                 <td>
-                    {{if .GetString "end_time"}}
-                    <span class="badge badge-inactive">Completed</span>
+                    {{if .IsActive}}
+                    <span
+                        style="background: #22c55e; color: #ffffff; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.875rem;">
+                        Active
+                    </span>
                     {{else}}
-                        <span class="badge badge-active">In Progress</span>
+                        <span
+                            style="background: #4a5568; color: #e0e0e0; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.875rem;">
+                            Completed
+                        </span>
                         {{end}}
                 </td>
             </tr>

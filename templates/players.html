@@ -3,35 +3,41 @@
 {{define "content"}}
 <div class="card">
     <h2>Players</h2>
-    <table>
-        <thead>
-            <tr>
-                <th>Name</th>
-                <th>Steam ID / External ID</th>
-                <th>Total Kills</th>
-                <th>Total Deaths</th>
-                <th>K/D Ratio</th>
-                <th>First Seen</th>
-            </tr>
-        </thead>
-        <tbody>
-            {{range .Players}}
-            <tr>
-                <td><strong>{{.Name}}</strong></td>
-                <td><code
-                        style="background: #1a1a1a; padding: 0.25rem 0.5rem; border-radius: 4px;">{{.ExternalID}}</code>
-                </td>
-                <td>{{.TotalKills}}</td>
-                <td>{{.TotalDeaths}}</td>
-                <td>{{.KDRatio}}</td>
-                <td>{{.Created}}</td>
-            </tr>
-            {{else}}
+
+    <!-- Search Bar -->
+    <div style="margin-bottom: 1rem;">
+        <input type="text" id="playerSearch" placeholder="Search by name..." hx-get="/players"
+            hx-trigger="keyup changed delay:300ms" hx-target="#playersTable" hx-include="#playerSearch" name="search"
+            style="width: 100%; padding: 0.75rem; background: #1a1a1a; border: 1px solid #333; border-radius: 4px; color: #e0e0e0; font-size: 1rem;" />
+    </div>
+
+    <div id="playersTable">
+        <table>
+            <thead>
                 <tr>
-                    <td colspan="6" style="text-align: center; color: #999;">No players found</td>
+                    <th>Name</th>
+                    <th>Total Kills</th>
+                    <th>Total Deaths</th>
+                    <th>K/D Ratio</th>
+                    <th>First Seen</th>
                 </tr>
-                {{end}}
-        </tbody>
-    </table>
+            </thead>
+            <tbody>
+                {{range .Players}}
+                <tr>
+                    <td><strong>{{.Name}}</strong></td>
+                    <td>{{.TotalKills}}</td>
+                    <td>{{.TotalDeaths}}</td>
+                    <td>{{.KDRatio}}</td>
+                    <td>{{.Created}}</td>
+                </tr>
+                {{else}}
+                    <tr>
+                        <td colspan="5" style="text-align: center; color: #999;">No players found</td>
+                    </tr>
+                    {{end}}
+            </tbody>
+        </table>
+    </div>
 </div>
 {{end}}

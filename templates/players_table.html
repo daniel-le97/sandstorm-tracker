@@ -1,0 +1,26 @@
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Total Kills</th>
+            <th>Total Deaths</th>
+            <th>K/D Ratio</th>
+            <th>First Seen</th>
+        </tr>
+    </thead>
+    <tbody>
+        {{range .Players}}
+        <tr>
+            <td><strong>{{.Name}}</strong></td>
+            <td>{{.TotalKills}}</td>
+            <td>{{.TotalDeaths}}</td>
+            <td>{{.KDRatio}}</td>
+            <td>{{.Created}}</td>
+        </tr>
+        {{else}}
+            <tr>
+                <td colspan="5" style="text-align: center; color: #999;">No players found</td>
+            </tr>
+            {{end}}
+    </tbody>
+</table>

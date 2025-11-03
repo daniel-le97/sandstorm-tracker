@@ -7,25 +7,29 @@
         <thead>
             <tr>
                 <th>Name</th>
-                <th>External ID</th>
                 <th>Path</th>
                 <th>Created</th>
             </tr>
         </thead>
         <tbody>
             {{range .Servers}}
-            <tr>
+            <tr style="cursor: pointer;" hx-get="/servers/{{.Id}}/matches" hx-target="#matchesContainer"
+                hx-swap="innerHTML">
                 <td><strong>{{.Get "external_id"}}</strong></td>
-                <td>{{.Id}}</td>
                 <td>{{.GetString "path"}}</td>
                 <td>{{.GetDateTime "created"}}</td>
             </tr>
             {{else}}
                 <tr>
-                    <td colspan="4" style="text-align: center; color: #999;">No servers found</td>
+                    <td colspan="3" style="text-align: center; color: #999;">No servers found</td>
                 </tr>
                 {{end}}
         </tbody>
     </table>
+</div>
+
+<!-- Matches Container -->
+<div id="matchesContainer" style="margin-top: 2rem;">
+    <!-- Matches will be loaded here when a server is clicked -->
 </div>
 {{end}}

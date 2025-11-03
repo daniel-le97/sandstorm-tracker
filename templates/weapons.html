@@ -3,29 +3,39 @@
 {{define "content"}}
 <div class="card">
     <h2>Weapon Statistics</h2>
-    <table>
-        <thead>
-            <tr>
-                <th>Weapon</th>
-                <th>Total Kills</th>
-                <th>Times Used</th>
-                <th>Avg Kills per Use</th>
-            </tr>
-        </thead>
-        <tbody>
-            {{range .Weapons}}
-            <tr>
-                <td><strong>{{.Weapon}}</strong></td>
-                <td>{{.TotalKills}}</td>
-                <td>{{.TimesUsed}}</td>
-                <td>{{printf "%.2f" .AvgKills}}</td>
-            </tr>
-            {{else}}
+
+    <!-- Search Bar -->
+    <div style="margin-bottom: 1rem;">
+        <input type="text" id="weaponSearch" placeholder="Search by weapon name..." hx-get="/weapons"
+            hx-trigger="keyup changed delay:300ms" hx-target="#weaponsTable" hx-include="#weaponSearch" name="search"
+            style="width: 100%; padding: 0.75rem; background: #1a1a1a; border: 1px solid #333; border-radius: 4px; color: #e0e0e0; font-size: 1rem;" />
+    </div>
+
+    <div id="weaponsTable">
+        <table>
+            <thead>
                 <tr>
-                    <td colspan="4" style="text-align: center; color: #999;">No weapon data found</td>
+                    <th>Weapon</th>
+                    <th>Total Kills</th>
+                    <th>Times Used</th>
+                    <th>Avg Kills per Use</th>
                 </tr>
-                {{end}}
-        </tbody>
-    </table>
+            </thead>
+            <tbody>
+                {{range .Weapons}}
+                <tr>
+                    <td><strong>{{.Weapon}}</strong></td>
+                    <td>{{.TotalKills}}</td>
+                    <td>{{.TimesUsed}}</td>
+                    <td>{{printf "%.2f" .AvgKills}}</td>
+                </tr>
+                {{else}}
+                    <tr>
+                        <td colspan="4" style="text-align: center; color: #999;">No weapon data found</td>
+                    </tr>
+                    {{end}}
+            </tbody>
+        </table>
+    </div>
 </div>
 {{end}}

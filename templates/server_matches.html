@@ -1,0 +1,49 @@
+<div class="card">
+    <h2>Matches for {{.ServerName}}</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Status</th>
+                <th>Map</th>
+                <th>Mode</th>
+                <th>Scenario</th>
+                <th>Started</th>
+                <th>Ended</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{range .Matches}}
+            <tr>
+                <td>
+                    {{if .EndTime}}
+                    <span
+                        style="background: #4a5568; color: #e0e0e0; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.875rem;">
+                        Completed
+                    </span>
+                    {{else}}
+                        <span
+                            style="background: #22c55e; color: #ffffff; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.875rem;">
+                            Active
+                        </span>
+                        {{end}}
+                </td>
+                <td><strong>{{.Map}}</strong></td>
+                <td>{{.Mode}}</td>
+                <td>{{.Scenario}}</td>
+                <td>{{.StartTime}}</td>
+                <td>
+                    {{if .EndTime}}
+                    {{.EndTime}}
+                    {{else}}
+                        <span style="color: #999;">-</span>
+                        {{end}}
+                </td>
+            </tr>
+            {{else}}
+                <tr>
+                    <td colspan="6" style="text-align: center; color: #999;">No matches found for this server</td>
+                </tr>
+                {{end}}
+        </tbody>
+    </table>
+</div>
