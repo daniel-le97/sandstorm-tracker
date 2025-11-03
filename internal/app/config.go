@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"path/filepath"
 
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/spf13/viper"
@@ -73,6 +74,18 @@ func (c *AppConfig) EnsureServersInDatabase(pbApp core.App) error {
 			continue
 		}
 
+		// Normalize path to absolute path for consistent comparison
+		absPath, err := filepath.Abs(serverCfg.LogPath)
+		if err != nil {
+			absPath = serverCfg.LogPath
+		}
+
+		// Extract server UUID from the log file path
+		serverID, err := GetServerIdFromPath(absPath)
+		if err != nil {
+			return fmt.Errorf("failed to extract server ID from path %s: %w", absPath, err)
+		}
+
 		// Check if server already exists by path
 		exists, err := pbApp.FindRecordsByFilter(
 			"servers",
@@ -80,7 +93,7 @@ func (c *AppConfig) EnsureServersInDatabase(pbApp core.App) error {
 			"",
 			1,
 			0,
-			map[string]any{"path": serverCfg.LogPath},
+			map[string]any{"path": absPath},
 		)
 
 		if err == nil && len(exists) > 0 {
@@ -95,12 +108,15 @@ func (c *AppConfig) EnsureServersInDatabase(pbApp core.App) error {
 		}
 
 		record := core.NewRecord(collection)
-		record.Set("external_id", serverCfg.Name)
-		record.Set("path", serverCfg.LogPath)
+		record.Set("name", serverCfg.Name)  // Friendly name from config
+		record.Set("external_id", serverID) // UUID from filename
+		record.Set("path", absPath)
 
 		if err := pbApp.Save(record); err != nil {
 			return fmt.Errorf("failed to create server record for %s: %w", serverCfg.Name, err)
 		}
+
+		fmt.Printf("Created server: name='%s', external_id='%s', path='%s'\n", serverCfg.Name, serverID, absPath)
 	}
 
 	return nil

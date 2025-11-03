@@ -13,13 +13,9 @@ tasks:
     cmds:
       - go build ./...\
   dev:
-    desc: run app with defaults (db sandstorm-tracker.db, port 8080, server hc)
+    desc: run app with defaults
     cmds:
-      - go run main.go -paths="C:\Users\danie\code\sandstorm-admin-wrapper\sandstorm-server\Insurgency\Saved\Logs"
-  web:
-    desc: Run the web server (default db, port 8080)
-    cmds:
-      - go run ./cmd/web -db=sandstorm-tracker.db -port=8080 -server=hc
+      - go run main.go serve
   test:
     desc: Run all Go tests
     cmds:
@@ -28,6 +24,10 @@ tasks:
     desc: Run gofmt on all Go files
     cmds:
       - gofmt -w .
+  superuser:
+    desc: Create an initial superuser account
+    cmds:
+      - go run . superuser create test@example.com password123
   clean:
     desc: Remove built binaries
     cmds:

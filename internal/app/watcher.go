@@ -3,7 +3,6 @@ package app
 import (
 	"bufio"
 	"context"
-	"encoding/json"
 	"fmt"
 	"log"
 	"net"
@@ -27,12 +26,10 @@ type Watcher struct {
 	ctx           context.Context
 	cancel        context.CancelFunc
 	wg            sync.WaitGroup
-	fileOffsets   map[string]int64
 	mu            sync.RWMutex
 	rconClients   map[string]*rcon.RconClient
 	rconMu        sync.Mutex
 	serverConfigs map[string]ServerConfig
-	offsetsPath   string
 }
 
 // NewWatcher creates a new file watcher
@@ -54,67 +51,17 @@ func NewWatcher(pbApp core.App, serverConfigs []ServerConfig) (*Watcher, error) 
 		scMap[serverID] = sc
 	}
 
-	cwd, err := os.Getwd()
-	if err != nil {
-		cancel()
-		return nil, fmt.Errorf("failed to get current working directory: %w", err)
-	}
-
 	w := &Watcher{
 		watcher:       watcher,
 		parser:        NewLogParser(pbApp),
 		pbApp:         pbApp,
 		ctx:           ctx,
 		cancel:        cancel,
-		offsetsPath:   filepath.Join(cwd, "sandstorm-tracker-offsets.json"),
-		fileOffsets:   make(map[string]int64),
 		rconClients:   make(map[string]*rcon.RconClient),
 		serverConfigs: scMap,
 	}
-	w.loadOffsets()
 
 	return w, nil
-}
-
-func (w *Watcher) loadOffsets() {
-	if _, err := os.Stat(w.offsetsPath); os.IsNotExist(err) {
-		file, err := os.Create(w.offsetsPath)
-		if err != nil {
-			log.Printf("Failed to create offsets file: %v", err)
-			return
-		}
-		file.Close()
-	}
-
-	data, err := os.ReadFile(w.offsetsPath)
-	if err != nil {
-		log.Printf("No previous file offsets found, starting fresh.")
-		return
-	}
-
-	var offsets map[string]int64
-	if err := json.Unmarshal(data, &offsets); err != nil {
-		log.Printf("Failed to unmarshal file offsets: %v", err)
-		return
-	}
-
-	w.mu.Lock()
-	w.fileOffsets = offsets
-	w.mu.Unlock()
-	log.Printf("Loaded file offsets from %s", w.offsetsPath)
-}
-
-func (w *Watcher) saveOffsets() {
-	w.mu.RLock()
-	data, err := json.MarshalIndent(w.fileOffsets, "", "  ")
-	w.mu.RUnlock()
-	if err != nil {
-		log.Printf("Failed to marshal file offsets: %v", err)
-		return
-	}
-	if err := os.WriteFile(w.offsetsPath, data, 0644); err != nil {
-		log.Printf("Failed to write file offsets: %v", err)
-	}
 }
 
 // AddPath adds a file or directory to watch
@@ -148,11 +95,6 @@ func (w *Watcher) AddPath(path string) error {
 		for _, file := range files {
 			if !file.IsDir() && strings.HasSuffix(file.Name(), ".log") && !strings.Contains(file.Name(), "-backup-") {
 				logFilePath := filepath.Join(absPath, file.Name())
-				w.mu.Lock()
-				if _, exists := w.fileOffsets[logFilePath]; !exists {
-					w.fileOffsets[logFilePath] = 0
-				}
-				w.mu.Unlock()
 				go w.processFile(logFilePath)
 			}
 		}
@@ -165,13 +107,8 @@ func (w *Watcher) AddPath(path string) error {
 			return fmt.Errorf("failed to watch directory %s: %w", dir, err)
 		}
 
-		w.mu.Lock()
-		if _, exists := w.fileOffsets[absPath]; !exists {
-			w.fileOffsets[absPath] = 0
-		}
-		w.mu.Unlock()
 		go w.processFile(absPath)
-		log.Printf("Watching file: %s (starting from offset %d)", absPath, 0)
+		log.Printf("Watching file: %s", absPath)
 	}
 	return nil
 }
@@ -187,7 +124,6 @@ func (w *Watcher) Stop() {
 	w.cancel()
 	w.wg.Wait()
 	w.watcher.Close()
-	w.saveOffsets()
 }
 
 func (w *Watcher) watchLoop() {
@@ -222,15 +158,21 @@ func (w *Watcher) handleFileEvent(event fsnotify.Event) {
 func (w *Watcher) processFile(filePath string) {
 	serverID := w.extractServerIDFromPath(filePath)
 
-	w.mu.Lock()
-	offset, exists := w.fileOffsets[filePath]
-	w.mu.Unlock()
-	if !exists {
-		offset = 0
-		w.mu.Lock()
-		w.fileOffsets[filePath] = 0
-		w.mu.Unlock()
+	// Get server DB ID and load offset from database
+	serverDBID, err := w.getOrCreateServerDBID(serverID, filePath)
+	if err != nil {
+		log.Printf("Failed to get server DB ID: %v", err)
+		return
 	}
+
+	// Load offset from database
+	serverRecord, err := w.pbApp.FindRecordById("servers", serverDBID)
+	if err != nil {
+		log.Printf("Error loading server record: %v", err)
+		return
+	}
+
+	offset := serverRecord.GetInt("offset")
 
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -239,15 +181,8 @@ func (w *Watcher) processFile(filePath string) {
 	}
 	defer file.Close()
 
-	if _, err := file.Seek(offset, 0); err != nil {
+	if _, err := file.Seek(int64(offset), 0); err != nil {
 		log.Printf("Error seeking to offset %d in %s: %v", offset, filePath, err)
-		return
-	}
-
-	// Get server DB ID
-	serverDBID, err := w.getOrCreateServerDBID(serverID, filePath)
-	if err != nil {
-		log.Printf("Failed to get server DB ID: %v", err)
 		return
 	}
 
@@ -271,13 +206,15 @@ func (w *Watcher) processFile(filePath string) {
 	}
 
 	newOffset, _ := file.Seek(0, 1)
-	w.mu.Lock()
-	w.fileOffsets[filePath] = newOffset
-	w.mu.Unlock()
 
+	// Save new offset to database
 	if linesProcessed > 0 {
-		w.saveOffsets()
-		log.Printf("Processed %d lines from %s (new offset: %d)", linesProcessed, filePath, newOffset)
+		serverRecord.Set("offset", newOffset)
+		if err := w.pbApp.Save(serverRecord); err != nil {
+			log.Printf("Error saving server offset: %v", err)
+		} else {
+			log.Printf("Processed %d lines from %s (new offset: %d)", linesProcessed, filePath, newOffset)
+		}
 	}
 }
 
@@ -287,14 +224,28 @@ func (w *Watcher) extractServerIDFromPath(filePath string) string {
 }
 
 func (w *Watcher) getOrCreateServerDBID(serverID, logPath string) (string, error) {
-	ctx := context.Background()
-
-	serverRecordID, err := GetOrCreateServer(ctx, w.pbApp, serverID, logPath)
+	// Normalize the path for comparison
+	absPath, err := filepath.Abs(logPath)
 	if err != nil {
-		return "", fmt.Errorf("failed to get or create server: %w", err)
+		absPath = logPath
 	}
 
-	return serverRecordID, nil
+	// Find server by matching the log path from config
+	record, err := w.pbApp.FindFirstRecordByFilter(
+		"servers",
+		"path = {:path}",
+		map[string]any{"path": absPath},
+	)
+
+	if err == nil {
+		// Server found by path
+		return record.Id, nil
+	}
+
+	// This should not happen if config is properly set up
+	// But log a warning instead of creating a new server
+	log.Printf("Warning: No server found in database with path: %s", absPath)
+	return "", fmt.Errorf("server not found in database for path: %s", absPath)
 }
 
 // GetRconClient returns the RCON client for a server, creating it if needed

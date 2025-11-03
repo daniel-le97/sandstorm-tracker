@@ -1,6 +1,7 @@
 /// <reference path="../pb_data/types.d.ts" />
-migrate((app) => {
-  const collection = new Collection({
+migrate( ( app ) =>
+{
+  const collection = new Collection( {
     "createRule": null,
     "deleteRule": null,
     "fields": [
@@ -19,6 +20,18 @@ migrate((app) => {
         "type": "text"
       },
       {
+        "hidden": false,
+        "id": "number1493879504",
+        "max": null,
+        "min": null,
+        "name": "offset",
+        "onlyInt": false,
+        "presentable": false,
+        "required": false,
+        "system": false,
+        "type": "number"
+      },
+      {
         "autogeneratePattern": "",
         "hidden": false,
         "id": "text2675300272",
@@ -29,6 +42,20 @@ migrate((app) => {
         "presentable": false,
         "primaryKey": false,
         "required": true,
+        "system": false,
+        "type": "text"
+      },
+      {
+        "autogeneratePattern": "",
+        "hidden": false,
+        "id": "text1579384326",
+        "max": 0,
+        "min": 0,
+        "name": "name",
+        "pattern": "",
+        "presentable": false,
+        "primaryKey": false,
+        "required": false,
         "system": false,
         "type": "text"
       },
@@ -75,11 +102,12 @@ migrate((app) => {
     "type": "base",
     "updateRule": null,
     "viewRule": null
-  });
+  } );
 
-  return app.save(collection);
-}, (app) => {
-  const collection = app.findCollectionByNameOrId("pbc_3738798621");
+  return app.save( collection );
+}, ( app ) =>
+{
+  const collection = app.findCollectionByNameOrId( "pbc_3738798621" );
 
-  return app.delete(collection);
-})
+  return app.delete( collection );
+} );
