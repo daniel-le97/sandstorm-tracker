@@ -64,7 +64,43 @@ func InitConfig() (*AppConfig, error) {
 		return nil, err
 	}
 
+	// Validate that all enabled servers have required fields
+	if err := config.Validate(); err != nil {
+		return nil, err
+	}
+
 	return &config, nil
+}
+
+// Validate checks that all enabled servers have required configuration fields
+func (c *AppConfig) Validate() error {
+	for i, server := range c.Servers {
+		if !server.Enabled {
+			continue // Skip validation for disabled servers
+		}
+
+		if server.Name == "" {
+			return fmt.Errorf("server at index %d is missing 'name' field", i)
+		}
+
+		if server.LogPath == "" {
+			return fmt.Errorf("server '%s' (index %d) is missing 'logPath' field", server.Name, i)
+		}
+
+		if server.RconAddress == "" {
+			return fmt.Errorf("server '%s' (index %d) is missing 'rconAddress' field", server.Name, i)
+		}
+
+		if server.RconPassword == "" {
+			return fmt.Errorf("server '%s' (index %d) is missing 'rconPassword' field", server.Name, i)
+		}
+
+		if server.QueryAddress == "" {
+			return fmt.Errorf("server '%s' (index %d) is missing 'queryAddress' field (A2S query port, usually game port + 29)", server.Name, i)
+		}
+	}
+
+	return nil
 }
 
 // EnsureServersInDatabase creates server records in PocketBase for all servers in config

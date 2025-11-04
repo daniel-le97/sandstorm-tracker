@@ -3,6 +3,7 @@ servers:
     logPath: "C:\\Users\\danie\\code\\forks\\sandstorm-admin-wrapper\\sandstorm-server\\Insurgency\\Saved\\Logs\\1d6407b7-f51b-4b1d-ad9e-faabbfbb7dde.log"
     rconAddress: "127.0.0.1:27015"
     rconPassword: "hzZR1BfpM0eDYnLcfaqwM7Rq43QYwpLGdVuky0QZZxfuQFst"
+    queryAddress: "127.0.0.1:27131"
     enabled: true
 
 
