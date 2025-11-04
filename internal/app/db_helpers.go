@@ -148,6 +148,24 @@ func GetPlayerByExternalID(ctx context.Context, pbApp core.App, externalID strin
 	}, nil
 }
 
+// GetPlayerByName finds a player by their display name
+func GetPlayerByName(ctx context.Context, pbApp core.App, name string) (*Player, error) {
+	record, err := pbApp.FindFirstRecordByFilter(
+		"players",
+		"name = {:name}",
+		map[string]any{"name": name},
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Player{
+		ID:         record.Id,
+		ExternalID: record.GetString("external_id"),
+		Name:       record.GetString("name"),
+	}, nil
+}
+
 // CreatePlayer creates a new player record
 func CreatePlayer(ctx context.Context, pbApp core.App, externalID, name string) (*Player, error) {
 	collection, err := pbApp.FindCollectionByNameOrId("players")
@@ -168,6 +186,46 @@ func CreatePlayer(ctx context.Context, pbApp core.App, externalID, name string) 
 		ExternalID: externalID,
 		Name:       name,
 	}, nil
+}
+
+// UpdatePlayerName updates a player's name if it has changed
+func UpdatePlayerName(ctx context.Context, pbApp core.App, player *Player, newName string) error {
+	if player.Name == newName {
+		return nil // No change needed
+	}
+
+	record, err := pbApp.FindRecordById("players", player.ID)
+	if err != nil {
+		return err
+	}
+
+	record.Set("name", newName)
+	if err := pbApp.Save(record); err != nil {
+		return err
+	}
+
+	player.Name = newName // Update the in-memory struct too
+	return nil
+}
+
+// UpdatePlayerExternalID updates a player's external_id (Steam ID) if it's currently empty
+func UpdatePlayerExternalID(ctx context.Context, pbApp core.App, player *Player, externalID string) error {
+	if player.ExternalID != "" {
+		return nil // Already has an external_id
+	}
+
+	record, err := pbApp.FindRecordById("players", player.ID)
+	if err != nil {
+		return err
+	}
+
+	record.Set("external_id", externalID)
+	if err := pbApp.Save(record); err != nil {
+		return err
+	}
+
+	player.ExternalID = externalID // Update the in-memory struct too
+	return nil
 }
 
 // UpsertMatchPlayerStats creates or updates match player stats

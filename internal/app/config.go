@@ -86,14 +86,14 @@ func (c *AppConfig) EnsureServersInDatabase(pbApp core.App) error {
 			return fmt.Errorf("failed to extract server ID from path %s: %w", absPath, err)
 		}
 
-		// Check if server already exists by path
+		// Check if server already exists by external_id
 		exists, err := pbApp.FindRecordsByFilter(
 			"servers",
-			"path = {:path}",
+			"external_id = {:external_id}",
 			"",
 			1,
 			0,
-			map[string]any{"path": absPath},
+			map[string]any{"external_id": serverID},
 		)
 
 		if err == nil && len(exists) > 0 {

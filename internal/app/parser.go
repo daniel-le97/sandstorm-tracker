@@ -178,13 +178,30 @@ func (p *LogParser) tryProcessKillEvent(ctx context.Context, line string, timest
 			continue
 		}
 
-		// Upsert player
+		// Try to find player by Steam ID first, then by name
 		player, err := GetPlayerByExternalID(ctx, p.pbApp, killer.SteamID)
 		if err != nil {
-			player, err = CreatePlayer(ctx, p.pbApp, killer.SteamID, killer.Name)
+			// Not found by Steam ID, try by name
+			player, err = GetPlayerByName(ctx, p.pbApp, killer.Name)
 			if err != nil {
-				log.Printf("Failed to create player %s: %v", killer.Name, err)
-				continue
+				// Player doesn't exist at all - create with both name and Steam ID
+				player, err = CreatePlayer(ctx, p.pbApp, killer.SteamID, killer.Name)
+				if err != nil {
+					log.Printf("Failed to create player %s: %v", killer.Name, err)
+					continue
+				}
+			} else {
+				// Found by name but missing Steam ID - update it
+				err = UpdatePlayerExternalID(ctx, p.pbApp, player, killer.SteamID)
+				if err != nil {
+					log.Printf("Failed to update player external_id for %s: %v", killer.Name, err)
+				}
+			}
+		} else {
+			// Found by Steam ID - update name if it has changed
+			err = UpdatePlayerName(ctx, p.pbApp, player, killer.Name)
+			if err != nil {
+				log.Printf("Failed to update player name for %s: %v", killer.Name, err)
 			}
 		}
 
@@ -230,32 +247,46 @@ func (p *LogParser) tryProcessKillEvent(ctx context.Context, line string, timest
 }
 
 // tryProcessPlayerJoin parses and processes a player join event
+// Note: Player joins generate TWO log lines:
+// 1. LogNet: Join succeeded: PlayerName (comes first)
+// 2. LogEOSAntiCheat: ServerRegisterClient: Client: (STEAMID) (comes second)
+// We create the player from the LogNet event with just the name,
+// and update the external_id when we see kill events with their Steam ID
 func (p *LogParser) tryProcessPlayerJoin(ctx context.Context, line string, timestamp time.Time, serverID string) bool {
 	matches := p.patterns.PlayerJoin.FindStringSubmatch(line)
 	if len(matches) < 3 {
 		return false
 	}
 
-	playerName := strings.TrimSpace(matches[1])
-	steamID := strings.TrimSpace(matches[2])
+	// PlayerJoin regex has alternation:
+	// Group 1: timestamp (always)
+	// Group 2: player name (LogNet branch) OR empty
+	// Group 3: Steam ID (EOS branch) OR empty
 
-	if steamID == "INVALID" || steamID == "" {
-		return true // Parsed but invalid
-	}
+	if matches[2] != "" {
+		// LogNet branch: "Join succeeded: PlayerName"
+		playerName := strings.TrimSpace(matches[2])
 
-	// Upsert player
-	_, err := GetPlayerByExternalID(ctx, p.pbApp, steamID)
-	if err != nil {
-		_, err := CreatePlayer(ctx, p.pbApp, steamID, playerName)
+		// Check if player already exists by name
+		_, err := GetPlayerByName(ctx, p.pbApp, playerName)
 		if err != nil {
-			log.Printf("Failed to create player on join: %v", err)
+			// Player doesn't exist - create with name only (external_id will be empty)
+			_, err := CreatePlayer(ctx, p.pbApp, "", playerName)
+			if err != nil {
+				log.Printf("Failed to create player on join: %v", err)
+			}
 		}
+
+		return true
+	} else if len(matches) > 3 && matches[3] != "" {
+		// EOS branch: "ServerRegisterClient: Client: (STEAMID)"
+		// We don't need to do anything here - the player was already created from LogNet event
+		// Their external_id will be populated when we see them in a kill event
+		return true
 	}
 
-	return true
-}
-
-// tryProcessPlayerDisconnect parses and processes a player disconnect event
+	return false
+} // tryProcessPlayerDisconnect parses and processes a player disconnect event
 func (p *LogParser) tryProcessPlayerDisconnect(ctx context.Context, line string, timestamp time.Time, serverID string) bool {
 	matches := p.patterns.PlayerDisconnect.FindStringSubmatch(line)
 	if len(matches) < 3 {

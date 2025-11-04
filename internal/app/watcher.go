@@ -224,28 +224,22 @@ func (w *Watcher) extractServerIDFromPath(filePath string) string {
 }
 
 func (w *Watcher) getOrCreateServerDBID(serverID, logPath string) (string, error) {
-	// Normalize the path for comparison
-	absPath, err := filepath.Abs(logPath)
-	if err != nil {
-		absPath = logPath
-	}
-
-	// Find server by matching the log path from config
+	// Find server by external_id (the UUID from the log filename)
 	record, err := w.pbApp.FindFirstRecordByFilter(
 		"servers",
-		"path = {:path}",
-		map[string]any{"path": absPath},
+		"external_id = {:external_id}",
+		map[string]any{"external_id": serverID},
 	)
 
 	if err == nil {
-		// Server found by path
+		// Server found by external_id
 		return record.Id, nil
 	}
 
 	// This should not happen if config is properly set up
 	// But log a warning instead of creating a new server
-	log.Printf("Warning: No server found in database with path: %s", absPath)
-	return "", fmt.Errorf("server not found in database for path: %s", absPath)
+	log.Printf("Warning: No server found in database with external_id: %s (from path: %s)", serverID, logPath)
+	return "", fmt.Errorf("server not found in database for external_id: %s", serverID)
 }
 
 // GetRconClient returns the RCON client for a server, creating it if needed

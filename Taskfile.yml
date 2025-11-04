@@ -32,3 +32,7 @@ tasks:
     desc: Remove built binaries
     cmds:
       - go clean
+  reset:
+    desc: Remove pb_data directory to reset database
+    cmds:
+      - powershell -Command "if (Test-Path pb_data) { Remove-Item -Recurse -Force pb_data; Write-Host 'pb_data removed' } else { Write-Host 'pb_data does not exist' }"
