@@ -350,8 +350,8 @@ func UpsertMatchWeaponStats(ctx context.Context, pbApp core.App, matchID, player
 	return pbApp.Save(record)
 }
 
-// GetOrCreateServer gets or creates a server record by external ID and path
-func GetOrCreateServer(ctx context.Context, pbApp core.App, externalID, path string) (string, error) {
+// GetOrCreateServer gets or creates a server record by external ID, name, and path
+func GetOrCreateServer(ctx context.Context, pbApp core.App, externalID, name, path string) (string, error) {
 	// Try to find existing server
 	record, err := pbApp.FindFirstRecordByFilter(
 		"servers",
@@ -372,14 +372,15 @@ func GetOrCreateServer(ctx context.Context, pbApp core.App, externalID, path str
 
 	record = core.NewRecord(collection)
 	record.Set("external_id", externalID)
-	record.Set("log_path", path)
+	record.Set("name", name)
+	record.Set("path", path)
 	record.Set("enabled", true)
 
 	if err := pbApp.Save(record); err != nil {
 		return "", err
 	}
 
-	log.Printf("Created new server with external_id: %s, path: %s", externalID, path)
+	log.Printf("Created new server: name='%s', external_id='%s', path='%s'", name, externalID, path)
 	return record.Id, nil
 }
 
