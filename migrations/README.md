@@ -5,6 +5,7 @@ This directory contains Go-based PocketBase migrations converted from the JavaSc
 ## Why Go Migrations?
 
 Go migrations are:
+
 - **Type-safe**: Compile-time checking prevents errors
 - **Performant**: No JavaScript runtime overhead
 - **Integrated**: Direct access to PocketBase API
@@ -37,11 +38,13 @@ This is done in `main.go`.
 Migrations run automatically when the app starts. PocketBase tracks which migrations have been applied in the `_migrations` table.
 
 To manually run migrations:
+
 ```bash
 ./sandstorm-tracker migrate up
 ```
 
 To check migration status:
+
 ```bash
 ./sandstorm-tracker migrate collections
 ```
@@ -64,14 +67,14 @@ func init() {
 	m.Register(func(app core.App) error {
 		// Migration up logic
 		collection := core.NewBaseCollection("my_collection")
-		
+
 		collection.Fields.Add(
 			&core.TextField{
 				Name:     "title",
 				Required: true,
 			},
 		)
-		
+
 		return app.Save(collection)
 	}, func(app core.App) error {
 		// Migration down logic (rollback)

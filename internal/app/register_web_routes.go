@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"strings"
 
+	"sandstorm-tracker/templates"
+
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/tools/template"
 )
@@ -22,9 +24,9 @@ func RegisterWebRoutes(app core.App) {
 				servers = []*core.Record{} // Empty if error
 			}
 
-			html, err := registry.LoadFiles(
-				"templates/layout.html",
-				"templates/servers.html",
+			html, err := registry.LoadFS(templates.GetWebAssets().FS(),
+				"layout.html",
+				"servers.html",
 			).Render(map[string]any{
 				"ActivePage": "servers",
 				"Servers":    servers,
@@ -85,8 +87,8 @@ func RegisterWebRoutes(app core.App) {
 				}
 			}
 
-			html, err := registry.LoadFiles(
-				"templates/server_matches.html",
+			html, err := registry.LoadFS(templates.GetWebAssets().FS(),
+				"server_matches.html",
 			).Render(map[string]any{
 				"ServerName": server.GetString("external_id"),
 				"Matches":    matchInfos,
@@ -148,9 +150,9 @@ func RegisterWebRoutes(app core.App) {
 				}
 			}
 
-			html, err := registry.LoadFiles(
-				"templates/layout.html",
-				"templates/matches.html",
+			html, err := registry.LoadFS(templates.GetWebAssets().FS(),
+				"layout.html",
+				"matches.html",
 			).Render(map[string]any{
 				"ActivePage": "matches",
 				"Matches":    matchInfos,
@@ -260,16 +262,16 @@ func RegisterWebRoutes(app core.App) {
 			var html string
 			if isHTMX {
 				// Return just the table for HTMX updates
-				html, err = registry.LoadFiles(
-					"templates/players_table.html",
+				html, err = registry.LoadFS(templates.GetWebAssets().FS(),
+					"players_table.html",
 				).Render(map[string]any{
 					"Players": playerStats,
 				})
 			} else {
 				// Return full page
-				html, err = registry.LoadFiles(
-					"templates/layout.html",
-					"templates/players.html",
+				html, err = registry.LoadFS(templates.GetWebAssets().FS(),
+					"layout.html",
+					"players.html",
 				).Render(map[string]any{
 					"ActivePage": "players",
 					"Players":    playerStats,
@@ -350,16 +352,16 @@ func RegisterWebRoutes(app core.App) {
 			var html string
 			if isHTMX {
 				// Return just the table for HTMX updates
-				html, err = registry.LoadFiles(
-					"templates/weapons_table.html",
+				html, err = registry.LoadFS(templates.GetWebAssets().FS(),
+					"weapons_table.html",
 				).Render(map[string]any{
 					"Weapons": weapons,
 				})
 			} else {
 				// Return full page
-				html, err = registry.LoadFiles(
-					"templates/layout.html",
-					"templates/weapons.html",
+				html, err = registry.LoadFS(templates.GetWebAssets().FS(),
+					"layout.html",
+					"weapons.html",
 				).Render(map[string]any{
 					"ActivePage": "weapons",
 					"Weapons":    weapons,

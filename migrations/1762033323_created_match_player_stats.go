@@ -243,4 +243,3 @@ func init() {
 		return app.Delete(collection)
 	})
 }
-
