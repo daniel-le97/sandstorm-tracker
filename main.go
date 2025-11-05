@@ -6,12 +6,13 @@ import (
 	"os"
 	"path/filepath"
 	"sandstorm-tracker/internal/app"
+	_ "sandstorm-tracker/migrations" // import migrations
 
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/apis"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/plugins/ghupdate"
-	"github.com/pocketbase/pocketbase/plugins/jsvm"
+	// "github.com/pocketbase/pocketbase/plugins/jsvm"
 	"github.com/pocketbase/pocketbase/plugins/migratecmd"
 	"github.com/pocketbase/pocketbase/tools/hook"
 	"github.com/pocketbase/pocketbase/tools/osutils"
@@ -93,16 +94,16 @@ func main() {
 	// ---------------------------------------------------------------
 
 	// load jsvm (pb_hooks and pb_migrations)
-	jsvm.MustRegister(pb, jsvm.Config{
-		MigrationsDir: migrationsDir,
-		HooksDir:      hooksDir,
-		HooksWatch:    hooksWatch,
-		HooksPoolSize: hooksPool,
-	})
+	// jsvm.MustRegister(pb, jsvm.Config{
+	// 	MigrationsDir: migrationsDir,
+	// 	HooksDir:      hooksDir,
+	// 	HooksWatch:    hooksWatch,
+	// 	HooksPoolSize: hooksPool,
+	// })
 
-	// migrate command (with js templates)
+	// migrate command (with go templates)
 	migratecmd.MustRegister(pb, pb.RootCmd, migratecmd.Config{
-		TemplateLang: migratecmd.TemplateLangJS,
+		TemplateLang: migratecmd.TemplateLangGo,
 		Automigrate:  automigrate,
 		Dir:          migrationsDir,
 	})
