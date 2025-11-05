@@ -1,7 +1,9 @@
 package main
 
 import (
+	// "context"
 	"log"
+	// "log/slog"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -27,6 +29,11 @@ func main() {
 	}
 
 	pb := pocketbase.New()
+
+	// Configure custom logger with desired level
+	// Options: slog.LevelDebug, slog.LevelInfo, slog.LevelWarn, slog.LevelError
+	// logLevel := slog.LevelError 
+	// pb.Logger().Handler().Enabled(context.TODO(), logLevel)
 
 	// ---------------------------------------------------------------
 	// Optional plugin flags:
