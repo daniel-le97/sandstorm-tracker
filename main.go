@@ -32,7 +32,7 @@ func main() {
 
 	// Configure custom logger with desired level
 	// Options: slog.LevelDebug, slog.LevelInfo, slog.LevelWarn, slog.LevelError
-	// logLevel := slog.LevelError 
+	// logLevel := slog.LevelError
 	// pb.Logger().Handler().Enabled(context.TODO(), logLevel)
 
 	// ---------------------------------------------------------------

@@ -1,11 +1,11 @@
-package templates
+package assets
 
 import (
 	"embed"
 	"io/fs"
 )
 
-//go:embed *.html
+//go:embed templates/*.html
 var webFS embed.FS
 
 // WebAssets holds the embedded web UI files
