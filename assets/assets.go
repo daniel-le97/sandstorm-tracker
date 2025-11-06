@@ -3,9 +3,11 @@ package assets
 import (
 	"embed"
 	"io/fs"
+	"os"
+	"path/filepath"
 )
 
-//go:embed templates/*.html
+//go:embed templates/*.html configs/*
 var webFS embed.FS
 
 // WebAssets holds the embedded web UI files
@@ -41,4 +43,44 @@ func (w *WebAssets) ReadFile(name string) ([]byte, error) {
 // Open opens the named file for reading
 func (w *WebAssets) Open(name string) (fs.File, error) {
 	return w.fs.Open(name)
+}
+
+// GetExampleConfig returns the content of an example config file
+// format can be "yml" or "toml"
+func (w *WebAssets) GetExampleConfig(format string) ([]byte, error) {
+	return w.fs.ReadFile("configs/sandstorm-tracker.example." + format)
+}
+
+// WriteExampleConfig writes an example config file to the specified path
+// format can be "yml" or "toml"
+func (w *WebAssets) WriteExampleConfig(path string, format string) error {
+	content, err := w.GetExampleConfig(format)
+	if err != nil {
+		return err
+	}
+
+	// Ensure directory exists
+	dir := filepath.Dir(path)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return err
+	}
+
+	return os.WriteFile(path, content, 0644)
+}
+
+// ListConfigs returns a list of all embedded config files
+func (w *WebAssets) ListConfigs() ([]string, error) {
+	var configs []string
+	entries, err := w.fs.ReadDir("configs")
+	if err != nil {
+		return nil, err
+	}
+
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			configs = append(configs, entry.Name())
+		}
+	}
+
+	return configs, nil
 }

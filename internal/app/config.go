@@ -2,7 +2,9 @@ package app
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
+	"sandstorm-tracker/assets"
 
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/spf13/viper"
@@ -156,4 +158,29 @@ func (c *AppConfig) EnsureServersInDatabase(pbApp core.App) error {
 	}
 
 	return nil
+}
+
+// GenerateExampleConfig writes an example config file to the specified path
+// format can be "yml" or "toml"
+func GenerateExampleConfig(path string, format string) error {
+	webAssets := assets.GetWebAssets()
+	return webAssets.WriteExampleConfig(path, format)
+}
+
+// ConfigFileExists checks if a config file exists in the current directory
+func ConfigFileExists() bool {
+	// Check for YAML config
+	if _, err := os.Stat("sandstorm-tracker.yml"); err == nil {
+		return true
+	}
+	if _, err := os.Stat("sandstorm-tracker.yaml"); err == nil {
+		return true
+	}
+
+	// Check for TOML config
+	if _, err := os.Stat("sandstorm-tracker.toml"); err == nil {
+		return true
+	}
+
+	return false
 }
