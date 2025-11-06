@@ -1,18 +1,19 @@
-package app
+package jobs
 
 import (
 	"context"
 	"log"
 	"sandstorm-tracker/internal/a2s"
+	"sandstorm-tracker/internal/config"
 	"time"
 
 	"github.com/pocketbase/dbx"
 	"github.com/pocketbase/pocketbase/core"
 )
 
-// RegisterA2SCron sets up a cron job that queries all configured servers via A2S
+// RegisterA2S sets up a cron job that queries all configured servers via A2S
 // and updates current player scores every minute
-func RegisterA2SCron(app core.App, cfg *AppConfig) {
+func RegisterA2S(app core.App, cfg *config.Config) {
 	scheduler := app.Cron()
 
 	// Run A2S queries every minute on all configured servers
@@ -27,7 +28,7 @@ func RegisterA2SCron(app core.App, cfg *AppConfig) {
 }
 
 // updatePlayerScoresFromA2S queries all configured servers via A2S and updates current player scores
-func updatePlayerScoresFromA2S(ctx context.Context, pbApp core.App, cfg *AppConfig) {
+func updatePlayerScoresFromA2S(ctx context.Context, pbApp core.App, cfg *config.Config) {
 	a2sClient := a2s.NewClientWithTimeout(5 * time.Second)
 
 	for _, serverCfg := range cfg.Servers {
@@ -93,7 +94,7 @@ func updatePlayerScoresFromA2S(ctx context.Context, pbApp core.App, cfg *AppConf
 }
 
 // getOrCreateServerFromConfig finds or creates a server record based on config
-func getOrCreateServerFromConfig(pbApp core.App, cfg ServerConfig) (*core.Record, error) {
+func getOrCreateServerFromConfig(pbApp core.App, cfg config.ServerConfig) (*core.Record, error) {
 	collection, err := pbApp.FindCollectionByNameOrId("servers")
 	if err != nil {
 		return nil, err

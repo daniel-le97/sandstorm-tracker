@@ -1,4 +1,4 @@
-package app
+package config
 
 import (
 	"fmt"
@@ -24,12 +24,12 @@ type LoggingConfig struct {
 	EnableServerLogs bool   `mapstructure:"enableServerLogs"`
 }
 
-type AppConfig struct {
+type Config struct {
 	Servers []ServerConfig `mapstructure:"servers"`
 	Logging LoggingConfig  `mapstructure:"logging"`
 }
 
-func InitConfig() (*AppConfig, error) {
+func Load() (*Config, error) {
 	viper.SetConfigName("sandstorm-tracker") // name of config file (without extension)
 	viper.AddConfigPath(".")                 // look for config in the working directory
 
@@ -48,7 +48,7 @@ func InitConfig() (*AppConfig, error) {
 		}
 	}
 
-	var config AppConfig
+	var config Config
 	err = viper.Unmarshal(&config)
 	if err != nil {
 		return nil, err
@@ -75,7 +75,7 @@ func InitConfig() (*AppConfig, error) {
 }
 
 // Validate checks that all enabled servers have required configuration fields
-func (c *AppConfig) Validate() error {
+func (c *Config) Validate() error {
 	for i, server := range c.Servers {
 		if !server.Enabled {
 			continue // Skip validation for disabled servers
@@ -106,7 +106,8 @@ func (c *AppConfig) Validate() error {
 }
 
 // EnsureServersInDatabase creates server records in PocketBase for all servers in config
-func (c *AppConfig) EnsureServersInDatabase(pbApp core.App) error {
+// This is a helper that bridges config and database concerns
+func (c *Config) EnsureServersInDatabase(pbApp core.App, getServerID func(string) (string, error)) error {
 	for _, serverCfg := range c.Servers {
 		if !serverCfg.Enabled {
 			continue
@@ -119,7 +120,7 @@ func (c *AppConfig) EnsureServersInDatabase(pbApp core.App) error {
 		}
 
 		// Extract server UUID from the log file path
-		serverID, err := GetServerIdFromPath(absPath)
+		serverID, err := getServerID(absPath)
 		if err != nil {
 			return fmt.Errorf("failed to extract server ID from path %s: %w", absPath, err)
 		}
@@ -160,15 +161,15 @@ func (c *AppConfig) EnsureServersInDatabase(pbApp core.App) error {
 	return nil
 }
 
-// GenerateExampleConfig writes an example config file to the specified path
+// GenerateExample writes an example config file to the specified path
 // format can be "yml" or "toml"
-func GenerateExampleConfig(path string, format string) error {
+func GenerateExample(path string, format string) error {
 	webAssets := assets.GetWebAssets()
 	return webAssets.WriteExampleConfig(path, format)
 }
 
-// ConfigFileExists checks if a config file exists in the current directory
-func ConfigFileExists() bool {
+// Exists checks if a config file exists in the current directory
+func Exists() bool {
 	// Check for YAML config
 	if _, err := os.Stat("sandstorm-tracker.yml"); err == nil {
 		return true

@@ -1,4 +1,4 @@
-package app
+package handlers
 
 import (
 	"fmt"
@@ -11,8 +11,8 @@ import (
 	"github.com/pocketbase/pocketbase/tools/template"
 )
 
-// RegisterWebRoutes registers the HTML frontend routes using template rendering
-func RegisterWebRoutes(app core.App) {
+// Register registers all HTTP routes for the web UI
+func Register(app core.App) {
 	registry := template.NewRegistry()
 
 	// OnServe hook to register routes

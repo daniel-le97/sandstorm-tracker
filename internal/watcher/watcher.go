@@ -1,4 +1,4 @@
-package app
+package watcher
 
 import (
 	"bufio"
@@ -12,7 +12,10 @@ import (
 	"sync"
 	"time"
 
+	"sandstorm-tracker/internal/config"
+	"sandstorm-tracker/internal/parser"
 	"sandstorm-tracker/internal/rcon"
+	"sandstorm-tracker/internal/util"
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/pocketbase/pocketbase/core"
@@ -21,7 +24,7 @@ import (
 // Watcher monitors log files and processes events
 type Watcher struct {
 	watcher       *fsnotify.Watcher
-	parser        *LogParser
+	parser        *parser.LogParser
 	pbApp         core.App
 	ctx           context.Context
 	cancel        context.CancelFunc
@@ -29,11 +32,11 @@ type Watcher struct {
 	mu            sync.RWMutex
 	rconClients   map[string]*rcon.RconClient
 	rconMu        sync.Mutex
-	serverConfigs map[string]ServerConfig
+	serverConfigs map[string]config.ServerConfig
 }
 
 // NewWatcher creates a new file watcher
-func NewWatcher(pbApp core.App, serverConfigs []ServerConfig) (*Watcher, error) {
+func NewWatcher(pbApp core.App, serverConfigs []config.ServerConfig) (*Watcher, error) {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create file watcher: %w", err)
@@ -41,9 +44,9 @@ func NewWatcher(pbApp core.App, serverConfigs []ServerConfig) (*Watcher, error) 
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	scMap := make(map[string]ServerConfig)
+	scMap := make(map[string]config.ServerConfig)
 	for _, sc := range serverConfigs {
-		serverID, err := GetServerIdFromPath(sc.LogPath)
+		serverID, err := util.GetServerIdFromPath(sc.LogPath)
 		if err != nil {
 			cancel()
 			return nil, fmt.Errorf("failed to get server ID from path %s: %w", sc.LogPath, err)
@@ -53,7 +56,7 @@ func NewWatcher(pbApp core.App, serverConfigs []ServerConfig) (*Watcher, error) 
 
 	w := &Watcher{
 		watcher:       watcher,
-		parser:        NewLogParser(pbApp),
+		parser:        parser.NewLogParser(pbApp),
 		pbApp:         pbApp,
 		ctx:           ctx,
 		cancel:        cancel,
@@ -251,17 +254,17 @@ func (w *Watcher) GetRconClient(serverID string) (*rcon.RconClient, error) {
 		return client, nil
 	}
 
-	serverConfig, exists := w.serverConfigs[serverID]
+	serverCfg, exists := w.serverConfigs[serverID]
 	if !exists {
 		return nil, fmt.Errorf("no config found for server %s", serverID)
 	}
 
-	if serverConfig.RconAddress == "" || serverConfig.RconPassword == "" {
+	if serverCfg.RconAddress == "" || serverCfg.RconPassword == "" {
 		return nil, fmt.Errorf("RCON not configured for server %s", serverID)
 	}
 
 	// Connect to RCON server
-	conn, err := net.DialTimeout("tcp", serverConfig.RconAddress, 5*time.Second)
+	conn, err := net.DialTimeout("tcp", serverCfg.RconAddress, 5*time.Second)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to RCON for server %s: %w", serverID, err)
 	}
@@ -269,7 +272,7 @@ func (w *Watcher) GetRconClient(serverID string) (*rcon.RconClient, error) {
 	client := rcon.NewRconClient(conn, rcon.DefaultConfig())
 
 	// Authenticate
-	if !client.Auth(serverConfig.RconPassword) {
+	if !client.Auth(serverCfg.RconPassword) {
 		conn.Close()
 		return nil, fmt.Errorf("RCON authentication failed for server %s", serverID)
 	}

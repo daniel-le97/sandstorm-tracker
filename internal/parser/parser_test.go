@@ -1,10 +1,11 @@
-package app
+package parser
 
 import (
 	"bufio"
 	"context"
 	"fmt"
 	"os"
+	"sandstorm-tracker/internal/database"
 
 	// "path/filepath"
 	"testing"
@@ -45,7 +46,7 @@ func TestParseAndWriteLogToDB_HCLog(t *testing.T) {
 
 	// Create a test server using PocketBase Record API
 	serverExternalID := "test-server-1"
-	_, err = GetOrCreateServer(ctx, testApp, serverExternalID, "Main Server", "test/path")
+	_, err = database.GetOrCreateServer(ctx, testApp, serverExternalID, "Main Server", "test/path")
 	if err != nil {
 		t.Fatalf("failed to create server: %v", err)
 	}
