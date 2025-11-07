@@ -35,7 +35,7 @@ func New() (*App, error) {
 		PocketBase: pocketbase.New(),
 	}
 
-	// Load configuration
+	// Load configuration (lightweight - no validation yet)
 	cfg, err := config.Load()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load config: %w", err)
@@ -45,56 +45,11 @@ func New() (*App, error) {
 	// Initialize parser
 	app.Parser = parser.NewLogParser(app.PocketBase)
 
-	// Initialize RCON pool
+	// Initialize RCON pool (servers added in onServe)
 	app.RconPool = rcon.NewClientPool(app.PocketBase.Logger())
 
-	// Add servers to RCON pool
-	for _, sc := range cfg.Servers {
-		serverID, err := util.GetServerIdFromPath(sc.LogPath)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get server ID from path %s: %w", sc.LogPath, err)
-		}
-
-		if sc.RconAddress != "" && sc.RconPassword != "" {
-			timeout := 5 * time.Second
-			if sc.RconTimeout > 0 {
-				timeout = time.Duration(sc.RconTimeout) * time.Second
-			}
-
-			app.RconPool.AddServer(serverID, &rcon.ServerConfig{
-				Address:  sc.RconAddress,
-				Password: sc.RconPassword,
-				Timeout:  timeout,
-			})
-		}
-	}
-
-	// Initialize A2S pool
+	// Initialize A2S pool (servers added in onServe)
 	app.A2SPool = a2s.NewServerPool()
-
-	// Add servers to A2S pool
-	for _, sc := range cfg.Servers {
-		if !sc.Enabled {
-			continue
-		}
-
-		// Use queryAddress if available, otherwise use rconAddress
-		queryAddr := sc.RconAddress
-		if sc.QueryAddress != "" {
-			queryAddr = sc.QueryAddress
-		}
-
-		if queryAddr != "" {
-			app.A2SPool.AddServer(queryAddr, sc.Name)
-		}
-	}
-
-	// Initialize watcher with injected dependencies: parser and rconPool
-	w, err := watcher.NewWatcher(app.PocketBase, app.Parser, app.RconPool, cfg.Servers)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create watcher: %w", err)
-	}
-	app.Watcher = w
 
 	// Setup default plugins
 	app.setupPlugins()
@@ -128,8 +83,55 @@ func (app *App) Bootstrap() error {
 
 // onServe is called when the server starts
 func (app *App) onServe(e *core.ServeEvent) error {
+	// Validate configuration before starting
+	if err := app.Config.Validate(); err != nil {
+		return fmt.Errorf("invalid configuration: %w", err)
+	}
+
+	// Setup servers in RCON and A2S pools
+	for _, sc := range app.Config.Servers {
+		if !sc.Enabled {
+			continue
+		}
+
+		serverID, err := util.GetServerIdFromPath(sc.LogPath)
+		if err != nil {
+			return fmt.Errorf("failed to get server ID from path %s: %w", sc.LogPath, err)
+		}
+
+		// Add to RCON pool
+		if sc.RconAddress != "" && sc.RconPassword != "" {
+			timeout := 5 * time.Second
+			if sc.RconTimeout > 0 {
+				timeout = time.Duration(sc.RconTimeout) * time.Second
+			}
+
+			app.RconPool.AddServer(serverID, &rcon.ServerConfig{
+				Address:  sc.RconAddress,
+				Password: sc.RconPassword,
+				Timeout:  timeout,
+			})
+		}
+
+		// Add to A2S pool
+		queryAddr := sc.RconAddress
+		if sc.QueryAddress != "" {
+			queryAddr = sc.QueryAddress
+		}
+		if queryAddr != "" {
+			app.A2SPool.AddServer(queryAddr, sc.Name)
+		}
+	}
+
+	// Initialize watcher with configured servers
+	w, err := watcher.NewWatcher(app.PocketBase, app.Parser, app.RconPool, app.Config.Servers)
+	if err != nil {
+		return fmt.Errorf("failed to create watcher: %w", err)
+	}
+	app.Watcher = w
+
 	// Ensure servers from config are in database
-	err := app.Config.EnsureServersInDatabase(app.PocketBase, util.GetServerIdFromPath)
+	err = app.Config.EnsureServersInDatabase(app.PocketBase, util.GetServerIdFromPath)
 	if err != nil {
 		return fmt.Errorf("failed to ensure servers in database: %w", err)
 	}

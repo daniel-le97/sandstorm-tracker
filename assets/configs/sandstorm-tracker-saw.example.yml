@@ -1,0 +1,29 @@
+# Simplified Configuration for Sandstorm Admin Wrapper (SAW) Users
+#
+# If you're using Sandstorm Admin Wrapper, you only need to provide the SAW installation path.
+# The tracker will automatically:
+#   - Read server-configs.json from SAW
+#   - Extract server names, RCON settings, and query ports
+#   - Construct log file paths automatically
+#
+# Usage:
+#   sandstorm-tracker --saw-path "C:\path\to\sandstorm-admin-wrapper"
+#
+# Or set as environment variable:
+#   $env:SAW_PATH = "C:\path\to\sandstorm-admin-wrapper"
+#   .\sandstorm-tracker.exe
+
+# SAW Path Configuration
+# Provide the root directory where Sandstorm Admin Wrapper is installed
+sawPath: "C:\\sandstorm-admin-wrapper"
+
+# Logging Configuration (optional - these are defaults)
+logging:
+  level: "info"
+  enableServerLogs: true
+# Advanced: Override settings for specific servers (optional)
+# If you need to override auto-detected settings, you can add them here
+# serverOverrides:
+#   "1d6407b7-f51b-4b1d-ad9e-faabbfbb7dde":  # Server UUID from SAW
+#     enabled: false  # Disable tracking for this server
+#     rconTimeout: 10  # Override timeout

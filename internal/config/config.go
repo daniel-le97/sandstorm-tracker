@@ -26,6 +26,7 @@ type LoggingConfig struct {
 }
 
 type Config struct {
+	SAWPath string         `mapstructure:"sawPath"` // Path to Sandstorm Admin Wrapper installation
 	Servers []ServerConfig `mapstructure:"servers"`
 	Logging LoggingConfig  `mapstructure:"logging"`
 }
@@ -38,6 +39,9 @@ func Load() (*Config, error) {
 	viper.AutomaticEnv()
 	viper.SetEnvPrefix("SANDSTORM") // Optional: all env vars must start with SANDSTORM_
 
+	// Bind SAW_PATH environment variable
+	viper.BindEnv("sawPath", "SAW_PATH")
+
 	// Try YAML first, then TOML
 	viper.SetConfigType("yml")
 	err := viper.ReadInConfig()
@@ -45,7 +49,13 @@ func Load() (*Config, error) {
 		viper.SetConfigType("toml")
 		err = viper.ReadInConfig()
 		if err != nil {
-			return nil, err
+			// No config file found - return empty config (will be handled by serve command)
+			return &Config{
+				Logging: LoggingConfig{
+					Level:            "info",
+					EnableServerLogs: true,
+				},
+			}, nil
 		}
 	}
 
@@ -53,6 +63,17 @@ func Load() (*Config, error) {
 	err = viper.Unmarshal(&config)
 	if err != nil {
 		return nil, err
+	}
+
+	// If SAW path is provided, load from SAW instead of manual config
+	if config.SAWPath != "" {
+		sawConfig, err := LoadFromSAW(config.SAWPath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to load from SAW: %w", err)
+		}
+		// Preserve logging config from file
+		sawConfig.Logging = config.Logging
+		return sawConfig, nil
 	}
 
 	// Dynamically bind environment variables for each server's RCON password

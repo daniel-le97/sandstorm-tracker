@@ -1,19 +1,12 @@
-servers:
-  - name: "Main Server"
-    logPath: "C:\\Users\\danie\\code\\forks\\sandstorm-admin-wrapper\\sandstorm-server\\Insurgency\\Saved\\Logs\\1d6407b7-f51b-4b1d-ad9e-faabbfbb7dde.log"
-    rconAddress: "127.0.0.1:27015"
-    rconPassword: "hzZR1BfpM0eDYnLcfaqwM7Rq43QYwpLGdVuky0QZZxfuQFst"
-    queryAddress: "127.0.0.1:27131"
-    enabled: true
+# servers:
+#   - name: "Main Server"
+#     logPath: "C:\\Users\\danie\\code\\forks\\sandstorm-admin-wrapper\\sandstorm-server\\Insurgency\\Saved\\Logs\\1d6407b7-f51b-4b1d-ad9e-faabbfbb7dde.log"
+#     rconAddress: "127.0.0.1:27015"
+#     rconPassword: "hzZR1BfpM0eDYnLcfaqwM7Rq43QYwpLGdVuky0QZZxfuQFst"
+#     queryAddress: "127.0.0.1:27131"
+#     enabled: true
 
-
-adminConfig:
-  path: 'C:\\Users\\danie\\code\\sandstorm-admin-wrapper\\admin-interface\\config'
-
-database:
-  path: "sandstorm-tracker.db"
-  enableWAL: true
-  cacheSize: 2000
+# sawPath: "C:\\Users\\danie\\code\\forks\\sandstorm-admin-wrapper"
 
 logging:
   level: "info"

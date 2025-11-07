@@ -18,7 +18,7 @@ func main() {
 		log.Fatalf("Failed to bootstrap app: %v", err)
 	}
 
-	// Start the application (PocketBase's Start method)
+	// Start registers default commands (serve, superuser, version) and executes RootCmd
 	if err := application.Start(); err != nil {
 		log.Fatal(err)
 	}
