@@ -2,9 +2,11 @@ package jobs
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"sandstorm-tracker/internal/a2s"
 	"sandstorm-tracker/internal/config"
+	"sandstorm-tracker/internal/util"
 	"time"
 
 	"github.com/pocketbase/dbx"
@@ -31,6 +33,124 @@ func RegisterA2S(app AppInterface, cfg *config.Config) {
 	})
 
 	log.Println("[A2S] Registered cron job to update player scores every minute")
+}
+
+// RegisterA2SForServer sets up a cron job for a specific server
+// This is called when a server becomes active (log rotation detected)
+func RegisterA2SForServer(app AppInterface, cfg *config.Config, serverID string) {
+	// Find the server config for this serverID
+	var serverCfg *config.ServerConfig
+	for i, sc := range cfg.Servers {
+		if !sc.Enabled {
+			continue
+		}
+
+		// Extract serverID from logPath using util function
+		pathServerID, err := util.GetServerIdFromPath(sc.LogPath)
+		if err != nil {
+			continue
+		}
+
+		if pathServerID == serverID {
+			serverCfg = &cfg.Servers[i]
+			break
+		}
+	}
+
+	if serverCfg == nil {
+		log.Printf("[A2S] Could not find server config for serverID %s", serverID)
+		return
+	}
+
+	scheduler := app.Cron()
+
+	// Create unique job name for this server
+	jobName := fmt.Sprintf("a2s_player_scores_%s", serverID)
+
+	// Run A2S query every minute for this specific server
+	scheduler.MustAdd(jobName, "* * * * *", func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+
+		pool := app.GetA2SPool()
+		if pool == nil {
+			return
+		}
+
+		queryAddr := serverCfg.QueryAddress
+		if queryAddr == "" {
+			queryAddr = serverCfg.RconAddress
+		}
+
+		// Query just this server
+		status, err := pool.QueryServer(ctx, queryAddr)
+		if err != nil || !status.Online {
+			return
+		}
+
+		// Process this server's players using the existing logic
+		processServerStatus(ctx, app, *serverCfg, status)
+	})
+
+	log.Printf("[A2S] Registered cron job for server %s (%s)", serverID, serverCfg.Name)
+}
+
+// UnregisterA2SForServer removes the cron job for a specific server
+// This is called when a server becomes inactive (no log activity for 10s)
+func UnregisterA2SForServer(app AppInterface, serverID string) {
+	scheduler := app.Cron()
+	jobName := fmt.Sprintf("a2s_player_scores_%s", serverID)
+
+	scheduler.Remove(jobName)
+	log.Printf("[A2S] Unregistered cron job for server %s", serverID)
+}
+
+// processServerStatus processes a single server's A2S query result
+func processServerStatus(ctx context.Context, app AppInterface, serverCfg config.ServerConfig, status *a2s.ServerStatus) {
+	if !status.Online {
+		return
+	}
+
+	log.Printf("[A2S] Queried %d players from %s", len(status.Players), serverCfg.Name)
+
+	// Find or create server record
+	serverRecord, err := getOrCreateServerFromConfig(app, serverCfg)
+	if err != nil {
+		log.Printf("[A2S] Failed to get server record for %s: %v", serverCfg.Name, err)
+		return
+	}
+
+	// Find active match for this server
+	activeMatch, err := getActiveMatchForServer(app, serverRecord.Id)
+	if err != nil {
+		log.Printf("[A2S] Failed to get active match for server %s: %v", serverCfg.Name, err)
+		return
+	}
+
+	if activeMatch == nil {
+		log.Printf("[A2S] No active match found for server %s, skipping player update", serverCfg.Name)
+		return
+	}
+
+	// Update each player's score in the active match
+	for _, player := range status.Players {
+		if player.Name == "" {
+			continue // Skip unnamed players
+		}
+
+		// Find or create player record by name (A2S doesn't provide Steam ID)
+		playerRecord, err := findOrCreatePlayerByName(app, player.Name)
+		if err != nil {
+			log.Printf("[A2S] Failed to find/create player %s: %v", player.Name, err)
+			continue
+		}
+
+		// Update match score
+		err = updatePlayerMatchScore(app, activeMatch.Id, playerRecord.Id, int32(player.Score))
+		if err != nil {
+			log.Printf("[A2S] Failed to update score for player %s: %v", player.Name, err)
+		}
+	}
 }
 
 // updatePlayerScoresFromA2S queries all configured servers via A2S and updates current player scores

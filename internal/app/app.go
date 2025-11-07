@@ -146,8 +146,18 @@ func (app *App) onServe(e *core.ServeEvent) error {
 	// Register web routes
 	handlers.Register(app)
 
-	// Register background jobs (A2S cron)
-	jobs.RegisterA2S(app, app.Config)
+	// Don't register A2S cron immediately - wait for servers to become active
+	// Set callback to register A2S job when server becomes active
+	app.Watcher.OnServerActive(func(serverID string) {
+		app.Logger().Info("Server became active, registering A2S cron job", "serverID", serverID)
+		jobs.RegisterA2SForServer(app, app.Config, serverID)
+	})
+
+	// Set callback to unregister A2S job when server becomes inactive
+	app.Watcher.OnServerInactive(func(serverID string) {
+		app.Logger().Info("Server became inactive, unregistering A2S cron job", "serverID", serverID)
+		jobs.UnregisterA2SForServer(app, serverID)
+	})
 
 	// Start file watcher
 	for _, serverCfg := range app.Config.Servers {
