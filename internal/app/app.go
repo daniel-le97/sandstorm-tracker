@@ -2,12 +2,15 @@ package app
 
 import (
 	"fmt"
+	"sandstorm-tracker/internal/a2s"
 	"sandstorm-tracker/internal/config"
 	"sandstorm-tracker/internal/handlers"
 	"sandstorm-tracker/internal/jobs"
 	"sandstorm-tracker/internal/parser"
+	"sandstorm-tracker/internal/rcon"
 	"sandstorm-tracker/internal/util"
 	"sandstorm-tracker/internal/watcher"
+	"time"
 
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/core"
@@ -19,9 +22,11 @@ type App struct {
 	*pocketbase.PocketBase // Embed PocketBase - all its methods are available
 
 	// Custom application components
-	Config  *config.Config
-	Parser  *parser.LogParser
-	Watcher *watcher.Watcher
+	Config   *config.Config
+	Parser   *parser.LogParser
+	RconPool *rcon.ClientPool
+	A2SPool  *a2s.ServerPool
+	Watcher  *watcher.Watcher
 }
 
 // New creates and initializes the sandstorm-tracker application
@@ -40,8 +45,52 @@ func New() (*App, error) {
 	// Initialize parser
 	app.Parser = parser.NewLogParser(app.PocketBase)
 
-	// Initialize watcher
-	w, err := watcher.NewWatcher(app.PocketBase, cfg.Servers)
+	// Initialize RCON pool
+	app.RconPool = rcon.NewClientPool(app.PocketBase.Logger())
+
+	// Add servers to RCON pool
+	for _, sc := range cfg.Servers {
+		serverID, err := util.GetServerIdFromPath(sc.LogPath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get server ID from path %s: %w", sc.LogPath, err)
+		}
+
+		if sc.RconAddress != "" && sc.RconPassword != "" {
+			timeout := 5 * time.Second
+			if sc.RconTimeout > 0 {
+				timeout = time.Duration(sc.RconTimeout) * time.Second
+			}
+
+			app.RconPool.AddServer(serverID, &rcon.ServerConfig{
+				Address:  sc.RconAddress,
+				Password: sc.RconPassword,
+				Timeout:  timeout,
+			})
+		}
+	}
+
+	// Initialize A2S pool
+	app.A2SPool = a2s.NewServerPool()
+
+	// Add servers to A2S pool
+	for _, sc := range cfg.Servers {
+		if !sc.Enabled {
+			continue
+		}
+
+		// Use queryAddress if available, otherwise use rconAddress
+		queryAddr := sc.RconAddress
+		if sc.QueryAddress != "" {
+			queryAddr = sc.QueryAddress
+		}
+
+		if queryAddr != "" {
+			app.A2SPool.AddServer(queryAddr, sc.Name)
+		}
+	}
+
+	// Initialize watcher with injected dependencies: parser and rconPool
+	w, err := watcher.NewWatcher(app.PocketBase, app.Parser, app.RconPool, cfg.Servers)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create watcher: %w", err)
 	}
@@ -86,10 +135,10 @@ func (app *App) onServe(e *core.ServeEvent) error {
 	}
 
 	// Register web routes
-	handlers.Register(app.PocketBase)
+	handlers.Register(app)
 
 	// Register background jobs (A2S cron)
-	jobs.RegisterA2S(app.PocketBase, app.Config)
+	jobs.RegisterA2S(app, app.Config)
 
 	// Start file watcher
 	for _, serverCfg := range app.Config.Servers {
@@ -100,7 +149,15 @@ func (app *App) onServe(e *core.ServeEvent) error {
 		}
 	}
 
-	go app.Watcher.Start()
+	// Start watcher with panic recovery
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				app.Logger().Error("Watcher panic recovered", "panic", r)
+			}
+		}()
+		app.Watcher.Start()
+	}()
 
 	return e.Next()
 }
@@ -112,10 +169,23 @@ func (app *App) onTerminate(e *core.TerminateEvent) error {
 		app.Watcher.Stop()
 	}
 
+	if app.RconPool != nil {
+		app.RconPool.CloseAll()
+	}
+
 	return e.Next()
 }
 
 // Custom application methods
+
+// SendRconCommand sends an RCON command to a specific server
+func (app *App) SendRconCommand(serverID string, command string) (string, error) {
+	if app.RconPool == nil {
+		return "", fmt.Errorf("RCON pool not initialized")
+	}
+
+	return app.RconPool.SendCommand(serverID, command)
+}
 
 // GetEnabledServers returns all enabled servers from config
 func (app *App) GetEnabledServers() []config.ServerConfig {
@@ -136,4 +206,33 @@ func (app *App) GetServerByName(name string) (*config.ServerConfig, error) {
 		}
 	}
 	return nil, fmt.Errorf("server '%s' not found in config", name)
+}
+
+// GetRconPoolStatus returns the current status of the RCON pool
+func (app *App) GetRconPoolStatus() map[string]any {
+	if app.RconPool == nil {
+		return map[string]any{
+			"available": false,
+		}
+	}
+
+	servers := app.RconPool.ListServers()
+	connectedServers := []string{}
+	for _, serverID := range servers {
+		if app.RconPool.IsConnected(serverID) {
+			connectedServers = append(connectedServers, serverID)
+		}
+	}
+
+	return map[string]any{
+		"available":         true,
+		"total_servers":     len(servers),
+		"connected_servers": len(connectedServers),
+		"connected_list":    connectedServers,
+	}
+}
+
+// GetA2SPool returns the A2S server pool
+func (app *App) GetA2SPool() *a2s.ServerPool {
+	return app.A2SPool
 }

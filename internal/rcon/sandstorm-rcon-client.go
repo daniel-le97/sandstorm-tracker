@@ -6,38 +6,23 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
+	"log/slog"
 	"net"
 	"os"
 	"strings"
 	"time"
 )
 
-// Logger interface for pluggable logging
-type Logger interface {
-	Debug(msg string, args ...any)
-	Info(msg string, args ...any)
-	Warn(msg string, args ...any)
-	Error(msg string, args ...any)
-}
-
-// NoOpLogger is a logger that does nothing
-type NoOpLogger struct{}
-
-func (l NoOpLogger) Debug(msg string, args ...any) {}
-func (l NoOpLogger) Info(msg string, args ...any)  {}
-func (l NoOpLogger) Warn(msg string, args ...any)  {}
-func (l NoOpLogger) Error(msg string, args ...any) {}
-
 // Config struct for RCON client
 type ClientConfig struct {
 	Timeout time.Duration
-	Logger  Logger
+	Logger  *slog.Logger
 }
 
 func DefaultConfig() *ClientConfig {
 	return &ClientConfig{
 		Timeout: 5 * time.Second,
-		Logger:  NoOpLogger{},
+		Logger:  slog.Default(), // Use Go's default slog logger
 	}
 }
 
@@ -69,7 +54,7 @@ func NewRconClient(conn net.Conn, config *ClientConfig) *RconClient {
 }
 
 // SetLogger allows changing the logger at runtime
-func (c *RconClient) SetLogger(logger Logger) {
+func (c *RconClient) SetLogger(logger *slog.Logger) {
 	c.Config.Logger = logger
 }
 

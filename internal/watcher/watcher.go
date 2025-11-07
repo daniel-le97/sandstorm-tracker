@@ -5,12 +5,10 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"net"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
-	"time"
 
 	"sandstorm-tracker/internal/config"
 	"sandstorm-tracker/internal/parser"
@@ -30,13 +28,13 @@ type Watcher struct {
 	cancel        context.CancelFunc
 	wg            sync.WaitGroup
 	mu            sync.RWMutex
-	rconClients   map[string]*rcon.RconClient
-	rconMu        sync.Mutex
+	rconPool      *rcon.ClientPool
 	serverConfigs map[string]config.ServerConfig
 }
 
 // NewWatcher creates a new file watcher
-func NewWatcher(pbApp core.App, serverConfigs []config.ServerConfig) (*Watcher, error) {
+// All dependencies are injected: parser and rconPool
+func NewWatcher(pbApp core.App, logParser *parser.LogParser, rconPool *rcon.ClientPool, serverConfigs []config.ServerConfig) (*Watcher, error) {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create file watcher: %w", err)
@@ -56,11 +54,11 @@ func NewWatcher(pbApp core.App, serverConfigs []config.ServerConfig) (*Watcher, 
 
 	w := &Watcher{
 		watcher:       watcher,
-		parser:        parser.NewLogParser(pbApp),
+		parser:        logParser,
 		pbApp:         pbApp,
 		ctx:           ctx,
 		cancel:        cancel,
-		rconClients:   make(map[string]*rcon.RconClient),
+		rconPool:      rconPool,
 		serverConfigs: scMap,
 	}
 
@@ -247,38 +245,5 @@ func (w *Watcher) getOrCreateServerDBID(serverID, logPath string) (string, error
 
 // GetRconClient returns the RCON client for a server, creating it if needed
 func (w *Watcher) GetRconClient(serverID string) (*rcon.RconClient, error) {
-	w.rconMu.Lock()
-	defer w.rconMu.Unlock()
-
-	if client, exists := w.rconClients[serverID]; exists {
-		return client, nil
-	}
-
-	serverCfg, exists := w.serverConfigs[serverID]
-	if !exists {
-		return nil, fmt.Errorf("no config found for server %s", serverID)
-	}
-
-	if serverCfg.RconAddress == "" || serverCfg.RconPassword == "" {
-		return nil, fmt.Errorf("RCON not configured for server %s", serverID)
-	}
-
-	// Connect to RCON server
-	conn, err := net.DialTimeout("tcp", serverCfg.RconAddress, 5*time.Second)
-	if err != nil {
-		return nil, fmt.Errorf("failed to connect to RCON for server %s: %w", serverID, err)
-	}
-
-	client := rcon.NewRconClient(conn, rcon.DefaultConfig())
-
-	// Authenticate
-	if !client.Auth(serverCfg.RconPassword) {
-		conn.Close()
-		return nil, fmt.Errorf("RCON authentication failed for server %s", serverID)
-	}
-
-	w.rconClients[serverID] = client
-	log.Printf("Created RCON client for server %s", serverID)
-
-	return client, nil
+	return w.rconPool.GetClient(serverID)
 }

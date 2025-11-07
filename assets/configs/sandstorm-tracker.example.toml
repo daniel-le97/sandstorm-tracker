@@ -4,6 +4,7 @@ logPath = "/opt/sandstorm/Insurgency/Saved/Logs"
 rconAddress = "127.0.0.1:27015"
 # Password can be overridden with RCON_PASSWORD_0 environment variable
 rconPassword = "MyRconPassword"
+rconTimeout = 5 # RCON connection timeout in seconds (default: 5)
 queryAddress = "127.0.0.1:27016"
 enabled = true
 
@@ -13,6 +14,7 @@ logPath = "/opt/sandstorm2/Insurgency/Saved/Logs"
 rconAddress = "127.0.0.1:27014"
 # Password can be overridden with RCON_PASSWORD_1 environment variable
 rconPassword = "MyRconPassword2"
+rconTimeout = 10 # Higher timeout for slower servers
 queryAddress = "127.0.0.1:27015"
 enabled = false
 

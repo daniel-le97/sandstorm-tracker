@@ -11,8 +11,15 @@ import (
 	"github.com/pocketbase/pocketbase/tools/template"
 )
 
+// AppInterface defines the methods handlers need from the app
+type AppInterface interface {
+	core.App
+	// Add any custom app methods here as needed
+	// SendRconCommand(serverID string, command string) (string, error)
+}
+
 // Register registers all HTTP routes for the web UI
-func Register(app core.App) {
+func Register(app AppInterface) {
 	registry := template.NewRegistry()
 
 	// OnServe hook to register routes
@@ -373,6 +380,44 @@ func Register(app core.App) {
 			}
 
 			return re.HTML(http.StatusOK, html)
+		})
+
+		// Health check endpoint
+		e.Router.GET("/health", func(re *core.RequestEvent) error {
+			health := map[string]any{
+				"status": "ok",
+				"database": map[string]any{
+					"connected": true,
+				},
+			}
+
+			// Try to get RCON pool info if app has the method
+			type rconPoolGetter interface {
+				GetRconPoolStatus() map[string]any
+			}
+
+			if customApp, ok := app.(rconPoolGetter); ok {
+				health["rcon"] = customApp.GetRconPoolStatus()
+			}
+
+			// Try to get A2S pool info if app has the method
+			type a2sPoolGetter interface {
+				GetA2SPool() interface{ ListServers() []string }
+			}
+
+			if customApp, ok := app.(a2sPoolGetter); ok {
+				pool := customApp.GetA2SPool()
+				if pool != nil {
+					servers := pool.ListServers()
+					health["a2s"] = map[string]any{
+						"available":     true,
+						"total_servers": len(servers),
+						"servers":       servers,
+					}
+				}
+			}
+
+			return re.JSON(http.StatusOK, health)
 		})
 
 		return e.Next()

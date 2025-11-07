@@ -15,6 +15,7 @@ type ServerConfig struct {
 	LogPath      string `mapstructure:"logPath"`
 	RconAddress  string `mapstructure:"rconAddress"`
 	RconPassword string `mapstructure:"rconPassword"`
+	RconTimeout  int    `mapstructure:"rconTimeout"` // timeout in seconds, default 5
 	QueryAddress string `mapstructure:"queryAddress"`
 	Enabled      bool   `mapstructure:"enabled"`
 }

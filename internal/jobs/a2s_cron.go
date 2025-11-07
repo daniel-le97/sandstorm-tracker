@@ -11,9 +11,15 @@ import (
 	"github.com/pocketbase/pocketbase/core"
 )
 
+// AppInterface defines the methods jobs need from the app
+type AppInterface interface {
+	core.App
+	GetA2SPool() *a2s.ServerPool
+}
+
 // RegisterA2S sets up a cron job that queries all configured servers via A2S
 // and updates current player scores every minute
-func RegisterA2S(app core.App, cfg *config.Config) {
+func RegisterA2S(app AppInterface, cfg *config.Config) {
 	scheduler := app.Cron()
 
 	// Run A2S queries every minute on all configured servers
@@ -28,38 +34,51 @@ func RegisterA2S(app core.App, cfg *config.Config) {
 }
 
 // updatePlayerScoresFromA2S queries all configured servers via A2S and updates current player scores
-func updatePlayerScoresFromA2S(ctx context.Context, pbApp core.App, cfg *config.Config) {
-	a2sClient := a2s.NewClientWithTimeout(5 * time.Second)
+func updatePlayerScoresFromA2S(ctx context.Context, app AppInterface, cfg *config.Config) {
+	// Use the app's A2S pool to query all servers
+	pool := app.GetA2SPool()
+	if pool == nil {
+		log.Println("[A2S] A2S pool not available")
+		return
+	}
 
-	for _, serverCfg := range cfg.Servers {
-		if !serverCfg.Enabled {
+	// Query all servers at once
+	results := pool.QueryAll(ctx)
+
+	for address, status := range results {
+		if !status.Online || status.Error != nil {
+			log.Printf("[A2S] Server %s offline or error: %v", address, status.Error)
 			continue
 		}
 
-		// Use queryAddress if available, otherwise use rconAddress
-		queryAddr := serverCfg.RconAddress
-		if serverCfg.QueryAddress != "" {
-			queryAddr = serverCfg.QueryAddress
+		// Find server config by query address
+		var serverCfg *config.ServerConfig
+		for _, sc := range cfg.Servers {
+			queryAddr := sc.RconAddress
+			if sc.QueryAddress != "" {
+				queryAddr = sc.QueryAddress
+			}
+			if queryAddr == address {
+				serverCfg = &sc
+				break
+			}
 		}
 
-		// Query players from this server
-		players, err := a2sClient.QueryPlayersContext(ctx, queryAddr)
-		if err != nil {
-			log.Printf("[A2S] Failed to query players from %s (%s): %v", serverCfg.Name, queryAddr, err)
+		if serverCfg == nil {
 			continue
 		}
 
-		log.Printf("[A2S] Queried %d players from %s", len(players), serverCfg.Name)
+		log.Printf("[A2S] Queried %d players from %s", len(status.Players), serverCfg.Name)
 
 		// Find or create server record
-		serverRecord, err := getOrCreateServerFromConfig(pbApp, serverCfg)
+		serverRecord, err := getOrCreateServerFromConfig(app, *serverCfg)
 		if err != nil {
 			log.Printf("[A2S] Failed to get server record for %s: %v", serverCfg.Name, err)
 			continue
 		}
 
 		// Find active match for this server
-		activeMatch, err := getActiveMatchForServer(pbApp, serverRecord.Id)
+		activeMatch, err := getActiveMatchForServer(app, serverRecord.Id)
 		if err != nil {
 			log.Printf("[A2S] Failed to get active match for server %s: %v", serverCfg.Name, err)
 			continue
@@ -71,13 +90,13 @@ func updatePlayerScoresFromA2S(ctx context.Context, pbApp core.App, cfg *config.
 		}
 
 		// Update each player's score in the active match
-		for _, player := range players {
+		for _, player := range status.Players {
 			if player.Name == "" {
 				continue // Skip unnamed players
 			}
 
 			// Find or create player record by name (A2S doesn't provide Steam ID)
-			playerRecord, err := findOrCreatePlayerByName(pbApp, player.Name)
+			playerRecord, err := findOrCreatePlayerByName(app, player.Name)
 			if err != nil {
 				log.Printf("[A2S] Failed to find/create player %s: %v", player.Name, err)
 				continue
@@ -85,7 +104,7 @@ func updatePlayerScoresFromA2S(ctx context.Context, pbApp core.App, cfg *config.
 
 			// Update match_weapon_stats with current score
 			// Note: A2S provides total score, not kills, so we use it as-is
-			err = updatePlayerMatchScore(pbApp, activeMatch.Id, playerRecord.Id, player.Score)
+			err = updatePlayerMatchScore(app, activeMatch.Id, playerRecord.Id, int32(player.Score))
 			if err != nil {
 				log.Printf("[A2S] Failed to update score for player %s: %v", player.Name, err)
 			}
