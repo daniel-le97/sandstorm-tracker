@@ -14,6 +14,7 @@ import (
 
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/core"
+	"github.com/pocketbase/pocketbase/plugins/ghupdate"
 	"github.com/pocketbase/pocketbase/plugins/migratecmd"
 )
 
@@ -64,7 +65,13 @@ func (app *App) setupPlugins() {
 		Automigrate: true,
 	})
 
-	// Add other plugins here (ghupdate, jsvm, etc.)
+	// Auto-update from GitHub releases
+	ghupdate.MustRegister(app.PocketBase, app.RootCmd, ghupdate.Config{
+		Owner: "daniel-le97",
+		Repo:  "sandstorm-trackerv2",
+	})
+
+	// Add other plugins here (jsvm, etc.)
 }
 
 // Bootstrap initializes all application components and registers hooks
