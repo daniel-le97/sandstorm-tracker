@@ -4,8 +4,8 @@ version: 2
 
 project_name: sandstorm-tracker
 
-before:
-  hooks:
+# before:
+#   hooks:
     # You may remove this if you don't use go module#     
 #     # Repository to push the app manifest to.
 #     repository:
@@ -27,7 +27,7 @@ before:
 #     # only, leaving the responsibility of publishing it to the user.
 #     skip_upload: false
     # you may remove this if you don't need go generate
-    - task sqlc
+    # - task sqlc
 
 builds:
   - env:
