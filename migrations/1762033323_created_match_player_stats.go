@@ -130,7 +130,7 @@ func init() {
 					"id": "number2494212961",
 					"max": null,
 					"min": null,
-					"name": "objectvies_destroyed",
+					"name": "objectives_destroyed",
 					"onlyInt": false,
 					"presentable": false,
 					"required": false,

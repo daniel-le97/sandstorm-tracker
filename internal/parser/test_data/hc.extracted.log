@@ -1,12 +1,9 @@
 [MAP_LOAD] [2025.10.04-21.18.15:445][  0]LogLoad: LoadMap: /Game/Maps/Town/Town?Name=Player?Scenario=Scenario_Hideout_Checkpoint_Security?MaxPlayers=10?Game=CheckpointHardcore?Lighting=Day
-[DIFFICULTY] [2025.10.04-21.18.23:163][  0]LogAI: Warning: AI difficulty set to 0.85
-[DIFFICULTY] [2025.10.04-21.18.23:925][ 10]LogAI: Warning: AI difficulty set to 0.85
 [JOIN] [2025.10.04-21.27.51:780][866]LogEOSAntiCheat: Display: ServerRegisterClient: Client: (76561198262186571) Result: (EOS_Success)
 [JOIN] [2025.10.04-21.27.51:781][866]LogNet: Join succeeded: -=312th=- Rabbit
 [JOIN] [2025.10.04-21.27.56:889][490]LogEOSAntiCheat: Display: ServerRegisterClient: Client: (76561198007416544) Result: (EOS_Success)
 [JOIN] [2025.10.04-21.27.56:890][490]LogNet: Join succeeded: *OSS*0rigin
 [CHAT_CMD] [2025.10.04-21.28.22:312][561]LogChat: Display: *OSS*0rigin(76561198007416544) Global Chat: !maplist
-[DIFFICULTY] [2025.10.04-21.28.34:618][ 47]LogAI: Warning: AI difficulty set to 0.85
 [JOIN] [2025.10.04-21.28.57:676][662]LogEOSAntiCheat: Display: ServerRegisterClient: Client: (76561198047711504) Result: (EOS_Success)
 [JOIN] [2025.10.04-21.28.57:676][662]LogNet: Join succeeded: Blue
 [KILL] [2025.10.04-21.29.24:398][699]LogGameplayEvents: Display: *OSS*0rigin[76561198007416544, team 0] killed Rifleman[INVALID, team 1] with BP_Firearm_M4A1_C_2147480587
@@ -40,6 +37,7 @@
 [KILL] [2025.10.04-21.30.43:742][659]LogGameplayEvents: Display: -=312th=- Rabbit[76561198262186571, team 0] killed Demolitions[INVALID, team 1] with BP_Projectile_ANM14_C_2147472600
 [KILL] [2025.10.04-21.30.44:444][724]LogGameplayEvents: Display: -=312th=- Rabbit[76561198262186571, team 0] killed Rifleman[INVALID, team 1] with BP_Firearm_AKM_C_2147480635
 [KILL] [2025.10.04-21.30.52:640][533]LogGameplayEvents: Display: -=312th=- Rabbit[76561198262186571, team 0] killed Rifleman[INVALID, team 1] with BP_Firearm_AKM_C_2147480635
+[OBJ_CAPTURED] [2025.10.04-21.31.01:003][404]LogGameplayEvents: Display: Objective 0 was captured for team 0 from team 1 by *OSS*0rigin[76561198007416544], -=312th=- Rabbit[76561198262186571].
 [CHAT_CMD] [2025.10.04-21.31.09:661][158]LogChat: Display: -=312th=- Rabbit(76561198262186571) Global Chat: !rank
 [KILL] [2025.10.04-21.31.32:679][ 93]LogGameplayEvents: Display: *OSS*0rigin[76561198007416544, team 0] killed Rifleman[INVALID, team 1] with BP_Firearm_M4A1_C_2147480587
 [KILL] [2025.10.04-21.31.36:947][463]LogGameplayEvents: Display: *OSS*0rigin[76561198007416544, team 0] killed Rifleman[INVALID, team 1] with BP_Firearm_M4A1_C_2147480587
@@ -53,6 +51,7 @@
 [KILL] [2025.10.04-21.32.48:543][886]LogGameplayEvents: Display: *OSS*0rigin[76561198007416544, team 0] killed Rifleman[INVALID, team 1] with BP_Firearm_M4A1_C_2147480587
 [KILL] [2025.10.04-21.32.48:726][899]LogGameplayEvents: Display: ArmoredBear[76561198995742987, team 0] killed Rifleman[INVALID, team 1] with BP_Firearm_M4A1_C_2147472393
 [KILL] [2025.10.04-21.32.55:613][297]LogGameplayEvents: Display: ArmoredBear[76561198995742987, team 0] + -=312th=- Rabbit[76561198262186571, team 0] killed Rifleman[INVALID, team 1] with ODCheckpoint_B_5
+[OBJ_DESTROYED] [2025.10.04-21.32.55:614][297]LogGameplayEvents: Display: Objective 1 owned by team 1 was destroyed for team 0 by -=312th=- Rabbit[76561198262186571], ArmoredBear[76561198995742987].
 [KILL] [2025.10.04-21.33.05:613][ 70]LogGameplayEvents: Display: *OSS*0rigin[76561198007416544, team 0] killed Rifleman[INVALID, team 1] with BP_Firearm_M4A1_C_2147480587
 [KILL] [2025.10.04-21.33.06:550][121]LogGameplayEvents: Display: Blue[76561198047711504, team 0] killed Rifleman[INVALID, team 1] with BP_Firearm_M16A4_C_2147472422
 [KILL] [2025.10.04-21.33.09:254][339]LogGameplayEvents: Display: -=312th=- Rabbit[76561198262186571, team 0] killed Rifleman[INVALID, team 1] with BP_Firearm_AKM_C_2147480635

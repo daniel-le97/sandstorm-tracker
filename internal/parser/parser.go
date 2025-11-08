@@ -32,11 +32,13 @@ type logPatterns struct {
 	RoundEnd         *regexp.Regexp
 	GameOver         *regexp.Regexp
 	MapLoad          *regexp.Regexp
-	DifficultyChange *regexp.Regexp
-	MapVote          *regexp.Regexp
-	ChatCommand      *regexp.Regexp
-	RconCommand      *regexp.Regexp
-	Timestamp        *regexp.Regexp
+	// DifficultyChange   *regexp.Regexp // Not currently used
+	MapVote            *regexp.Regexp
+	ChatCommand        *regexp.Regexp
+	RconCommand        *regexp.Regexp
+	ObjectiveDestroyed *regexp.Regexp
+	ObjectiveCaptured  *regexp.Regexp
+	Timestamp          *regexp.Regexp
 }
 
 func newLogPatterns() *logPatterns {
@@ -63,7 +65,7 @@ func newLogPatterns() *logPatterns {
 		// Map and server events
 		MapLoad: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\s*\d+\]LogLoad: LoadMap: /Game/Maps/([^/]+)/[^?]+\?.*Scenario=([^?&]+).*MaxPlayers=(\d+).*Lighting=([^?&]+)`),
 
-		DifficultyChange: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\s*\d+\]LogAI: Warning: AI difficulty set to ([0-9.]+)`),
+		// DifficultyChange: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\s*\d+\]LogAI: Warning: AI difficulty set to ([0-9.]+)`), // Not currently used
 
 		MapVote: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\d+\]LogMapVoteManager: Display: .*Vote Options:`),
 
@@ -71,6 +73,13 @@ func newLogPatterns() *logPatterns {
 		ChatCommand: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\d+\]LogChat: Display: ([^(]+)\((\d+)\) Global Chat: (!.+)`),
 
 		RconCommand: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\s*\d+\]LogRcon: ([^<]+)<< (.+)`),
+
+		// Objective events
+		// ObjectiveDestroyed: timestamp, objectiveNum, owningTeam, destroyingTeam, playerSection
+		ObjectiveDestroyed: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\d+\]LogGameplayEvents: Display: Objective (\d+) owned by team (\d+) was destroyed for team (\d+) by (.+)\.`),
+
+		// ObjectiveCaptured: timestamp, objectiveNum, capturingTeam, losingTeam, playerSection
+		ObjectiveCaptured: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\d+\]LogGameplayEvents: Display: Objective (\d+) was captured for team (\d+) from team (\d+) by (.+)\.`),
 
 		// Utility pattern for timestamp extraction
 		Timestamp: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]`),
@@ -117,6 +126,14 @@ func (p *LogParser) ParseAndProcess(ctx context.Context, line string, serverID s
 	}
 
 	if p.tryProcessPlayerDisconnect(ctx, line, timestamp, serverID) {
+		return nil
+	}
+
+	if p.tryProcessObjectiveDestroyed(ctx, line, timestamp, serverID, logFilePath) {
+		return nil
+	}
+
+	if p.tryProcessObjectiveCaptured(ctx, line, timestamp, serverID, logFilePath) {
 		return nil
 	}
 
@@ -381,11 +398,14 @@ func parseKillerSection(killerSection string) []killer {
 	}
 
 	playerParts := strings.Split(killerSection, " + ")
-	playerRegex := regexp.MustCompile(`^(.+?)\[([^,\]]*), team (\d+)\]$`)
+	// Try full format first: Name[SteamID, team X]
+	playerRegexFull := regexp.MustCompile(`^(.+?)\[([^,\]]*), team (\d+)\]$`)
+	// Fallback format for objective events: Name[SteamID]
+	playerRegexSimple := regexp.MustCompile(`^(.+?)\[([^\]]+)\]$`)
 
 	for _, playerPart := range playerParts {
 		playerPart = strings.TrimSpace(playerPart)
-		matches := playerRegex.FindStringSubmatch(playerPart)
+		matches := playerRegexFull.FindStringSubmatch(playerPart)
 
 		if len(matches) == 4 {
 			team, _ := strconv.Atoi(matches[3])
@@ -394,6 +414,16 @@ func parseKillerSection(killerSection string) []killer {
 				SteamID: strings.TrimSpace(matches[2]),
 				Team:    team,
 			})
+		} else {
+			// Try simple format
+			matches = playerRegexSimple.FindStringSubmatch(playerPart)
+			if len(matches) == 3 {
+				killers = append(killers, killer{
+					Name:    strings.TrimSpace(matches[1]),
+					SteamID: strings.TrimSpace(matches[2]),
+					Team:    -1, // Team is provided elsewhere in objective events
+				})
+			}
 		}
 	}
 
@@ -486,4 +516,190 @@ func (p *LogParser) findLastMapLoadEvent(logFilePath string, beforeTime time.Tim
 	}
 
 	return "", "", time.Time{}, fmt.Errorf("no map load event found before %v", beforeTime)
+}
+
+// tryProcessObjectiveDestroyed parses and processes objective destroyed events
+func (p *LogParser) tryProcessObjectiveDestroyed(ctx context.Context, line string, timestamp time.Time, serverID string, logFilePath string) bool {
+	matches := p.patterns.ObjectiveDestroyed.FindStringSubmatch(line)
+	if len(matches) < 6 {
+		return false
+	}
+
+	objectiveNum := strings.TrimSpace(matches[2])
+	owningTeam := strings.TrimSpace(matches[3])
+	destroyingTeam := strings.TrimSpace(matches[4])
+	playerSection := strings.TrimSpace(matches[5])
+
+	log.Printf("Objective %s destroyed: owned by team %s, destroyed for team %s by %s",
+		objectiveNum, owningTeam, destroyingTeam, playerSection)
+
+	// Parse player section (can have multiple players)
+	players := parseKillerSection(playerSection)
+	if len(players) == 0 {
+		return true // Parsed but no valid players
+	}
+
+	// Get or create the current active match for this server
+	activeMatch, err := database.GetActiveMatch(ctx, p.pbApp, serverID)
+	if err != nil {
+		// No active match found - search backwards in log for last map load event
+		log.Printf("No active match found for objective destroyed event on server %s, searching for last map load...", serverID)
+
+		mapName, scenario, mapLoadTime, err := p.findLastMapLoadEvent(logFilePath, timestamp)
+		if err != nil {
+			log.Printf("Failed to find last map load event: %v, creating match with unknown map", err)
+			mode := "Unknown"
+			activeMatch, err = database.CreateMatch(ctx, p.pbApp, serverID, nil, &mode, &timestamp)
+		} else {
+			log.Printf("Found last map load: %s (%s) at %v", mapName, scenario, mapLoadTime)
+			activeMatch, err = database.CreateMatch(ctx, p.pbApp, serverID, &mapName, &scenario, &mapLoadTime)
+		}
+
+		if err != nil {
+			log.Printf("Failed to create match for objective destroyed event: %v", err)
+			return true // Can't track without a match
+		}
+		log.Printf("Created new match %s for server %s", activeMatch.ID, serverID)
+	}
+
+	// Process each player (first gets credit, rest get assists)
+	for i, player := range players {
+		if player.SteamID == "INVALID" || player.SteamID == "" {
+			continue
+		}
+
+		// Try to find player by Steam ID first, then by name
+		playerRecord, err := database.GetPlayerByExternalID(ctx, p.pbApp, player.SteamID)
+		if err != nil {
+			playerRecord, err = database.GetPlayerByName(ctx, p.pbApp, player.Name)
+			if err != nil {
+				playerRecord, err = database.CreatePlayer(ctx, p.pbApp, player.SteamID, player.Name)
+				if err != nil {
+					log.Printf("Failed to create player %s: %v", player.Name, err)
+					continue
+				}
+			} else {
+				// Update external ID if missing
+				err = database.UpdatePlayerExternalID(ctx, p.pbApp, playerRecord, player.SteamID)
+				if err != nil {
+					log.Printf("Failed to update player external_id for %s: %v", player.Name, err)
+				}
+			}
+		}
+
+		// Ensure player is in the match (upsert creates row if needed)
+		team, _ := strconv.ParseInt(destroyingTeam, 10, 64)
+		err = database.UpsertMatchPlayerStats(ctx, p.pbApp, activeMatch.ID, playerRecord.ID, &team, &timestamp)
+		if err != nil {
+			log.Printf("Failed to upsert player %s into match: %v", player.Name, err)
+			continue
+		}
+
+		// First player gets the objective destroy credit, others get assists
+		if i == 0 {
+			// Track as objective destroyed in match_player_stats
+			err = database.IncrementMatchPlayerObjectivesDestroyed(ctx, p.pbApp, activeMatch.ID, playerRecord.ID)
+			if err != nil {
+				log.Printf("Failed to increment objective destroyed for player %s: %v", player.Name, err)
+			}
+		} else {
+			// Could track assists here if desired
+			log.Printf("Player %s assisted in destroying objective %s", player.Name, objectiveNum)
+		}
+	}
+
+	return true
+}
+
+// tryProcessObjectiveCaptured parses and processes objective captured events
+func (p *LogParser) tryProcessObjectiveCaptured(ctx context.Context, line string, timestamp time.Time, serverID string, logFilePath string) bool {
+	matches := p.patterns.ObjectiveCaptured.FindStringSubmatch(line)
+	if len(matches) < 6 {
+		return false
+	}
+
+	objectiveNum := strings.TrimSpace(matches[2])
+	capturingTeam := strings.TrimSpace(matches[3])
+	losingTeam := strings.TrimSpace(matches[4])
+	playerSection := strings.TrimSpace(matches[5])
+
+	log.Printf("Objective %s captured: team %s captured from team %s by %s",
+		objectiveNum, capturingTeam, losingTeam, playerSection)
+
+	// Parse player section (can have multiple players)
+	players := parseKillerSection(playerSection)
+	if len(players) == 0 {
+		return true // Parsed but no valid players
+	}
+
+	// Get or create the current active match for this server
+	activeMatch, err := database.GetActiveMatch(ctx, p.pbApp, serverID)
+	if err != nil {
+		// No active match found - search backwards in log for last map load event
+		log.Printf("No active match found for objective captured event on server %s, searching for last map load...", serverID)
+
+		mapName, scenario, mapLoadTime, err := p.findLastMapLoadEvent(logFilePath, timestamp)
+		if err != nil {
+			log.Printf("Failed to find last map load event: %v, creating match with unknown map", err)
+			mode := "Unknown"
+			activeMatch, err = database.CreateMatch(ctx, p.pbApp, serverID, nil, &mode, &timestamp)
+		} else {
+			log.Printf("Found last map load: %s (%s) at %v", mapName, scenario, mapLoadTime)
+			activeMatch, err = database.CreateMatch(ctx, p.pbApp, serverID, &mapName, &scenario, &mapLoadTime)
+		}
+
+		if err != nil {
+			log.Printf("Failed to create match for objective captured event: %v", err)
+			return true // Can't track without a match
+		}
+		log.Printf("Created new match %s for server %s", activeMatch.ID, serverID)
+	}
+
+	// Process each player (first gets credit, rest get assists)
+	for i, player := range players {
+		if player.SteamID == "INVALID" || player.SteamID == "" {
+			continue
+		}
+
+		// Try to find player by Steam ID first, then by name
+		playerRecord, err := database.GetPlayerByExternalID(ctx, p.pbApp, player.SteamID)
+		if err != nil {
+			playerRecord, err = database.GetPlayerByName(ctx, p.pbApp, player.Name)
+			if err != nil {
+				playerRecord, err = database.CreatePlayer(ctx, p.pbApp, player.SteamID, player.Name)
+				if err != nil {
+					log.Printf("Failed to create player %s: %v", player.Name, err)
+					continue
+				}
+			} else {
+				// Update external ID if missing
+				err = database.UpdatePlayerExternalID(ctx, p.pbApp, playerRecord, player.SteamID)
+				if err != nil {
+					log.Printf("Failed to update player external_id for %s: %v", player.Name, err)
+				}
+			}
+		}
+
+		// Ensure player is in the match (upsert creates row if needed)
+		team, _ := strconv.ParseInt(capturingTeam, 10, 64)
+		err = database.UpsertMatchPlayerStats(ctx, p.pbApp, activeMatch.ID, playerRecord.ID, &team, &timestamp)
+		if err != nil {
+			log.Printf("Failed to upsert player %s into match: %v", player.Name, err)
+			continue
+		}
+
+		// First player gets the objective capture credit, others get assists
+		if i == 0 {
+			// Track as objective captured in match_player_stats
+			err = database.IncrementMatchPlayerObjectivesCaptured(ctx, p.pbApp, activeMatch.ID, playerRecord.ID)
+			if err != nil {
+				log.Printf("Failed to increment objective captured for player %s: %v", player.Name, err)
+			}
+		} else {
+			// Could track assists here if desired
+			log.Printf("Player %s assisted in capturing objective %s", player.Name, objectiveNum)
+		}
+	}
+
+	return true
 }

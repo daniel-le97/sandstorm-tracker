@@ -11,9 +11,9 @@ func TestLoadFromSAW(t *testing.T) {
 	// Create temp directory for test
 	tempDir := t.TempDir()
 
-	// Create SAW directory structure
-	adminInterfaceDir := filepath.Join(tempDir, "admin-interface")
-	if err := os.MkdirAll(adminInterfaceDir, 0755); err != nil {
+	// Create SAW directory structure (admin-interface/config/)
+	configDir := filepath.Join(tempDir, "admin-interface", "config")
+	if err := os.MkdirAll(configDir, 0755); err != nil {
 		t.Fatalf("Failed to create test directory: %v", err)
 	}
 
@@ -46,7 +46,7 @@ func TestLoadFromSAW(t *testing.T) {
 		t.Fatalf("Failed to marshal test config: %v", err)
 	}
 
-	configPath := filepath.Join(adminInterfaceDir, "server-configs.json")
+	configPath := filepath.Join(configDir, "server-configs.json")
 	if err := os.WriteFile(configPath, configData, 0644); err != nil {
 		t.Fatalf("Failed to write test config: %v", err)
 	}
@@ -103,8 +103,8 @@ func TestLoadFromSAW(t *testing.T) {
 
 func TestLoadFromSAW_NoRconServers(t *testing.T) {
 	tempDir := t.TempDir()
-	adminInterfaceDir := filepath.Join(tempDir, "admin-interface")
-	if err := os.MkdirAll(adminInterfaceDir, 0755); err != nil {
+	configDir := filepath.Join(tempDir, "admin-interface", "config")
+	if err := os.MkdirAll(configDir, 0755); err != nil {
 		t.Fatalf("Failed to create test directory: %v", err)
 	}
 
@@ -118,7 +118,7 @@ func TestLoadFromSAW_NoRconServers(t *testing.T) {
 	}
 
 	configData, _ := json.MarshalIndent(testConfig, "", "  ")
-	configPath := filepath.Join(adminInterfaceDir, "server-configs.json")
+	configPath := filepath.Join(configDir, "server-configs.json")
 	os.WriteFile(configPath, configData, 0644)
 
 	// Should return error when no enabled servers found

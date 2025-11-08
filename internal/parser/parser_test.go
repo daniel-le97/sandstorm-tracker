@@ -200,12 +200,17 @@ func TestExtractAllEvents(t *testing.T) {
 		{
 			name:       "HC Log",
 			inputFile:  "test_data/hc.log",
-			outputFile: "test_data/extracted_events.log",
+			outputFile: "test_data/hc.extracted.log",
 		},
 		{
 			name:       "Normal Log",
 			inputFile:  "test_data/normal.log",
-			outputFile: "test_data/extracted_events_normal.log",
+			outputFile: "test_data/normal.extracted.log",
+		},
+		{
+			name:       "UUID Log",
+			inputFile:  "test_data/1d6407b7-f51b-4b1d-ad9e-faabbfbb7dde.log",
+			outputFile: "test_data/1d6407b7-f51b-4b1d-ad9e-faabbfbb7dde.extracted.log",
 		},
 	}
 
@@ -265,14 +270,20 @@ func TestExtractAllEvents(t *testing.T) {
 				} else if parser.patterns.MapLoad.MatchString(line) {
 					eventType = "MAP_LOAD"
 					matched = true
-				} else if parser.patterns.DifficultyChange.MatchString(line) {
-					eventType = "DIFFICULTY"
-					matched = true
+					// } else if parser.patterns.DifficultyChange.MatchString(line) {
+					// 	eventType = "DIFFICULTY"
+					// 	matched = true
 				} else if parser.patterns.MapVote.MatchString(line) {
 					eventType = "MAP_VOTE"
 					matched = true
 				} else if parser.patterns.ChatCommand.MatchString(line) {
 					eventType = "CHAT_CMD"
+					matched = true
+				} else if parser.patterns.ObjectiveDestroyed.MatchString(line) {
+					eventType = "OBJ_DESTROYED"
+					matched = true
+				} else if parser.patterns.ObjectiveCaptured.MatchString(line) {
+					eventType = "OBJ_CAPTURED"
 					matched = true
 				}
 

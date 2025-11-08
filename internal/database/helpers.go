@@ -261,6 +261,8 @@ func UpsertMatchPlayerStats(ctx context.Context, pbApp core.App, matchID, player
 		record.Set("assists", 0)
 		record.Set("session_count", 1)
 		record.Set("is_currently_connected", true)
+		record.Set("objectives_destroyed", 0)
+		record.Set("objectives_captured", 0)
 	} else {
 		// Update existing - increment session_count
 		sessionCount := record.GetInt("session_count")
@@ -306,6 +308,46 @@ func IncrementMatchPlayerAssists(ctx context.Context, pbApp core.App, matchID, p
 
 	assists := record.GetInt("assists")
 	record.Set("assists", assists+1)
+
+	return pbApp.Save(record)
+}
+
+// IncrementMatchPlayerObjectivesDestroyed increments objectives destroyed count for a player in a match
+func IncrementMatchPlayerObjectivesDestroyed(ctx context.Context, pbApp core.App, matchID, playerID string) error {
+	record, err := pbApp.FindFirstRecordByFilter(
+		"match_player_stats",
+		"match = {:match} && player = {:player}",
+		map[string]any{
+			"match":  matchID,
+			"player": playerID,
+		},
+	)
+	if err != nil {
+		return err
+	}
+
+	objectivesDestroyed := record.GetInt("objectives_destroyed")
+	record.Set("objectives_destroyed", objectivesDestroyed+1)
+
+	return pbApp.Save(record)
+}
+
+// IncrementMatchPlayerObjectivesCaptured increments objectives captured count for a player in a match
+func IncrementMatchPlayerObjectivesCaptured(ctx context.Context, pbApp core.App, matchID, playerID string) error {
+	record, err := pbApp.FindFirstRecordByFilter(
+		"match_player_stats",
+		"match = {:match} && player = {:player}",
+		map[string]any{
+			"match":  matchID,
+			"player": playerID,
+		},
+	)
+	if err != nil {
+		return err
+	}
+
+	objectivesCaptured := record.GetInt("objectives_captured")
+	record.Set("objectives_captured", objectivesCaptured+1)
 
 	return pbApp.Save(record)
 }

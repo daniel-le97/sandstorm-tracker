@@ -212,6 +212,36 @@ func (w *Watcher) processFile(filePath string) {
 	}
 	defer file.Close()
 
+	// Get current file size
+	fileInfo, err := file.Stat()
+	if err != nil {
+		log.Printf("Error getting file info for %s: %v", filePath, err)
+		return
+	}
+	currentSize := fileInfo.Size()
+
+	// If offset is 0 (new server), set offset to current file size and wait for log rotation
+	if offset == 0 {
+		log.Printf("New server %s detected, setting offset to %d bytes (waiting for first log rotation)", serverID, currentSize)
+		serverRecord.Set("offset", currentSize)
+		if err := w.pbApp.Save(serverRecord); err != nil {
+			log.Printf("Error saving initial offset: %v", err)
+		}
+		return // Don't process until first rotation
+	}
+
+	// If offset equals current size, this is the first time we're watching - wait for new data
+	if int64(offset) == currentSize {
+		log.Printf("Server %s at current end of file (%d bytes), waiting for new log entries", serverID, currentSize)
+		return // Don't process until new data is written
+	}
+
+	// If current size is less than offset, log file was rotated (truncated/reset)
+	if currentSize < int64(offset) {
+		log.Printf("Log rotation detected for %s (file size %d < offset %d), resetting to 0", serverID, currentSize, offset)
+		offset = 0
+	}
+
 	if _, err := file.Seek(int64(offset), 0); err != nil {
 		log.Printf("Error seeking to offset %d in %s: %v", offset, filePath, err)
 		return
@@ -223,8 +253,8 @@ func (w *Watcher) processFile(filePath string) {
 	for scanner.Scan() {
 		line := scanner.Text()
 
-		// Parse and process directly - no intermediate structs
-		if err := w.parser.ParseAndProcess(w.ctx, line, serverDBID, filePath); err != nil {
+		// Parse and process directly - pass serverID (external_id), not serverDBID
+		if err := w.parser.ParseAndProcess(w.ctx, line, serverID, filePath); err != nil {
 			log.Printf("Error processing line: %v", err)
 		}
 

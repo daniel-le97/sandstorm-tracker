@@ -69,42 +69,49 @@ Sandstorm Tracker is a Go project that tracks kills, playtime, alive time, weapo
 
 ## Configuration
 
-The tracker accepts configuration via YAML, TOML, or JSON files. See `sandstorm-tracker.example.yml` for a complete example with all available options.
+The tracker accepts configuration via YAML, TOML, or JSON files. There are two configuration modes:
+
+1. **SAW Mode** (Recommended for sandstorm-admin-wrapper users) - Auto-discovers servers
+2. **Manual Mode** (For standalone servers) - Explicit configuration
 
 ### For sandstorm-admin-wrapper Users
 
-If you're using [sandstorm-admin-wrapper](https://github.com/startersclan/sandstorm-admin-wrapper), your servers share a common log directory with UUID-based log filenames. Here's how to configure:
+If you're using [sandstorm-admin-wrapper](https://github.com/startersclan/sandstorm-admin-wrapper), configuration is simplified! The tracker automatically reads your SAW configuration and constructs log paths for all servers.
 
-1. **Find your server's log file:**
+**Simple configuration - just provide the SAW path:**
 
-   ```sh
-   ls /opt/sandstorm-admin-wrapper/sandstorm-server/Insurgency/Saved/Logs/
-   # You'll see files like: abc123-uuid-uuid-uuid-uuid.log
-   ```
+```yaml
+sawPath: "/opt/sandstorm-admin-wrapper" # Path to your SAW installation
 
-2. **Configure each server with its specific log file:**
+# That's it! The tracker will:
+# - Read server-configs.json automatically
+# - Construct log paths for all servers
+# - Extract RCON addresses and passwords
+# - Configure query addresses (game port + 29)
+```
 
-   ```yaml
-   servers:
-     - name: "Main Server"
-       logPath: "/opt/sandstorm-admin-wrapper/sandstorm-server/Insurgency/Saved/Logs/abc123-your-uuid.log"
-       rconAddress: "127.0.0.1:27015"
-       rconPassword: "your_rcon_password"
-       queryAddress: "127.0.0.1:27131" # game port + 29
-       enabled: true
+**Example full configuration:**
 
-     - name: "Secondary Server"
-       logPath: "/opt/sandstorm-admin-wrapper/sandstorm-server/Insurgency/Saved/Logs/def456-your-uuid.log"
-       rconAddress: "127.0.0.1:27115"
-       rconPassword: "your_rcon_password"
-       queryAddress: "127.0.0.1:27231" # game port + 29
-       enabled: true
-   ```
+```yaml
+sawPath: "/opt/sandstorm-admin-wrapper"
 
-3. **Query port calculation:**
-   - Query port = Game port + 29
-   - If your game port is 27102, query port is 27131
-   - If your game port is 27202, query port is 27231
+logging:
+  level: "info"
+```
+
+The tracker will automatically discover all servers configured in your SAW installation at:
+
+- `{SAW_PATH}/admin-interface/config/server-configs.json`
+
+And construct log paths like:
+
+- `{SAW_PATH}/sandstorm-server/Insurgency/Saved/Logs/{SERVER_UUID}.log`
+
+**Windows users:**
+
+```yaml
+sawPath: "C:\\sandstorm-admin-wrapper"
+```
 
 ### For Standalone Server Users
 

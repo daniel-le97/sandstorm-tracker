@@ -1,0 +1,1777 @@
+﻿Log file open, 11/08/25 13:59:12
+LogConsoleResponse: Display: Failed to find resolution value strings in scalability ini. Falling back to default.
+LogConsoleResponse: Display: Failed to find resolution value strings in scalability ini. Falling back to default.
+LogPakFile: Display: Found Pak file ../../../Insurgency/Content/Paks/pakchunk28-WindowsServer.pak attempting to mount.
+LogPakFile: Display: Mounting pak file ../../../Insurgency/Content/Paks/pakchunk28-WindowsServer.pak.
+LogPakFile: PakFile PrimaryIndexSize=12929
+LogPakFile: PakFile PathHashIndexSize=1280
+LogPakFile: PakFile FullDirectoryIndexSize=5707
+LogShaderLibrary: Display: ShaderCodeLibraryPakFileMountedCallback: PakFile '../../../Insurgency/Content/Paks/pakchunk28-WindowsServer.pak' (chunk index 0, root '../../../Insurgency/Content/') mounted
+LogShaderLibrary: Display: ShaderCodeLibraryPakFileMountedCallback: pending pak file info (ChunkID:0 Root:../../../Insurgency/Content/ File:../../../Insurgency/Content/Paks/pakchunk28-WindowsServer.pak)
+LogPakFile: OnPakFileMounted2Time == 0.000200
+LogPakFile: Display: Found Pak file ../../../Insurgency/Content/Paks/pakchunk27-WindowsServer.pak attempting to mount.
+LogPakFile: Display: Mounting pak file ../../../Insurgency/Content/Paks/pakchunk27-WindowsServer.pak.
+LogPakFile: PakFile PrimaryIndexSize=15577
+LogPakFile: PakFile PathHashIndexSize=536
+LogPakFile: PakFile FullDirectoryIndexSize=2003
+LogShaderLibrary: Display: ShaderCodeLibraryPakFileMountedCallback: PakFile '../../../Insurgency/Content/Paks/pakchunk27-WindowsServer.pak' (chunk index 0, root '../../../Insurgency/Content/') mounted
+LogShaderLibrary: Display: ShaderCodeLibraryPakFileMountedCallback: pending pak file info (ChunkID:0 Root:../../../Insurgency/Content/ File:../../../Insurgency/Content/Paks/pakchunk27-WindowsServer.pak)
+LogPakFile: OnPakFileMounted2Time == 0.000027
+LogPakFile: Display: Found Pak file ../../../Insurgency/Content/Paks/pakchunk26-WindowsServer.pak attempting to mount.
+LogPakFile: Display: Mounting pak file ../../../Insurgency/Content/Paks/pakchunk26-WindowsServer.pak.
+LogPakFile: PakFile PrimaryIndexSize=8369
+LogPakFile: PakFile PathHashIndexSize=368
+LogPakFile: PakFile FullDirectoryIndexSize=1439
+LogShaderLibrary: Display: ShaderCodeLibraryPakFileMountedCallback: PakFile '../../../Insurgency/Content/Paks/pakchunk26-WindowsServer.pak' (chunk index 0, root '../../../Insurgency/Content/') mounted
+LogShaderLibrary: Display: ShaderCodeLibraryPakFileMountedCallback: pending pak file info (ChunkID:0 Root:../../../Insurgency/Content/ File:../../../Insurgency/Content/Paks/pakchunk26-WindowsServer.pak)
+LogPakFile: OnPakFileMounted2Time == 0.000030
+LogPakFile: Display: Found Pak file ../../../Insurgency/Content/Paks/pakchunk25-WindowsServer.pak attempting to mount.
+LogPakFile: Display: Mounting pak file ../../../Insurgency/Content/Paks/pakchunk25-WindowsServer.pak.
+LogPakFile: PakFile PrimaryIndexSize=3501
+LogPakFile: PakFile PathHashIndexSize=320
+LogPakFile: PakFile FullDirectoryIndexSize=1252
+LogShaderLibrary: Display: ShaderCodeLibraryPakFileMountedCallback: PakFile '../../../Insurgency/Content/Paks/pakchunk25-WindowsServer.pak' (chunk index 0, root '../../../Insurgency/Content/') mounted
+LogShaderLibrary: Display: ShaderCodeLibraryPakFileMountedCallback: pending pak file info (ChunkID:0 Root:../../../Insurgency/Content/ File:../../../Insurgency/Content/Paks/pakchunk25-WindowsServer.pak)
+LogPakFile: OnPakFileMounted2Time == 0.000028
+LogPakFile: Display: Found Pak file ../../../Insurgency/Content/Paks/pakchunk24-WindowsServer.pak attempting to mount.
+LogPakFile: Display: Mounting pak file ../../../Insurgency/Content/Paks/pakchunk24-WindowsServer.pak.
+LogPakFile: PakFile PrimaryIndexSize=9417
+LogPakFile: PakFile PathHashIndexSize=440
+LogPakFile: PakFile FullDirectoryIndexSize=1543
+LogShaderLibrary: Display: ShaderCodeLibraryPakFileMountedCallback: PakFile '../../../Insurgency/Content/Paks/pakchunk24-WindowsServer.pak' (chunk index 0, root '../../../Insurgency/Content/') mounted
+LogShaderLibrary: Display: ShaderCodeLibraryPakFileMountedCallback: pending pak file info (ChunkID:0 Root:../../../Insurgency/Content/ File:../../../Insurgency/Content/Paks/pakchunk24-WindowsServer.pak)
+LogPakFile: OnPakFileMounted2Time == 0.000028
+LogPakFile: Display: Found Pak file ../../../Insurgency/Content/Paks/pakchunk23-WindowsServer.pak attempting to mount.
+LogPakFile: Display: Mounting pak file ../../../Insurgency/Content/Paks/pakchunk23-WindowsServer.pak.
+LogPakFile: PakFile PrimaryIndexSize=10213
+LogPakFile: PakFile PathHashIndexSize=536
+LogPakFile: PakFile FullDirectoryIndexSize=1969
+LogShaderLibrary: Display: ShaderCodeLibraryPakFileMountedCallback: PakFile '../../../Insurgency/Content/Paks/pakchunk23-WindowsServer.pak' (chunk index 0, root '../../../Insurgency/Content/') mounted
+LogShaderLibrary: Display: ShaderCodeLibraryPakFileMountedCallback: pending pak file info (ChunkID:0 Root:../../../Insurgency/Content/ File:../../../Insurgency/Content/Paks/pakchunk23-WindowsServer.pak)
+LogPakFile: OnPakFileMounted2Time == 0.000023
+LogPakFile: Display: Found Pak file ../../../Insurgency/Content/Paks/pakchunk22-WindowsServer.pak attempting to mount.
+LogPakFile: Display: Mounting pak file ../../../Insurgency/Content/Paks/pakchunk22-WindowsServer.pak.
+LogPakFile: PakFile PrimaryIndexSize=11942
+LogPakFile: PakFile PathHashIndexSize=596
+LogPakFile: PakFile FullDirectoryIndexSize=1763
+LogShaderLibrary: Display: ShaderCodeLibraryPakFileMountedCallback: PakFile '../../../Insurgency/Content/Paks/pakchunk22-WindowsServer.pak' (chunk index 0, root '../../../') mounted
+LogShaderLibrary: Display: ShaderCodeLibraryPakFileMountedCallback: pending pak file info (ChunkID:0 Root:../../../ File:../../../Insurgency/Content/Paks/pakchunk22-WindowsServer.pak)
+LogPakFile: OnPakFileMounted2Time == 0.000022
+LogPakFile: Display: Found Pak file ../../../Insurgency/Content/Paks/pakchunk21-WindowsServer.pak attempting to mount.
+LogPakFile: Display: Mounting pak file ../../../Insurgency/Content/Paks/pakchunk21-WindowsServer.pak.
+LogPakFile: PakFile PrimaryIndexSize=6985
+LogPakFile: PakFile PathHashIndexSize=680
+LogPakFile: PakFile FullDirectoryIndexSize=2450
+LogShaderLibrary: Display: ShaderCodeLibraryPakFileMountedCallback: PakFile '../../../Insurgency/Content/Paks/pakchunk21-WindowsServer.pak' (chunk index 0, root '../../../Insurgency/Content/') mounted
+LogShaderLibrary: Display: ShaderCodeLibraryPakFileMountedCallback: pending pak file info (ChunkID:0 Root:../../../Insurgency/Content/ File:../../../Insurgency/Content/Paks/pakchunk21-WindowsServer.pak)
+LogPakFile: OnPakFileMounted2Time == 0.000035
+LogPakFile: Display: Found Pak file ../../../Insurgency/Content/Paks/pakchunk20-WindowsServer.pak attempting to mount.
+LogPakFile: Display: Mounting pak file ../../../Insurgency/Content/Paks/pakchunk20-WindowsServer.pak.
+LogPakFile: PakFile PrimaryIndexSize=8381
+LogPakFile: PakFile PathHashIndexSize=368
+LogPakFile: PakFile FullDirectoryIndexSize=1385
+LogShaderLibrary: Display: ShaderCodeLibraryPakFileMountedCallback: PakFile '../../../Insurgency/Content/Paks/pakchunk20-WindowsServer.pak' (chunk index 0, root '../../../Insurgency/Content/') mounted
+LogShaderLibrary: Display: ShaderCodeLibraryPakFileMountedCallback: pending pak file info (ChunkID:0 Root:../../../Insurgency/Content/ File:../../../Insurgency/Content/Paks/pakchunk20-WindowsServer.pak)
+LogPakFile: OnPakFileMounted2Time == 0.000025
+LogPakFile: Display: Found Pak file ../../../Insurgency/Content/Paks/pakchunk19-WindowsServer.pak attempting to mount.
+LogPakFile: Display: Mounting pak file ../../../Insurgency/Content/Paks/pakchunk19-WindowsServer.pak.
+LogPakFile: PakFile PrimaryIndexSize=11773
+LogPakFile: PakFile PathHashIndexSize=800
+LogPakFile: PakFile FullDirectoryIndexSize=3398
+LogShaderLibrary: Display: ShaderCodeLibraryPakFileMountedCallback: PakFile '../../../Insurgency/Content/Paks/pakchunk19-WindowsServer.pak' (chunk index 0, root '../../../Insurgency/Content/') mounted
+LogShaderLibrary: Display: ShaderCodeLibraryPakFileMountedCallback: pending pak file info (ChunkID:0 Root:../../../Insurgency/Content/ File:../../../Insurgency/Content/Paks/pakchunk19-WindowsServer.pak)
+LogPakFile: OnPakFileMounted2Time == 0.000023
+LogPakFile: Display: Found Pak file ../../../Insurgency/Content/Paks/pakchunk18-WindowsServer.pak attempting to mount.
+LogPakFile: Display: Mounting pak file ../../../Insurgency/Content/Paks/pakchunk18-WindowsServer.pak.
+LogPakFile: PakFile PrimaryIndexSize=11181
+LogPakFile: PakFile PathHashIndexSize=488
+LogPakFile: PakFile FullDirectoryIndexSize=1866
+LogShaderLibrary: Display: ShaderCodeLibraryPakFileMountedCallback: PakFile '../../../Insurgency/Content/Paks/pakchunk18-WindowsServer.pak' (chunk index 0, root '../../../Insurgency/Content/') mounted
+LogShaderLibrary: Display: ShaderCodeLibraryPakFileMountedCallback: pending pak file info (ChunkID:0 Root:../../../Insurgency/Content/ File:../../../Insurgency/Content/Paks/pakchunk18-WindowsServer.pak)
+LogPakFile: OnPakFileMounted2Time == 0.000036
+LogPakFile: Display: Found Pak file ../../../Insurgency/Content/Paks/pakchunk17-WindowsServer.pak attempting to mount.
+LogPakFile: Display: Mounting pak file ../../../Insurgency/Content/Paks/pakchunk17-WindowsServer.pak.
+LogPakFile: PakFile PrimaryIndexSize=4833
+LogPakFile: PakFile PathHashIndexSize=464
+LogPakFile: PakFile FullDirectoryIndexSize=1920
+LogShaderLibrary: Display: ShaderCodeLibraryPakFileMountedCallback: PakFile '../../../Insurgency/Content/Paks/pakchunk17-WindowsServer.pak' (chunk index 0, root '../../../Insurgency/Content/') mounted
+LogShaderLibrary: Display: ShaderCodeLibraryPakFileMountedCallback: pending pak file info (ChunkID:0 Root:../../../Insurgency/Content/ File:../../../Insurgency/Content/Paks/pakchunk17-WindowsServer.pak)
+LogPakFile: OnPakFileMounted2Time == 0.000030
+LogPakFile: Display: Found Pak file ../../../Insurgency/Content/Paks/pakchunk16-WindowsServer.pak attempting to mount.
+LogPakFile: Display: Mounting pak file ../../../Insurgency/Content/Paks/pakchunk16-WindowsServer.pak.
+LogPakFile: PakFile PrimaryIndexSize=14938
+LogPakFile: PakFile PathHashIndexSize=2260
+LogPakFile: PakFile FullDirectoryIndexSize=7955
+LogShaderLibrary: Display: ShaderCodeLibraryPakFileMountedCallback: PakFile '../../../Insurgency/Content/Paks/pakchunk16-WindowsServer.pak' (chunk index 0, root '../../../') mounted
+LogShaderLibrary: Display: ShaderCodeLibraryPakFileMountedCallback: pending pak file info (ChunkID:0 Root:../../../ File:../../../Insurgency/Content/Paks/pakchunk16-WindowsServer.pak)
+LogPakFile: OnPakFileMounted2Time == 0.000030
+LogPakFile: Display: Found Pak file ../../../Insurgency/Content/Paks/pakchunk15-WindowsServer.pak attempting to mount.
+LogPakFile: Display: Mounting pak file ../../../Insurgency/Content/Paks/pakchunk15-WindowsServer.pak.
+LogPakFile: PakFile PrimaryIndexSize=8157
+LogPakFile: PakFile PathHashIndexSize=440
+LogPakFile: PakFile FullDirectoryIndexSize=1691
+LogShaderLibrary: Display: ShaderCodeLibraryPakFileMountedCallback: PakFile '../../../Insurgency/Content/Paks/pakchunk15-WindowsServer.pak' (chunk index 0, root '../../../Insurgency/Content/') mounted
+LogShaderLibrary: Display: ShaderCodeLibraryPakFileMountedCallback: pending pak file info (ChunkID:0 Root:../../../Insurgency/Content/ File:../../../Insurgency/Content/Paks/pakchunk15-WindowsServer.pak)
+LogPakFile: OnPakFileMounted2Time == 0.000023
+LogPakFile: Display: Found Pak file ../../../Insurgency/Content/Paks/pakchunk14-WindowsServer.pak attempting to mount.
+LogPakFile: Display: Mounting pak file ../../../Insurgency/Content/Paks/pakchunk14-WindowsServer.pak.
+LogPakFile: PakFile PrimaryIndexSize=14881
+LogPakFile: PakFile PathHashIndexSize=4516
+LogPakFile: PakFile FullDirectoryIndexSize=5844
+LogShaderLibrary: Display: ShaderCodeLibraryPakFileMountedCallback: PakFile '../../../Insurgency/Content/Paks/pakchunk14-WindowsServer.pak' (chunk index 0, root '../../../Insurgency/Content/') mounted
+LogShaderLibrary: Display: ShaderCodeLibraryPakFileMountedCallback: pending pak file info (ChunkID:0 Root:../../../Insurgency/Content/ File:../../../Insurgency/Content/Paks/pakchunk14-WindowsServer.pak)
+LogPakFile: OnPakFileMounted2Time == 0.000023
+LogPakFile: Display: Found Pak file ../../../Insurgency/Content/Paks/pakchunk13-WindowsServer.pak attempting to mount.
+LogPakFile: Display: Mounting pak file ../../../Insurgency/Content/Paks/pakchunk13-WindowsServer.pak.
+LogPakFile: PakFile PrimaryIndexSize=13045
+LogPakFile: PakFile PathHashIndexSize=848
+LogPakFile: PakFile FullDirectoryIndexSize=3259
+LogShaderLibrary: Display: ShaderCodeLibraryPakFileMountedCallback: PakFile '../../../Insurgency/Content/Paks/pakchunk13-WindowsServer.pak' (chunk index 0, root '../../../Insurgency/Content/') mounted
+LogShaderLibrary: Display: ShaderCodeLibraryPakFileMountedCallback: pending pak file info (ChunkID:0 Root:../../../Insurgency/Content/ File:../../../Insurgency/Content/Paks/pakchunk13-WindowsServer.pak)
+LogPakFile: OnPakFileMounted2Time == 0.000022
+LogPakFile: Display: Found Pak file ../../../Insurgency/Content/Paks/pakchunk12-WindowsServer.pak attempting to mount.
+LogPakFile: Display: Mounting pak file ../../../Insurgency/Content/Paks/pakchunk12-WindowsServer.pak.
+LogPakFile: PakFile PrimaryIndexSize=11877
+LogPakFile: PakFile PathHashIndexSize=440
+LogPakFile: PakFile FullDirectoryIndexSize=1756
+LogShaderLibrary: Display: ShaderCodeLibraryPakFileMountedCallback: PakFile '../../../Insurgency/Content/Paks/pakchunk12-WindowsServer.pak' (chunk index 0, root '../../../Insurgency/Content/') mounted
+LogShaderLibrary: Display: ShaderCodeLibraryPakFileMountedCallback: pending pak file info (ChunkID:0 Root:../../../Insurgency/Content/ File:../../../Insurgency/Content/Paks/pakchunk12-WindowsServer.pak)
+LogPakFile: OnPakFileMounted2Time == 0.000026
+LogPakFile: Display: Found Pak file ../../../Insurgency/Content/Paks/pakchunk11-WindowsServer.pak attempting to mount.
+LogPakFile: Display: Mounting pak file ../../../Insurgency/Content/Paks/pakchunk11-WindowsServer.pak.
+LogPakFile: PakFile PrimaryIndexSize=11222
+LogPakFile: PakFile PathHashIndexSize=1436
+LogPakFile: PakFile FullDirectoryIndexSize=4468
+LogShaderLibrary: Display: ShaderCodeLibraryPakFileMountedCallback: PakFile '../../../Insurgency/Content/Paks/pakchunk11-WindowsServer.pak' (chunk index 0, root '../../../') mounted
+LogShaderLibrary: Display: ShaderCodeLibraryPakFileMountedCallback: pending pak file info (ChunkID:0 Root:../../../ File:../../../Insurgency/Content/Paks/pakchunk11-WindowsServer.pak)
+LogPakFile: OnPakFileMounted2Time == 0.000036
+LogPakFile: Display: Found Pak file ../../../Insurgency/Content/Paks/pakchunk10-WindowsServer.pak attempting to mount.
+LogPakFile: Display: Mounting pak file ../../../Insurgency/Content/Paks/pakchunk10-WindowsServer.pak.
+LogPakFile: PakFile PrimaryIndexSize=14057
+LogPakFile: PakFile PathHashIndexSize=1112
+LogPakFile: PakFile FullDirectoryIndexSize=4191
+LogShaderLibrary: Display: ShaderCodeLibraryPakFileMountedCallback: PakFile '../../../Insurgency/Content/Paks/pakchunk10-WindowsServer.pak' (chunk index 0, root '../../../Insurgency/Content/') mounted
+LogShaderLibrary: Display: ShaderCodeLibraryPakFileMountedCallback: pending pak file info (ChunkID:0 Root:../../../Insurgency/Content/ File:../../../Insurgency/Content/Paks/pakchunk10-WindowsServer.pak)
+LogPakFile: OnPakFileMounted2Time == 0.000022
+LogPakFile: Display: Found Pak file ../../../Insurgency/Content/Paks/pakchunk0-WindowsServer.pak attempting to mount.
+LogPakFile: Display: Mounting pak file ../../../Insurgency/Content/Paks/pakchunk0-WindowsServer.pak.
+LogPakFile: PakFile PrimaryIndexSize=2373518
+LogPakFile: PakFile PathHashIndexSize=1907979
+LogPakFile: PakFile FullDirectoryIndexSize=6591233
+LogShaderLibrary: Display: ShaderCodeLibraryPakFileMountedCallback: PakFile '../../../Insurgency/Content/Paks/pakchunk0-WindowsServer.pak' (chunk index 0, root '../../../') mounted
+LogShaderLibrary: Display: ShaderCodeLibraryPakFileMountedCallback: pending pak file info (ChunkID:0 Root:../../../ File:../../../Insurgency/Content/Paks/pakchunk0-WindowsServer.pak)
+LogPakFile: OnPakFileMounted2Time == 0.000028
+LogPlatformFile: Not using cached read wrapper
+LogTaskGraph: Started task graph with 4 named threads and 8 total threads with 1 sets of task threads.
+LogICUInternationalization: ICU TimeZone Detection - Raw Offset: -7:00, Platform Override: ''
+LogInit: Display: Loading text-based GConfig....
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Mutators.ST_Mutators' 'AllYouCanEatTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Mutators.ST_Mutators' 'AntiMaterialRiflesOnlyTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Mutators.ST_Mutators' 'ArmsRaceTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Mutators.ST_Mutators' 'ArmsRaceTitleUpper'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Mutators.ST_Mutators' 'BoltActionsOnlyTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Mutators.ST_Mutators' 'BrokeTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Mutators.ST_Mutators' 'BudgetAntiquingTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Mutators.ST_Mutators' 'BulletSpongeTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Mutators.ST_Mutators' 'ChadTeam666Title'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Mutators.ST_Mutators' 'CompetitiveTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Mutators.ST_Mutators' 'CompetitiveLoadoutsTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Mutators.ST_Mutators' 'FastMovementTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Mutators.ST_Mutators' 'FullyLoadedTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Mutators.ST_Mutators' 'GuerrillasTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Mutators.ST_Mutators' 'GunslingersTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Mutators.ST_Mutators' 'HardcoreTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Mutators.ST_Mutators' 'LMGOnlyTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Mutators.ST_Mutators' 'LockedAimTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Mutators.ST_Mutators' 'MakarovsOnlyTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Mutators.ST_Mutators' 'NoAimTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Mutators.ST_Mutators' 'NoDeathCamTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Mutators.ST_Mutators' 'NoThirdPersonTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Mutators.ST_Mutators' 'OfficialRulesTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Mutators.ST_Mutators' 'PistolsOnlyTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Mutators.ST_Mutators' 'PoorTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Mutators.ST_Mutators' 'ShotgunsOnlyTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Mutators.ST_Mutators' 'SlowCaptureTimesTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Mutators.ST_Mutators' 'SlowMovementTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Mutators.ST_Mutators' 'SmallFirefightTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Mutators.ST_Mutators' 'SoldierOfFortuneTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Mutators.ST_Mutators' 'SpecialOperationsTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Mutators.ST_Mutators' 'StrappedTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Mutators.ST_Mutators' 'StrikeTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Mutators.ST_Mutators' 'StrikeTitleUpper'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Mutators.ST_Mutators' 'TacticalVoiceChatTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Mutators.ST_Mutators' 'TieBreakerTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Mutators.ST_Mutators' 'WarlordsTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Mutators.ST_Mutators' 'WelrodsTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Mutators.ST_Mutators' 'WelrodsOnlyTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Playlists.ST_Playlists' 'CompFirefightTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Playlists.ST_Playlists' 'CompFirefightTitleXPBoost'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Playlists.ST_Playlists' 'CheckpointBigMoneyTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Playlists.ST_Playlists' 'BoltActionsOnlyCoopTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Playlists.ST_Playlists' 'BoltActionsOnlyCoopNoDropsTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Playlists.ST_Playlists' 'ChadTeam6Title'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Playlists.ST_Playlists' 'CheckpointTitleAlt'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Playlists.ST_Playlists' 'CheckpointFrenzyTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Playlists.ST_Playlists' 'CheckpointFrenzyBrainEmTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Playlists.ST_Playlists' 'CheckpointFrenzyHillsideTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Playlists.ST_Playlists' 'CheckpointHardcoreTitleAlt'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Playlists.ST_Playlists' 'CheckpointHardcoreHillsideTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Playlists.ST_Playlists' 'CheckpointHillsideTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Playlists.ST_Playlists' 'CheckpointHardcoreDoubleTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Playlists.ST_Playlists' 'CheckpointGuerrillasTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Playlists.ST_Playlists' 'HardcoreLiteTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Playlists.ST_Playlists' 'CheckpointHotPotatoTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Playlists.ST_Playlists' 'CheckpointFrenzyHotPotatoTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Playlists.ST_Playlists' 'MakattackTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Playlists.ST_Playlists' 'OutpostTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Playlists.ST_Playlists' 'BudgetAntiquingTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Playlists.ST_Playlists' 'OutpostCTE1Title'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Playlists.ST_Playlists' 'OutpostCTE2Title'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Playlists.ST_Playlists' 'CheckpointPistolsInArmsTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Playlists.ST_Playlists' 'CheckpointHardcoreQuadrupleTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Playlists.ST_Playlists' 'CheckpointRunningInThe90sTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Playlists.ST_Playlists' 'SurvivalTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Playlists.ST_Playlists' 'CheckpointFrenzyTaskForce666Title'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Playlists.ST_Playlists' 'CheckpointHardcoreTripleTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Playlists.ST_Playlists' 'VersusCoopBabTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Playlists.ST_Playlists' 'HardcoreCheckpointBabTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Playlists.ST_Playlists' 'VersusCoopCitadelTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Playlists.ST_Playlists' 'CommunityTestTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Playlists.ST_Playlists' 'VersusCoopForest'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Playlists.ST_Playlists' 'VersusCoopGapTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Playlists.ST_Playlists' 'VersusCoopLastLight'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Playlists.ST_Playlists' 'VersusCoopPrisonTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Playlists.ST_Playlists' 'VersusCoopTrainYard'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Gamemodes.ST_Gamemodes' 'AmbushLower'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Playlists.ST_Playlists' 'BattleTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Playlists.ST_Playlists' 'BattleAMRTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Playlists.ST_Playlists' 'BattleBoltActionTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Playlists.ST_Playlists' 'BattleHardcoreTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Playlists.ST_Playlists' 'BattleHillsideTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Playlists.ST_Playlists' 'BattleNightTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Playlists.ST_Playlists' 'BigMoneyDomTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Playlists.ST_Playlists' 'TeamDeathmatchBigMoneyTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Playlists.ST_Playlists' 'BrainEmTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Playlists.ST_Playlists' 'PointCaptureBrainEmTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Playlists.ST_Playlists' 'ContactTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Playlists.ST_Playlists' 'DangerCloseTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Gamemodes.ST_Gamemodes' 'DefusalLower'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Playlists.ST_Playlists' 'DefusalTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Gamemodes.ST_Gamemodes' 'DominationLower'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Playlists.ST_Playlists' 'FirefightTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Playlists.ST_Playlists' 'FirefightGoldenGunTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Playlists.ST_Playlists' 'FirefightTitleXPBoost'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Playlists.ST_Playlists' 'FrontlineTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Playlists.ST_Playlists' 'GangWarTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Playlists.ST_Playlists' 'GunslingersTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Playlists.ST_Playlists' 'MakattackDominationTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Playlists.ST_Playlists' 'PointCaptureTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Playlists.ST_Playlists' 'PointCaptureGuerrillaTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Playlists.ST_Playlists' 'PointCaptureHillsideTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Playlists.ST_Playlists' 'PointCapturePumpItTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Playlists.ST_Playlists' 'PushTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Playlists.ST_Playlists' 'SkirmishTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Playlists.ST_Playlists' 'SkirmishTitleXPBoost'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Gamemodes.ST_Gamemodes' 'TeamDeathmatchLower'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Playlists.ST_Playlists' 'TeamDeathMatchVampireTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Playlists.ST_Playlists' 'WelrodTitle'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Scenarios.ST_Scenarios' 'Insurgents'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Scenarios.ST_Scenarios' 'Security'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Scenarios.ST_Scenarios' 'West'. Did you forget to add a string table redirector?
+LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Scenarios.ST_Scenarios' 'East'. Did you forget to add a string table redirector?
+LogPluginManager: Mounting plugin Wwise
+LogPluginManager: Mounting plugin GeometryMode
+LogPluginManager: Mounting plugin OnlineSubsystemSteamNWI
+LogPluginManager: Mounting plugin OnlineSubsystem
+LogPluginManager: Mounting plugin OnlineSubsystemUtils
+LogPluginManager: Mounting plugin SteamShared
+LogPluginManager: Mounting plugin Ansel
+LogPluginManager: Mounting plugin NVIDIAGfeSDK
+LogPluginManager: Mounting plugin OnlineFramework
+LogPluginManager: Mounting plugin MediaPlayerEditor
+LogPluginManager: Mounting plugin WmfMedia
+LogPluginManager: Mounting plugin OnlineSubsystemNWI
+LogPluginManager: Mounting plugin Hydra5
+LogPluginManager: Mounting plugin OnlineSubsystemNull
+LogPluginManager: Mounting plugin OnlineSubsystemEOS
+LogPluginManager: Mounting plugin SignificanceManager
+LogPluginManager: Mounting plugin Niagara
+LogPluginManager: Mounting plugin PythonScriptPlugin
+LogPluginManager: Mounting plugin ReplicationGraph
+LogPluginManager: Mounting plugin EditorScriptingUtilities
+LogPluginManager: Mounting plugin Gauntlet
+LogPluginManager: Mounting plugin BlueprintStats
+LogPluginManager: Mounting plugin InsurgencyEditor
+LogPluginManager: Mounting plugin PluginBrowser
+LogPluginManager: Mounting plugin PluginUtils
+LogPluginManager: Mounting plugin ModKit
+LogPluginManager: Mounting plugin HttpExtensions
+LogPluginManager: Mounting plugin ZipUtilities
+LogPluginManager: Mounting plugin AnimationBudgetAllocator
+LogPluginManager: Mounting plugin InsurgencyUnitTests
+LogPluginManager: Mounting plugin DataValidation
+LogPluginManager: Mounting plugin RenderDocPlugin
+LogPluginManager: Mounting plugin TraceDataFilters
+LogPluginManager: Mounting plugin TraceSourceFilters
+LogPluginManager: Mounting plugin GameplayInsights
+LogPluginManager: Mounting plugin StatsCollector
+LogPluginManager: Mounting plugin VivoxCore
+LogPluginManager: Mounting plugin MfMedia
+LogPluginManager: Mounting plugin ControlRig
+LogPluginManager: Mounting plugin LevelSequenceEditor
+LogPluginManager: Mounting plugin InstanceTool
+LogPluginManager: Mounting plugin ConsoleCertificationRequirements
+LogPluginManager: Mounting plugin DiscordRpc
+LogPluginManager: Mounting plugin InsurgencyUncookedOnly
+LogPluginManager: Mounting plugin SoftRefHelper
+LogPluginManager: Mounting plugin LocalizationCommandlet
+LogPluginManager: Mounting plugin CryptoUtilities
+LogPluginManager: Mounting plugin GameStats
+LogPluginManager: Mounting plugin Holidays
+LogPluginManager: Mounting plugin InsurgencyGameplayDebugger
+LogPluginManager: Mounting plugin SlackFeedback
+LogPluginManager: Mounting plugin UMGExtensions
+LogPluginManager: Mounting plugin PerformanceCapture
+LogPluginManager: Mounting plugin PinglePythonExtension
+LogPluginManager: Mounting plugin RconSandstorm
+LogPluginManager: Mounting plugin Rcon
+LogPluginManager: Mounting plugin ImGui
+LogPluginManager: Mounting plugin EnhancedInput
+LogPluginManager: Mounting plugin AISupport
+LogPluginManager: Mounting plugin EnvironmentQueryEditor
+LogPluginManager: Mounting plugin LightPropagationVolume
+LogPluginManager: Mounting plugin CameraShakePreviewer
+LogPluginManager: Mounting plugin GameplayCameras
+LogPluginManager: Mounting plugin TemplateSequence
+LogPluginManager: Mounting plugin OodleData
+LogPluginManager: Mounting plugin OodleNetwork
+LogPluginManager: Mounting plugin AnimationSharing
+LogPluginManager: Mounting plugin PropertyAccessEditor
+LogPluginManager: Mounting plugin AssetManagerEditor
+LogPluginManager: Mounting plugin FacialAnimation
+LogPluginManager: Mounting plugin SpeedTreeImporter
+LogPluginManager: Mounting plugin VariantManagerContent
+LogPluginManager: Mounting plugin AutomationUtils
+LogPluginManager: Mounting plugin ScreenshotTools
+LogPluginManager: Mounting plugin ChaosClothEditor
+LogPluginManager: Mounting plugin ChaosCloth
+LogPluginManager: Mounting plugin ChaosEditor
+LogPluginManager: Mounting plugin PlanarCut
+LogPluginManager: Mounting plugin GeometryProcessing
+LogPluginManager: Mounting plugin EditableMesh
+LogPluginManager: Mounting plugin GeometryCollectionPlugin
+LogPluginManager: Mounting plugin ProceduralMeshComponent
+LogPluginManager: Mounting plugin ChaosSolverPlugin
+LogPluginManager: Mounting plugin ChaosNiagara
+LogPluginManager: Mounting plugin CharacterAI
+LogPluginManager: Mounting plugin MotoSynth
+LogPluginManager: Mounting plugin OpenImageDenoise
+LogPluginManager: Mounting plugin PlatformCrypto
+LogPluginManager: Mounting plugin MagicLeapPassableWorld
+LogPluginManager: Mounting plugin MLSDK
+LogPluginManager: Mounting plugin MeshPainting
+LogPluginManager: Mounting plugin TcpMessaging
+LogPluginManager: Mounting plugin UdpMessaging
+LogPluginManager: Mounting plugin ActorSequence
+LogPluginManager: Mounting plugin MatineeToLevelSequence
+LogPluginManager: Mounting plugin ActorLayerUtilities
+LogPluginManager: Mounting plugin AssetTags
+LogPluginManager: Mounting plugin ChunkDownloader
+LogPluginManager: Mounting plugin GooglePAD
+LogPluginManager: Mounting plugin PhysXVehicles
+LogPluginManager: Mounting plugin RuntimePhysXCooking
+LogPluginManager: Mounting plugin SoundFields
+LogPluginManager: Mounting plugin Synthesis
+LogPluginManager: Mounting plugin AudioSynesthesia
+LogPluginManager: Mounting plugin WindowsMoviePlayer
+LogPluginManager: Mounting plugin ExampleContent
+LogPluginManager: Mounting plugin NWI_Infected
+LogInit: Using libcurl 7.55.1-DEV
+LogInit:  - built for x86_64-pc-win32
+LogInit:  - supports SSL with OpenSSL/1.1.1
+LogInit:  - supports HTTP deflate (compression) using libz 1.2.8
+LogInit:  - other features:
+LogInit:      CURL_VERSION_SSL
+LogInit:      CURL_VERSION_LIBZ
+LogInit:      CURL_VERSION_IPV6
+LogInit:      CURL_VERSION_ASYNCHDNS
+LogInit:      CURL_VERSION_LARGEFILE
+LogInit:      CURL_VERSION_IDN
+LogInit:  CurlRequestOptions (configurable via config and command line):
+LogInit:  - bVerifyPeer = true  - Libcurl will verify peer certificate
+LogInit:  - bUseHttpProxy = false  - Libcurl will NOT use HTTP proxy
+LogInit:  - bDontReuseConnections = false  - Libcurl will reuse connections
+LogInit:  - MaxHostConnections = 16  - Libcurl will limit the number of connections to a host
+LogInit:  - LocalHostAddr = Default
+LogInit:  - BufferSize = 65536
+LogSteamShared: Display: Loading Steam SDK 1.48
+LogSteamShared: Steam SDK Loaded!
+LogOnline: OSS: Creating online subsystem instance for: SteamNWI
+LogOnline: Display: STEAM (NWI): Steam: Starting SteamWorks. Client [0] Server [1]
+LogOnline: STEAM (NWI): [AppId: 581320] Game Server API initialized 1
+LogOnline: STEAM (NWI): Missing P2PCleanupTimeout key in OnlineSubsystemSteam of DefaultEngine.ini, using default
+LogInit: WinSock: version 1.1 (2.2), MaxSocks=32767, MaxUdp=65467
+LogOnline: STEAM (NWI): Initializing voice subsystem.
+LogOnlineVoice: OSS: Voice interface disabled by config [OnlineSubsystem].bHasVoiceEnabled
+LogOnline: Error: STEAM (NWI): Failed initializing server voice subsystem.
+LogOnline: OSS: TryLoadSubsystemAndSetDefault: Loaded subsystem for module [SteamNWI]
+LogAnsel: Tried to load ../../../Engine/Plugins/Runtime/Nvidia/Ansel/Binaries/ThirdParty/AnselSDK64.dll : success=1
+LogTemp: Using NVIDIAGfeSDKPlugin version 1.0.0
+LogLuminAPIImpl: Warning: MLSDK not found.  This likely means the MLSDK environment variable is not set.
+LogInit: Build: Unknown-CL-357729
+LogInit: Engine Version: 4.27.2-357729+Unknown
+LogInit: Compatible Engine Version: 4.27.2-357729+Unknown
+LogInit: Net CL: 357729
+LogInit: OS: Windows 10 (Release 2009) (), CPU: AMD Ryzen 7 7700 8-Core Processor              , GPU: NVIDIA GeForce RTX 4070 SUPER
+LogInit: Compiled (64-bit): Sep 11 2025 18:57:00
+LogInit: Compiled with Visual C++: 19.29.30159.00
+LogInit: Build Configuration: Shipping
+LogInit: Branch Name: Unknown
+LogInit: Command Line:  Ministry?Scenario=Scenario_Ministry_Checkpoint_Security?MaxPlayers=8?Lighting=Day -Hostname="Sandstorm Admin Wrapper" -MaxPlayers=8 -Port=7777 -QueryPort=27131 -log=1d6407b7-f51b-4b1d-ad9e-faabbfbb7dde.log -LogCmds="LogGameplayEvents Log" -LOCALLOGTIMES -AdminList=Admins -MapCycle=MapCycle
+LogInit: Base Directory: C:/Users/danie/code/forks/sandstorm-admin-wrapper/sandstorm-server/Insurgency/Binaries/Win64/
+LogInit: Allocator: binned2
+LogInit: Installed Engine Build: 0
+LogInit: Presizing for max 2097152 objects, including 130000 objects not considered by GC, pre-allocating 32000000 bytes for permanent pool.
+LogConfig: Applying CVar settings from Section [/Script/Engine.StreamingSettings] File [../../../Insurgency/Saved/Config/WindowsServer/Engine.ini]
+LogConfig: Setting CVar [[s.MinBulkDataSizeForAsyncLoading:131072]]
+LogConfig: Setting CVar [[s.AsyncLoadingThreadEnabled:1]]
+LogConfig: Setting CVar [[s.EventDrivenLoaderEnabled:1]]
+LogConfig: Setting CVar [[s.WarnIfTimeLimitExceeded:0]]
+LogConfig: Setting CVar [[s.TimeLimitExceededMultiplier:1.5]]
+LogConfig: Setting CVar [[s.TimeLimitExceededMinTime:0.005]]
+LogConfig: Setting CVar [[s.UseBackgroundLevelStreaming:1]]
+LogConfig: Setting CVar [[s.PriorityAsyncLoadingExtraTime:15.0]]
+LogConfig: Setting CVar [[s.LevelStreamingActorsUpdateTimeLimit:5.0]]
+LogConfig: Setting CVar [[s.PriorityLevelStreamingActorsUpdateExtraTime:5.0]]
+LogConfig: Setting CVar [[s.LevelStreamingComponentsRegistrationGranularity:10]]
+LogConfig: Setting CVar [[s.UnregisterComponentsTimeLimit:1.0]]
+LogConfig: Setting CVar [[s.LevelStreamingComponentsUnregistrationGranularity:5]]
+LogConfig: Setting CVar [[s.FlushStreamingOnExit:1]]
+LogStreaming: Display: Async Loading initialized: Event Driven Loader: true, Async Loading Thread: false, Async Post Load: false
+LogInit: Object subsystem initialized
+LogConfig: Setting CVar [[net.MaxPlayersOverride:10]]
+LogConfig: Setting CVar [[net.PingExcludeFrameTime:1]]
+LogConfig: Setting CVar [[net.UseAdaptiveNetUpdateFrequency:0]]
+LogConfig: Setting CVar [[demo.RecordHz:20]]
+LogConfig: Setting CVar [[r.HZBOcclusion:0]]
+LogConfig: Setting CVar [[r.RenderTargetPoolMin:450]]
+LogConfig: Setting CVar [[r.EyeAdaptation.BlackHistogramBucketInfluence:1]]
+LogConfig: Setting CVar [[net.AllowAsyncLoading:1]]
+LogConfig: Setting CVar [[net.AllowEncryption:1]]
+LogConfig: Setting CVar [[AllowMultiHandlers:1]]
+LogConfig: Setting CVar [[r.setres:1280x720]]
+LogConfig: Setting CVar [[fx.NiagaraAllowRuntimeScalabilityChanges:1]]
+LogConfig: Setting CVar [[t.FPSChart.ExcludeIdleTime:1]]
+[2025.11.08-13.59.13:375][  0]LogConfig: Setting CVar [[net.MaxPlayersOverride:10]]
+[2025.11.08-13.59.13:375][  0]LogConfig: Setting CVar [[net.PingExcludeFrameTime:1]]
+[2025.11.08-13.59.13:375][  0]LogConfig: Setting CVar [[net.UseAdaptiveNetUpdateFrequency:0]]
+[2025.11.08-13.59.13:375][  0]LogConfig: Setting CVar [[demo.RecordHz:20]]
+[2025.11.08-13.59.13:375][  0]LogConfig: Setting CVar [[r.HZBOcclusion:0]]
+[2025.11.08-13.59.13:375][  0]LogConfig: Setting CVar [[r.RenderTargetPoolMin:450]]
+[2025.11.08-13.59.13:375][  0]LogConfig: Setting CVar [[r.EyeAdaptation.BlackHistogramBucketInfluence:1]]
+[2025.11.08-13.59.13:375][  0]LogConfig: Setting CVar [[net.AllowAsyncLoading:1]]
+[2025.11.08-13.59.13:375][  0]LogConfig: Setting CVar [[net.AllowEncryption:1]]
+[2025.11.08-13.59.13:375][  0]LogConfig: Setting CVar [[AllowMultiHandlers:1]]
+[2025.11.08-13.59.13:375][  0]LogConfig: Setting CVar [[r.setres:1280x720]]
+[2025.11.08-13.59.13:375][  0]LogConfig: Setting CVar [[fx.NiagaraAllowRuntimeScalabilityChanges:1]]
+[2025.11.08-13.59.13:375][  0]LogConfig: Setting CVar [[t.FPSChart.ExcludeIdleTime:1]]
+[2025.11.08-13.59.13:375][  0]LogConfig: Applying CVar settings from Section [/Script/Engine.RendererSettings] File [../../../Insurgency/Saved/Config/WindowsServer/Engine.ini]
+[2025.11.08-13.59.13:375][  0]LogConfig: Setting CVar [[r.GPUCrashDebugging:0]]
+[2025.11.08-13.59.13:375][  0]LogConfig: Setting CVar [[r.MobileHDR:0]]
+[2025.11.08-13.59.13:375][  0]LogConfig: Setting CVar [[r.MobileNumDynamicPointLights:4]]
+[2025.11.08-13.59.13:375][  0]LogConfig: Setting CVar [[r.MobileDynamicPointLightsUseStaticBranch:1]]
+[2025.11.08-13.59.13:375][  0]LogConfig: Setting CVar [[r.AllowOcclusionQueries:1]]
+[2025.11.08-13.59.13:375][  0]LogConfig: Setting CVar [[r.MinScreenRadiusForLights:0.030000]]
+[2025.11.08-13.59.13:375][  0]LogConfig: Setting CVar [[r.MinScreenRadiusForDepthPrepass:0.030000]]
+[2025.11.08-13.59.13:375][  0]LogConfig: Setting CVar [[r.PrecomputedVisibilityWarning:0]]
+[2025.11.08-13.59.13:375][  0]LogConfig: Setting CVar [[r.TextureStreaming:1]]
+[2025.11.08-13.59.13:375][  0]LogConfig: Setting CVar [[Compat.UseDXT5NormalMaps:0]]
+[2025.11.08-13.59.13:375][  0]LogConfig: Setting CVar [[r.AllowStaticLighting:1]]
+[2025.11.08-13.59.13:375][  0]LogConfig: Setting CVar [[r.NormalMapsForStaticLighting:0]]
+[2025.11.08-13.59.13:375][  0]LogConfig: Setting CVar [[r.GenerateMeshDistanceFields:0]]
+[2025.11.08-13.59.13:375][  0]LogConfig: Setting CVar [[r.GenerateLandscapeGIData:1]]
+[2025.11.08-13.59.13:375][  0]LogConfig: Setting CVar [[r.SeparateTranslucency:0]]
+[2025.11.08-13.59.13:375][  0]LogConfig: Setting CVar [[r.TranslucentSortPolicy:0]]
+[2025.11.08-13.59.13:375][  0]LogConfig: Setting CVar [[r.CustomDepth:3]]
+[2025.11.08-13.59.13:375][  0]LogConfig: Setting CVar [[r.DefaultFeature.Bloom:1]]
+[2025.11.08-13.59.13:375][  0]LogConfig: Setting CVar [[r.DefaultFeature.AmbientOcclusion:1]]
+[2025.11.08-13.59.13:375][  0]LogConfig: Setting CVar [[r.DefaultFeature.AmbientOcclusionStaticFraction:1]]
+[2025.11.08-13.59.13:375][  0]LogConfig: Setting CVar [[r.DefaultFeature.AutoExposure:1]]
+[2025.11.08-13.59.13:375][  0]LogConfig: Setting CVar [[r.DefaultFeature.MotionBlur:0]]
+[2025.11.08-13.59.13:375][  0]LogConfig: Setting CVar [[r.DefaultFeature.LensFlare:0]]
+[2025.11.08-13.59.13:375][  0]LogConfig: Setting CVar [[r.DefaultFeature.AntiAliasing:2]]
+[2025.11.08-13.59.13:375][  0]LogConfig: Setting CVar [[r.EarlyZPass:2]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[r.DBuffer:1]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[r.ClearSceneMethod:1]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[r.BasePassOutputsVelocity:1]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[r.WireframeCullThreshold:5.000000]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[r.SupportLowQualityLightmaps:0]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[r.Shadow.UnbuiltPreviewInGame:0]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[r.EarlyZPassOnlyMaterialMasking:1]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[r.DefaultFeature.LightUnits:0]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[r.DefaultFeature.AutoExposure.Bias:0.000000]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[r.DefaultFeature.AutoExposure.ExtendDefaultLuminanceRange:0]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[r.ReflectionCaptureResolution:32]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[r.UseLegacyMaintainYFOVViewMatrix:1]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[r.ForceStripAdjacencyDataDuringCooking:0]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[r.Mobile.ReflectionCaptureCompression:0]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Applying CVar settings from Section [/Script/Engine.RendererOverrideSettings] File [../../../Insurgency/Saved/Config/WindowsServer/Engine.ini]
+[2025.11.08-13.59.13:376][  0]LogConfig: Applying CVar settings from Section [/Script/Engine.StreamingSettings] File [../../../Insurgency/Saved/Config/WindowsServer/Engine.ini]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[s.MinBulkDataSizeForAsyncLoading:131072]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[s.AsyncLoadingThreadEnabled:1]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[s.EventDrivenLoaderEnabled:1]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[s.WarnIfTimeLimitExceeded:0]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[s.TimeLimitExceededMultiplier:1.5]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[s.TimeLimitExceededMinTime:0.005]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[s.UseBackgroundLevelStreaming:1]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[s.PriorityAsyncLoadingExtraTime:15.0]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[s.LevelStreamingActorsUpdateTimeLimit:5.0]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[s.PriorityLevelStreamingActorsUpdateExtraTime:5.0]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[s.LevelStreamingComponentsRegistrationGranularity:10]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[s.UnregisterComponentsTimeLimit:1.0]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[s.LevelStreamingComponentsUnregistrationGranularity:5]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[s.FlushStreamingOnExit:1]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Applying CVar settings from Section [/Script/Engine.GarbageCollectionSettings] File [../../../Insurgency/Saved/Config/WindowsServer/Engine.ini]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[gc.MaxObjectsNotConsideredByGC:130000]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[gc.SizeOfPermanentObjectPool:32000000]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[gc.FlushStreamingOnGC:0]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[gc.NumRetriesBeforeForcingGC:10]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[gc.AllowParallelGC:1]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[gc.TimeBetweenPurgingPendingKillObjects:61.1]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[gc.MaxObjectsInEditor:25165824]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[gc.IncrementalBeginDestroyEnabled:1]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[gc.CreateGCClusters:1]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[gc.MinGCClusterSize:5]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[gc.ActorClusteringEnabled:1]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[gc.BlueprintClusteringEnabled:1]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[gc.UseDisregardForGCOnDedicatedServers:0]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[gc.MultithreadedDestructionEnabled:1]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Applying CVar settings from Section [/Script/Engine.NetworkSettings] File [../../../Insurgency/Saved/Config/WindowsServer/Engine.ini]
+[2025.11.08-13.59.13:376][  0]LogConfig: Applying CVar settings from Section [ViewDistanceQuality@3] File [../../../Insurgency/Saved/Config/WindowsServer/Scalability.ini]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[r.SkeletalMeshLODBias:0]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[r.ViewDistanceScale:1.0]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[r.SkeletalMeshLODRadiusScale:1]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[r.LandscapeLODBias:0]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[r.HLOD.DistanceOverride:0]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[r.StaticMeshLODDistanceScale:1]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[r.ViewDistanceScale.FieldOfViewAffectsHLOD:1]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[r.ViewDistanceScale.FieldOfViewMinAngleScale:5]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[r.ViewDistanceScale.FieldOfViewMinAngle:15]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[r.ViewDistanceScale.FieldOfViewMaxAngleScale:1]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[r.ViewDistanceScale.FieldOfViewMaxAngle:65]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Applying CVar settings from Section [AntiAliasingQuality@5] File [../../../Insurgency/Saved/Config/WindowsServer/Scalability.ini]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[r.PostProcessAAQuality:5]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[r.SMAA.Temporal:0]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Applying CVar settings from Section [ShadowQuality@3] File [../../../Insurgency/Saved/Config/WindowsServer/Scalability.ini]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[r.LightFunctionQuality:1]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[r.ShadowQuality:5]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[r.Shadow.CSM.MaxCascades:2]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[r.Shadow.MaxResolution:4096]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[r.Shadow.MaxCSMResolution:4096]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[r.Shadow.RadiusThreshold:0.01]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[r.Shadow.DistanceScale:1.0]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[r.Shadow.CSM.TransitionScale:1.0]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[r.Shadow.PreShadowResolutionFactor:1.0]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[r.DistanceFieldShadowing:0]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[r.DistanceFieldAO:0]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[r.AOQuality:2]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[r.VolumetricFog:1]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[r.VolumetricFog.GridPixelSize:16]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[r.VolumetricFog.GridSizeZ:128]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[r.VolumetricFog.HistoryMissSupersampleCount:4]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[r.LightMaxDrawDistanceScale:1]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[r.CapsuleShadows:1]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[r.Shadow.ForceSingleSampleShadowingFromStationary:1]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[r.CapsuleShadowsCharacter:1]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[r.ContactShadows:1]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Applying CVar settings from Section [PostProcessQuality@3] File [../../../Insurgency/Saved/Config/WindowsServer/Scalability.ini]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[r.MotionBlurQuality:4]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[r.AmbientOcclusionMipLevelFactor:0.4]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[r.AmbientOcclusionMaxQuality:100]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[r.AmbientOcclusionLevels:-1]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[r.AmbientOcclusionRadiusScale:1.0]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[r.DepthOfFieldQuality:2]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[r.RenderTargetPoolMin:400]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[r.LensFlareQuality:2]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[r.SceneColorFringeQuality:1]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[r.EyeAdaptationQuality:2]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[r.BloomQuality:5]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[r.FastBlurThreshold:100]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[r.Upscale.Quality:3]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[r.Tonemapper.GrainQuantization:1]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[r.LightShaftQuality:1]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[r.Filter.SizeScale:1]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[r.Tonemapper.Quality:5]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[r.DOF.Gather.AccumulatorQuality:1        ; higher gathering accumulator quality]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[r.DOF.Gather.PostfilterMethod:1          ; Median3x3 postfilering method]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[r.DOF.Gather.EnableBokehSettings:0       ; no bokeh simulation when gathering]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[r.DOF.Gather.RingCount:4                 ; medium number of samples when gathering]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[r.DOF.Scatter.ForegroundCompositing:1    ; additive foreground scattering]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[r.DOF.Scatter.BackgroundCompositing:2    ; additive background scattering]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[r.DOF.Scatter.EnableBokehSettings:1      ; bokeh simulation when scattering]]
+[2025.11.08-13.59.13:376][  0]LogConfig: Setting CVar [[r.DOF.Scatter.MaxSpriteRatio:0.1         ; only a maximum of 10% of scattered bokeh]]
+[2025.11.08-13.59.13:377][  0]LogConfig: Setting CVar [[r.DOF.Recombine.Quality:1                ; cheap slight out of focus]]
+[2025.11.08-13.59.13:377][  0]LogConfig: Setting CVar [[r.DOF.Recombine.EnableBokehSettings:0    ; no bokeh simulation on slight out of focus]]
+[2025.11.08-13.59.13:377][  0]LogConfig: Setting CVar [[r.DOF.TemporalAAQuality:1                ; more stable temporal accumulation]]
+[2025.11.08-13.59.13:377][  0]LogConfig: Setting CVar [[r.DOF.Kernel.MaxForegroundRadius:0.025]]
+[2025.11.08-13.59.13:377][  0]LogConfig: Setting CVar [[r.DOF.Kernel.MaxBackgroundRadius:0.025]]
+[2025.11.08-13.59.13:377][  0]LogConfig: Applying CVar settings from Section [TextureQuality@3] File [../../../Insurgency/Saved/Config/WindowsServer/Scalability.ini]
+[2025.11.08-13.59.13:377][  0]LogConfig: Setting CVar [[r.Streaming.MipBias:0]]
+[2025.11.08-13.59.13:377][  0]LogConfig: Setting CVar [[r.Streaming.AmortizeCPUToGPUCopy:0]]
+[2025.11.08-13.59.13:377][  0]LogConfig: Setting CVar [[r.Streaming.MaxNumTexturesToStreamPerFrame:0]]
+[2025.11.08-13.59.13:377][  0]LogConfig: Setting CVar [[r.Streaming.Boost:1.0]]
+[2025.11.08-13.59.13:377][  0]LogConfig: Setting CVar [[r.MaxAnisotropy:16]]
+[2025.11.08-13.59.13:377][  0]LogConfig: Setting CVar [[r.VT.MaxAnisotropy:8]]
+[2025.11.08-13.59.13:377][  0]LogConfig: Setting CVar [[r.Streaming.LimitPoolSizeToVRAM:1]]
+[2025.11.08-13.59.13:377][  0]LogConfig: Setting CVar [[r.Streaming.PoolSize:2000]]
+[2025.11.08-13.59.13:377][  0]LogConfig: Setting CVar [[r.Streaming.MaxEffectiveScreenSize:0]]
+[2025.11.08-13.59.13:377][  0]LogConfig: Setting CVar [[r.SlavePlayerCamera:1]]
+[2025.11.08-13.59.13:377][  0]LogConfig: Setting CVar [[r.SlavePlayerCameraSpectator:0]]
+[2025.11.08-13.59.13:377][  0]LogConfig: Applying CVar settings from Section [EffectsQuality@3] File [../../../Insurgency/Saved/Config/WindowsServer/Scalability.ini]
+[2025.11.08-13.59.13:377][  0]LogConfig: Setting CVar [[r.TranslucencyLightingVolumeDim:64]]
+[2025.11.08-13.59.13:377][  0]LogConfig: Setting CVar [[r.RefractionQuality:2]]
+[2025.11.08-13.59.13:377][  0]LogConfig: Setting CVar [[r.SSR.Quality:3]]
+[2025.11.08-13.59.13:377][  0]LogConfig: Setting CVar [[r.SSR.HalfResSceneColor:0]]
+[2025.11.08-13.59.13:377][  0]LogConfig: Setting CVar [[r.SceneColorFormat:4]]
+[2025.11.08-13.59.13:377][  0]LogConfig: Setting CVar [[r.DetailMode:2]]
+[2025.11.08-13.59.13:377][  0]LogConfig: Setting CVar [[r.TranslucencyVolumeBlur:1]]
+[2025.11.08-13.59.13:377][  0]LogConfig: Setting CVar [[r.MaterialQualityLevel:1 ; High quality]]
+[2025.11.08-13.59.13:377][  0]LogConfig: Setting CVar [[r.AnisotropicMaterials:1]]
+[2025.11.08-13.59.13:377][  0]LogConfig: Setting CVar [[r.SSS.Scale:1]]
+[2025.11.08-13.59.13:377][  0]LogConfig: Setting CVar [[r.SSS.SampleSet:2]]
+[2025.11.08-13.59.13:377][  0]LogConfig: Setting CVar [[r.SSS.Quality:1]]
+[2025.11.08-13.59.13:377][  0]LogConfig: Setting CVar [[r.SSS.HalfRes:0]]
+[2025.11.08-13.59.13:377][  0]LogConfig: Setting CVar [[r.SSGI.Quality:3]]
+[2025.11.08-13.59.13:377][  0]LogConfig: Setting CVar [[r.EmitterSpawnRateScale:1.0]]
+[2025.11.08-13.59.13:377][  0]LogConfig: Setting CVar [[r.ParticleLightQuality:2]]
+[2025.11.08-13.59.13:377][  0]LogConfig: Setting CVar [[r.SkyAtmosphere.AerialPerspectiveLUT.FastApplyOnOpaque:1 ; Always have FastSkyLUT 1 in this case to avoid wrong sky]]
+[2025.11.08-13.59.13:377][  0]LogConfig: Setting CVar [[r.SkyAtmosphere.AerialPerspectiveLUT.SampleCountMaxPerSlice:4]]
+[2025.11.08-13.59.13:377][  0]LogConfig: Setting CVar [[r.SkyAtmosphere.AerialPerspectiveLUT.DepthResolution:16.0]]
+[2025.11.08-13.59.13:377][  0]LogConfig: Setting CVar [[r.SkyAtmosphere.FastSkyLUT:1]]
+[2025.11.08-13.59.13:377][  0]LogConfig: Setting CVar [[r.SkyAtmosphere.FastSkyLUT.SampleCountMin:4.0]]
+[2025.11.08-13.59.13:377][  0]LogConfig: Setting CVar [[r.SkyAtmosphere.FastSkyLUT.SampleCountMax:128.0]]
+[2025.11.08-13.59.13:377][  0]LogConfig: Setting CVar [[r.SkyAtmosphere.SampleCountMin:4.0]]
+[2025.11.08-13.59.13:377][  0]LogConfig: Setting CVar [[r.SkyAtmosphere.SampleCountMax:128.0]]
+[2025.11.08-13.59.13:377][  0]LogConfig: Setting CVar [[r.SkyAtmosphere.TransmittanceLUT.UseSmallFormat:0]]
+[2025.11.08-13.59.13:377][  0]LogConfig: Setting CVar [[r.SkyAtmosphere.TransmittanceLUT.SampleCount:10.0]]
+[2025.11.08-13.59.13:377][  0]LogConfig: Setting CVar [[r.SkyAtmosphere.MultiScatteringLUT.SampleCount:15.0]]
+[2025.11.08-13.59.13:377][  0]LogConfig: Setting CVar [[r.SkyLight.RealTimeReflectionCapture:1]]
+[2025.11.08-13.59.13:377][  0]LogConfig: Setting CVar [[fx.Niagara.QualityLevel:3]]
+[2025.11.08-13.59.13:377][  0]LogConfig: Setting CVar [[r.RenderTargetViewportSize:1.0]]
+[2025.11.08-13.59.13:377][  0]LogConfig: Setting CVar [[r.SurfReac.Particles.PoolSize:80]]
+[2025.11.08-13.59.13:377][  0]LogConfig: Setting CVar [[r.SurfReac.Audio.PoolSize:256]]
+[2025.11.08-13.59.13:377][  0]LogConfig: Setting CVar [[r.SurfaceReaction.DecalPoolSize:512]]
+[2025.11.08-13.59.13:377][  0]LogConfig: Setting CVar [[r.SurfaceReaction.DecalPlanePoolSize:256]]
+[2025.11.08-13.59.13:377][  0]LogConfig: Setting CVar [[r.ScopeRenderMode:0]]
+[2025.11.08-13.59.13:377][  0]LogConfig: Setting CVar [[r.SeparateTranslucencyScreenPercentage:100]]
+[2025.11.08-13.59.13:377][  0]LogConfig: Setting CVar [[r.RagdollMaximum:16]]
+[2025.11.08-13.59.13:377][  0]LogConfig: Setting CVar [[r.Dismemberment:1]]
+[2025.11.08-13.59.13:377][  0]LogConfig: Applying CVar settings from Section [FoliageQuality@3] File [../../../Insurgency/Saved/Config/WindowsServer/Scalability.ini]
+[2025.11.08-13.59.13:377][  0]LogConfig: Setting CVar [[foliage.DensityScale:1.0]]
+[2025.11.08-13.59.13:377][  0]LogConfig: Setting CVar [[grass.DensityScale:1.0]]
+[2025.11.08-13.59.13:377][  0]LogConfig: Setting CVar [[r.FoliageInteractionQuality:1]]
+[2025.11.08-13.59.13:377][  0]LogConfig: Applying CVar settings from Section [ShadingQuality@3] File [../../../Insurgency/Saved/Config/WindowsServer/Scalability.ini]
+[2025.11.08-13.59.13:377][  0]LogConfig: Setting CVar [[r.HairStrands.SkyLighting.IntegrationType:2]]
+[2025.11.08-13.59.13:377][  0]LogConfig: Setting CVar [[r.HairStrands.SkyAO.SampleCount:4]]
+[2025.11.08-13.59.13:377][  0]LogConfig: Setting CVar [[r.HairStrands.Visibility.MSAA.SamplePerPixel:4]]
+[2025.11.08-13.59.13:377][  0]LogModuleManager: Warning: ModuleManager: Module 'ExampleDeviceProfileSelector' not found - its StaticallyLinkedModuleInitializers function is null.
+[2025.11.08-13.59.13:378][  0]LogInit: Applying CVar settings loaded from the selected device profile: [WindowsServer]
+[2025.11.08-13.59.13:378][  0]LogHAL: Display: Platform has ~ 31 GB [33261629440 / 34359738368 / 31], which maps to Larger [LargestMinGB=32, LargerMinGB=12, DefaultMinGB=8, SmallerMinGB=6, SmallestMinGB=0)
+[2025.11.08-13.59.13:378][  0]LogInit: Going up to parent DeviceProfile [Windows]
+[2025.11.08-13.59.13:378][  0]LogInit: Going up to parent DeviceProfile []
+[2025.11.08-13.59.13:378][  0]LogConfig: Applying CVar settings from Section [ViewDistanceQuality@1] File [../../../Insurgency/Saved/Config/WindowsServer/Scalability.ini]
+[2025.11.08-13.59.13:378][  0]LogConfig: Setting CVar [[r.SkeletalMeshLODBias:0]]
+[2025.11.08-13.59.13:378][  0]LogConfig: Setting CVar [[r.ViewDistanceScale:1.0]]
+[2025.11.08-13.59.13:378][  0]LogConfig: Setting CVar [[r.SkeletalMeshLODRadiusScale:0.5]]
+[2025.11.08-13.59.13:378][  0]LogConfig: Setting CVar [[r.LandscapeLODBias:0]]
+[2025.11.08-13.59.13:378][  0]LogConfig: Setting CVar [[r.HLOD.DistanceOverride:16000]]
+[2025.11.08-13.59.13:378][  0]LogConfig: Setting CVar [[r.StaticMeshLODDistanceScale:0.9]]
+[2025.11.08-13.59.13:378][  0]LogConfig: Setting CVar [[r.ViewDistanceScale.FieldOfViewAffectsHLOD:0]]
+[2025.11.08-13.59.13:378][  0]LogConfig: Applying CVar settings from Section [AntiAliasingQuality@1] File [../../../Insurgency/Saved/Config/WindowsServer/Scalability.ini]
+[2025.11.08-13.59.13:378][  0]LogConfig: Setting CVar [[r.PostProcessAAQuality:1]]
+[2025.11.08-13.59.13:378][  0]LogConfig: Setting CVar [[r.SMAA.Temporal:0]]
+[2025.11.08-13.59.13:378][  0]LogConfig: Applying CVar settings from Section [ShadowQuality@1] File [../../../Insurgency/Saved/Config/WindowsServer/Scalability.ini]
+[2025.11.08-13.59.13:378][  0]LogConfig: Setting CVar [[r.LightFunctionQuality:1]]
+[2025.11.08-13.59.13:378][  0]LogConfig: Setting CVar [[r.ShadowQuality:2]]
+[2025.11.08-13.59.13:378][  0]LogConfig: Setting CVar [[r.Shadow.CSM.MaxCascades:1]]
+[2025.11.08-13.59.13:378][  0]LogConfig: Setting CVar [[r.Shadow.MaxResolution:1024]]
+[2025.11.08-13.59.13:378][  0]LogConfig: Setting CVar [[r.Shadow.MaxCSMResolution:1024]]
+[2025.11.08-13.59.13:378][  0]LogConfig: Setting CVar [[r.Shadow.RadiusThreshold:0.01]]
+[2025.11.08-13.59.13:378][  0]LogConfig: Setting CVar [[r.Shadow.DistanceScale:0.7]]
+[2025.11.08-13.59.13:378][  0]LogConfig: Setting CVar [[r.Shadow.CSM.TransitionScale:0.25]]
+[2025.11.08-13.59.13:378][  0]LogConfig: Setting CVar [[r.Shadow.PreShadowResolutionFactor:0.5]]
+[2025.11.08-13.59.13:378][  0]LogConfig: Setting CVar [[r.DistanceFieldShadowing:0]]
+[2025.11.08-13.59.13:378][  0]LogConfig: Setting CVar [[r.DistanceFieldAO:0]]
+[2025.11.08-13.59.13:378][  0]LogConfig: Setting CVar [[r.VolumetricFog:1]]
+[2025.11.08-13.59.13:378][  0]LogConfig: Setting CVar [[r.LightMaxDrawDistanceScale:.5]]
+[2025.11.08-13.59.13:378][  0]LogConfig: Setting CVar [[r.CapsuleShadows:0]]
+[2025.11.08-13.59.13:378][  0]LogConfig: Setting CVar [[r.Shadow.ForceSingleSampleShadowingFromStationary:1]]
+[2025.11.08-13.59.13:378][  0]LogConfig: Setting CVar [[r.CapsuleShadowsCharacter:0]]
+[2025.11.08-13.59.13:378][  0]LogConfig: Setting CVar [[r.ContactShadows:0]]
+[2025.11.08-13.59.13:378][  0]LogConfig: Setting CVar [[r.VolumetricFog.GridPixelSize:64]]
+[2025.11.08-13.59.13:378][  0]LogConfig: Setting CVar [[r.VolumetricFog.GridSizeZ:64]]
+[2025.11.08-13.59.13:378][  0]LogConfig: Setting CVar [[r.VolumetricFog.HistoryMissSupersampleCount:4]]
+[2025.11.08-13.59.13:378][  0]LogConfig: Applying CVar settings from Section [PostProcessQuality@1] File [../../../Insurgency/Saved/Config/WindowsServer/Scalability.ini]
+[2025.11.08-13.59.13:378][  0]LogConfig: Setting CVar [[r.MotionBlurQuality:3]]
+[2025.11.08-13.59.13:378][  0]LogConfig: Setting CVar [[r.AmbientOcclusionMipLevelFactor:1.0]]
+[2025.11.08-13.59.13:378][  0]LogConfig: Setting CVar [[r.AmbientOcclusionMaxQuality:60]]
+[2025.11.08-13.59.13:378][  0]LogConfig: Setting CVar [[r.AmbientOcclusionLevels:-1]]
+[2025.11.08-13.59.13:378][  0]LogConfig: Setting CVar [[r.AmbientOcclusionRadiusScale:1.5]]
+[2025.11.08-13.59.13:378][  0]LogConfig: Setting CVar [[r.DepthOfFieldQuality:1]]
+[2025.11.08-13.59.13:378][  0]LogConfig: Setting CVar [[r.RenderTargetPoolMin:350]]
+[2025.11.08-13.59.13:378][  0]LogConfig: Setting CVar [[r.LensFlareQuality:0]]
+[2025.11.08-13.59.13:378][  0]LogConfig: Setting CVar [[r.SceneColorFringeQuality:0]]
+[2025.11.08-13.59.13:378][  0]LogConfig: Setting CVar [[r.EyeAdaptationQuality:2]]
+[2025.11.08-13.59.13:378][  0]LogConfig: Setting CVar [[r.BloomQuality:4]]
+[2025.11.08-13.59.13:378][  0]LogConfig: Setting CVar [[r.FastBlurThreshold:2]]
+[2025.11.08-13.59.13:378][  0]LogConfig: Setting CVar [[r.Upscale.Quality:2]]
+[2025.11.08-13.59.13:378][  0]LogConfig: Setting CVar [[r.Tonemapper.GrainQuantization:0]]
+[2025.11.08-13.59.13:378][  0]LogConfig: Setting CVar [[r.LightShaftQuality:0]]
+[2025.11.08-13.59.13:378][  0]LogConfig: Setting CVar [[r.Filter.SizeScale:0.7]]
+[2025.11.08-13.59.13:378][  0]LogConfig: Setting CVar [[r.Tonemapper.Quality:2]]
+[2025.11.08-13.59.13:378][  0]LogConfig: Setting CVar [[r.DOF.Gather.AccumulatorQuality:0        ; lower gathering accumulator quality]]
+[2025.11.08-13.59.13:378][  0]LogConfig: Setting CVar [[r.DOF.Gather.PostfilterMethod:2          ; Max3x3 postfilering method]]
+[2025.11.08-13.59.13:379][  0]LogConfig: Setting CVar [[r.DOF.Gather.EnableBokehSettings:0       ; no bokeh simulation when gathering]]
+[2025.11.08-13.59.13:379][  0]LogConfig: Setting CVar [[r.DOF.Gather.RingCount:3                 ; low number of samples when gathering]]
+[2025.11.08-13.59.13:379][  0]LogConfig: Setting CVar [[r.DOF.Scatter.ForegroundCompositing:0    ; no foreground scattering]]
+[2025.11.08-13.59.13:379][  0]LogConfig: Setting CVar [[r.DOF.Scatter.BackgroundCompositing:0    ; no foreground scattering]]
+[2025.11.08-13.59.13:379][  0]LogConfig: Setting CVar [[r.DOF.Recombine.Quality:0                ; no slight out of focus]]
+[2025.11.08-13.59.13:379][  0]LogConfig: Setting CVar [[r.DOF.TemporalAAQuality:0                ; faster temporal accumulation]]
+[2025.11.08-13.59.13:379][  0]LogConfig: Setting CVar [[r.DOF.Kernel.MaxForegroundRadius:0.006   ; required because low gathering and no scattering and not looking great at 1080p]]
+[2025.11.08-13.59.13:379][  0]LogConfig: Setting CVar [[r.DOF.Kernel.MaxBackgroundRadius:0.006   ; required because low gathering and no scattering and not looking great at 1080p]]
+[2025.11.08-13.59.13:379][  0]LogConfig: Applying CVar settings from Section [TextureQuality@1] File [../../../Insurgency/Saved/Config/WindowsServer/Scalability.ini]
+[2025.11.08-13.59.13:379][  0]LogConfig: Setting CVar [[r.Streaming.MipBias:2]]
+[2025.11.08-13.59.13:379][  0]LogConfig: Setting CVar [[r.Streaming.AmortizeCPUToGPUCopy:0]]
+[2025.11.08-13.59.13:379][  0]LogConfig: Setting CVar [[r.Streaming.MaxNumTexturesToStreamPerFrame:0]]
+[2025.11.08-13.59.13:379][  0]LogConfig: Setting CVar [[r.Streaming.Boost:1.0]]
+[2025.11.08-13.59.13:379][  0]LogConfig: Setting CVar [[r.MaxAnisotropy:4]]
+[2025.11.08-13.59.13:379][  0]LogConfig: Setting CVar [[r.VT.MaxAnisotropy:4]]
+[2025.11.08-13.59.13:379][  0]LogConfig: Setting CVar [[r.Streaming.LimitPoolSizeToVRAM:1]]
+[2025.11.08-13.59.13:379][  0]LogConfig: Setting CVar [[r.Streaming.PoolSize:1000]]
+[2025.11.08-13.59.13:379][  0]LogConfig: Setting CVar [[r.Streaming.MaxEffectiveScreenSize:0]]
+[2025.11.08-13.59.13:379][  0]LogConfig: Setting CVar [[r.SlavePlayerCamera:1]]
+[2025.11.08-13.59.13:379][  0]LogConfig: Setting CVar [[r.SlavePlayerCameraSpectator:0]]
+[2025.11.08-13.59.13:379][  0]LogConfig: Applying CVar settings from Section [EffectsQuality@1] File [../../../Insurgency/Saved/Config/WindowsServer/Scalability.ini]
+[2025.11.08-13.59.13:379][  0]LogConfig: Setting CVar [[r.TranslucencyLightingVolumeDim:32]]
+[2025.11.08-13.59.13:379][  0]LogConfig: Setting CVar [[r.RefractionQuality:0]]
+[2025.11.08-13.59.13:379][  0]LogConfig: Setting CVar [[r.SSR.Quality:0]]
+[2025.11.08-13.59.13:379][  0]LogConfig: Setting CVar [[r.SSR.HalfResSceneColor:1]]
+[2025.11.08-13.59.13:379][  0]LogConfig: Setting CVar [[r.SceneColorFormat:3]]
+[2025.11.08-13.59.13:379][  0]LogConfig: Setting CVar [[r.DetailMode:1]]
+[2025.11.08-13.59.13:379][  0]LogConfig: Setting CVar [[r.TranslucencyVolumeBlur:0]]
+[2025.11.08-13.59.13:379][  0]LogConfig: Setting CVar [[r.MaterialQualityLevel:2 ; Medium quality]]
+[2025.11.08-13.59.13:379][  0]LogConfig: Setting CVar [[r.AnisotropicMaterials:0]]
+[2025.11.08-13.59.13:379][  0]LogConfig: Setting CVar [[r.SSS.Scale:0.75]]
+[2025.11.08-13.59.13:379][  0]LogConfig: Setting CVar [[r.SSS.SampleSet:0]]
+[2025.11.08-13.59.13:379][  0]LogConfig: Setting CVar [[r.SSS.Quality:0]]
+[2025.11.08-13.59.13:379][  0]LogConfig: Setting CVar [[r.SSS.HalfRes:1]]
+[2025.11.08-13.59.13:379][  0]LogConfig: Setting CVar [[r.SSGI.Quality:1]]
+[2025.11.08-13.59.13:379][  0]LogConfig: Setting CVar [[r.EmitterSpawnRateScale:0.6]]
+[2025.11.08-13.59.13:379][  0]LogConfig: Setting CVar [[r.ParticleLightQuality:0]]
+[2025.11.08-13.59.13:379][  0]LogConfig: Setting CVar [[r.SkyAtmosphere.AerialPerspectiveLUT.FastApplyOnOpaque:1 ; Always have FastSkyLUT 1 in this case to avoid wrong sky]]
+[2025.11.08-13.59.13:379][  0]LogConfig: Setting CVar [[r.SkyAtmosphere.AerialPerspectiveLUT.SampleCountMaxPerSlice:1]]
+[2025.11.08-13.59.13:379][  0]LogConfig: Setting CVar [[r.SkyAtmosphere.AerialPerspectiveLUT.DepthResolution:16.0]]
+[2025.11.08-13.59.13:379][  0]LogConfig: Setting CVar [[r.SkyAtmosphere.FastSkyLUT:1]]
+[2025.11.08-13.59.13:379][  0]LogConfig: Setting CVar [[r.SkyAtmosphere.FastSkyLUT.SampleCountMin:4.0]]
+[2025.11.08-13.59.13:379][  0]LogConfig: Setting CVar [[r.SkyAtmosphere.FastSkyLUT.SampleCountMax:32.0]]
+[2025.11.08-13.59.13:379][  0]LogConfig: Setting CVar [[r.SkyAtmosphere.SampleCountMin:4.0]]
+[2025.11.08-13.59.13:379][  0]LogConfig: Setting CVar [[r.SkyAtmosphere.SampleCountMax:32.0]]
+[2025.11.08-13.59.13:379][  0]LogConfig: Setting CVar [[r.SkyAtmosphere.TransmittanceLUT.UseSmallFormat:0]]
+[2025.11.08-13.59.13:379][  0]LogConfig: Setting CVar [[r.SkyAtmosphere.TransmittanceLUT.SampleCount:10.0]]
+[2025.11.08-13.59.13:379][  0]LogConfig: Setting CVar [[r.SkyAtmosphere.MultiScatteringLUT.SampleCount:15.0]]
+[2025.11.08-13.59.13:379][  0]LogConfig: Setting CVar [[r.SkyLight.RealTimeReflectionCapture:0]]
+[2025.11.08-13.59.13:379][  0]LogConfig: Setting CVar [[fx.Niagara.QualityLevel:1]]
+[2025.11.08-13.59.13:379][  0]LogConfig: Setting CVar [[r.RenderTargetViewportSize:1.0]]
+[2025.11.08-13.59.13:379][  0]LogConfig: Setting CVar [[r.SurfReac.Particles.PoolSize:40]]
+[2025.11.08-13.59.13:379][  0]LogConfig: Setting CVar [[r.SurfReac.Audio.PoolSize:128]]
+[2025.11.08-13.59.13:379][  0]LogConfig: Setting CVar [[r.SurfaceReaction.DecalPoolSize:192]]
+[2025.11.08-13.59.13:379][  0]LogConfig: Setting CVar [[r.SurfaceReaction.DecalPlanePoolSize:96]]
+[2025.11.08-13.59.13:379][  0]LogConfig: Setting CVar [[r.ScopeRenderMode:0]]
+[2025.11.08-13.59.13:379][  0]LogConfig: Setting CVar [[r.SeparateTranslucencyScreenPercentage:100]]
+[2025.11.08-13.59.13:379][  0]LogConfig: Setting CVar [[r.RagdollMaximum:8]]
+[2025.11.08-13.59.13:379][  0]LogConfig: Setting CVar [[r.Dismemberment:1]]
+[2025.11.08-13.59.13:379][  0]LogConfig: Applying CVar settings from Section [FoliageQuality@3] File [../../../Insurgency/Saved/Config/WindowsServer/Scalability.ini]
+[2025.11.08-13.59.13:379][  0]LogConfig: Setting CVar [[foliage.DensityScale:1.0]]
+[2025.11.08-13.59.13:379][  0]LogConfig: Setting CVar [[grass.DensityScale:1.0]]
+[2025.11.08-13.59.13:379][  0]LogConfig: Setting CVar [[r.FoliageInteractionQuality:1]]
+[2025.11.08-13.59.13:379][  0]LogConfig: Applying CVar settings from Section [ShadingQuality@3] File [../../../Insurgency/Saved/Config/WindowsServer/Scalability.ini]
+[2025.11.08-13.59.13:379][  0]LogConfig: Setting CVar [[r.HairStrands.SkyLighting.IntegrationType:2]]
+[2025.11.08-13.59.13:379][  0]LogConfig: Setting CVar [[r.HairStrands.SkyAO.SampleCount:4]]
+[2025.11.08-13.59.13:379][  0]LogConfig: Setting CVar [[r.HairStrands.Visibility.MSAA.SamplePerPixel:4]]
+[2025.11.08-13.59.13:379][  0]LogConfig: Applying CVar settings from Section [ConsoleVariables] File [../../../Insurgency/Saved/Config/WindowsServer/Engine.ini]
+[2025.11.08-13.59.13:381][  0]LogInit: Computer: DANIEL
+[2025.11.08-13.59.13:381][  0]LogInit: User: danie
+[2025.11.08-13.59.13:381][  0]LogInit: CPU Page size=4096, Cores=8
+[2025.11.08-13.59.13:381][  0]LogInit: High frequency timer resolution =10.000000 MHz
+[2025.11.08-13.59.13:381][  0]LogMemory: Memory total: Physical=31.0GB (31GB approx)
+[2025.11.08-13.59.13:381][  0]LogMemory: Platform Memory Stats for WindowsServer
+[2025.11.08-13.59.13:381][  0]LogMemory: Process Physical Memory: 160.22 MB used, 196.73 MB peak
+[2025.11.08-13.59.13:381][  0]LogMemory: Process Virtual Memory: 186.97 MB used, 186.97 MB peak
+[2025.11.08-13.59.13:381][  0]LogMemory: Physical Memory: 18875.11 MB used,  12845.65 MB free, 31720.76 MB total
+[2025.11.08-13.59.13:381][  0]LogMemory: Virtual Memory: 134192040.00 MB used,  25685.50 MB free, 134217728.00 MB total
+[2025.11.08-13.59.13:385][  0]LogWindows: WindowsPlatformFeatures disabled or dedicated server build
+[2025.11.08-13.59.13:580][  0]LogInit: Physics initialised using underlying interface: PhysX
+[2025.11.08-13.59.13:581][  0]LogInit: Using OS detected language (en-US).
+[2025.11.08-13.59.13:581][  0]LogInit: Using OS detected locale (en-US).
+[2025.11.08-13.59.13:582][  0]LogTextLocalizationManager: No specific localization for 'en-US' exists, so the 'en' localization will be used.
+[2025.11.08-13.59.13:598][  0]LogInit: Setting process to per monitor DPI aware
+[2025.11.08-13.59.13:609][  0]LogRendererCore: Ray tracing is disabled. Reason: r.RayTracing=0.
+[2025.11.08-13.59.13:620][  0]LogInit: Using OS detected language (en-US).
+[2025.11.08-13.59.13:620][  0]LogInit: Using OS detected locale (en-US).
+[2025.11.08-13.59.13:621][  0]LogTextLocalizationManager: No specific localization for 'en-US' exists, so the 'en' localization will be used.
+[2025.11.08-13.59.13:630][  0]LogTextLocalizationManager: Compacting localization data took   0.77ms
+[2025.11.08-13.59.13:630][  0]LogAssetRegistry: FAssetRegistry took 0.0087 seconds to start up
+[2025.11.08-13.59.13:727][  0]LogCollisionProfile: Warning: Profile (BlockAll) - Custom Channel Name = 'ClientsideDestructible' hasn't been found
+[2025.11.08-13.59.13:727][  0]LogCollisionProfile: Warning: Profile (OverlapOnlyPawn) - Custom Channel Name = 'GameTraceChannel8' hasn't been found
+[2025.11.08-13.59.13:727][  0]LogCollisionProfile: Warning: Profile (OverlapOnlyPawn) - Custom Channel Name = 'GameTraceChannel9' hasn't been found
+[2025.11.08-13.59.13:727][  0]LogCollisionProfile: Warning: Profile (OverlapOnlyPawn) - Custom Channel Name = 'GameTraceChannel10' hasn't been found
+[2025.11.08-13.59.13:727][  0]LogCollisionProfile: Warning: Profile (OverlapOnlyPawn) - Custom Channel Name = 'GameTraceChannel11' hasn't been found
+[2025.11.08-13.59.13:727][  0]LogCollisionProfile: Warning: Profile (Destructible) - Custom Channel Name = 'ClientsideDestructible' hasn't been found
+[2025.11.08-13.59.13:732][  0]LogStreaming: Display: FlushAsyncLoading: 1 QueuedPackages, 0 AsyncPackages
+[2025.11.08-13.59.13:733][  0]LogPakFile: New pak file ../../../Insurgency/Content/Paks/pakchunk0-WindowsServer.pak added to pak precacher.
+[2025.11.08-13.59.13:735][  0]LogModuleManager: Warning: ModuleManager: Module 'ExampleDeviceProfileSelector' not found - its StaticallyLinkedModuleInitializers function is null.
+[2025.11.08-13.59.13:736][  0]LogInit: Active device profile: [000001F1C1199800][000001F1B99CB6E0 49] WindowsServer
+[2025.11.08-13.59.13:736][  0]LogInit: Profiles: [000001F1C1199660][000001F1BC8BE680 49] Windows, [000001F1C1199800][000001F1B99CB6E0 49] WindowsServer, 
+[2025.11.08-13.59.13:746][  0]LogSerialization: Display: AllowBulkDataInIoStore: 'true'
+[2025.11.08-13.59.13:754][  0]LogNetVersion: Insurgency 1.0.0, NetCL: 357729, EngineNetVer: 17, GameNetVer: 0 (Checksum: 86494416)
+[2025.11.08-13.59.13:784][  0]LogStreaming: Error: Couldn't find file for package /StatsCollector/BP_DebugStatCollectorMenu requested by async loading code. NameToLoad: /StatsCollector/BP_DebugStatCollectorMenu
+[2025.11.08-13.59.13:784][  0]LogStreaming: Error: Found 0 dependent packages...
+[2025.11.08-13.59.13:784][  0]LogStreaming: Error: Couldn't find file for package /StatsCollector/FPSCounter requested by async loading code. NameToLoad: /StatsCollector/FPSCounter
+[2025.11.08-13.59.13:784][  0]LogStreaming: Error: Found 0 dependent packages...
+[2025.11.08-13.59.13:786][  0]LogGameStatsServer: Display: GameStatsServer INIT: No authentication provided, -GameStatsToken= required for statistics collection.
+[2025.11.08-13.59.13:857][  0]LogOnline: OSS: Creating online subsystem instance for: Hydra
+[2025.11.08-13.59.13:858][  0]LogStreaming: Error: Couldn't find file for package /Game/UI/Widgets/WelcomeScreen/BP_WelcomeScreen requested by async loading code. NameToLoad: /Game/UI/Widgets/WelcomeScreen/BP_WelcomeScreen
+[2025.11.08-13.59.13:858][  0]LogStreaming: Error: Found 0 dependent packages...
+[2025.11.08-13.59.13:874][  0]LogStreaming: Error: Couldn't find file for package /Game/UI/Fonts/Oswald requested by async loading code. NameToLoad: /Game/UI/Fonts/Oswald
+[2025.11.08-13.59.13:874][  0]LogStreaming: Error: Found 0 dependent packages...
+[2025.11.08-13.59.13:875][  0]LogStreaming: Error: Couldn't find file for package /Game/UI/Fonts/SourceSansPro requested by async loading code. NameToLoad: /Game/UI/Fonts/SourceSansPro
+[2025.11.08-13.59.13:875][  0]LogStreaming: Error: Found 0 dependent packages...
+[2025.11.08-13.59.13:877][  0]LogActor: Warning: SetReplicates called on non-initialized actor Default__MagazineDebris. Directly setting bReplicates is the correct procedure for pre-init actors.
+[2025.11.08-13.59.13:879][  0]LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Mutators.ST_Mutators' 'ArmsRaceDescription'. Did you forget to add a string table redirector?
+[2025.11.08-13.59.13:880][  0]LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Arcade.ST_Arcade' 'ModeFrenzyGameRules1'. Did you forget to add a string table redirector?
+[2025.11.08-13.59.13:880][  0]LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Arcade.ST_Arcade' 'ModeFrenzyGameRules2'. Did you forget to add a string table redirector?
+[2025.11.08-13.59.13:880][  0]LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Arcade.ST_Arcade' 'ModeFrenzyGameRules3'. Did you forget to add a string table redirector?
+[2025.11.08-13.59.13:880][  0]LogStringTable: Warning: Failed to find string table entry for '/Game/UI/Strings/ST_Arcade.ST_Arcade' 'ModeFrenzyGameRules4'. Did you forget to add a string table redirector?
+[2025.11.08-13.59.13:911][  0]LogUObjectArray: 26288 objects as part of root set at end of initial load.
+[2025.11.08-13.59.13:911][  0]LogUObjectAllocator: 6410392 out of 32000000 bytes used by permanent object pool.
+[2025.11.08-13.59.13:911][  0]LogUObjectArray: CloseDisregardForGC: 26288/0 objects in disregard for GC pool
+[2025.11.08-13.59.13:938][  0]LogGauntlet: Display: Gauntlet Initialized
+[2025.11.08-13.59.13:943][  0]LogOnline: FOnlineSubsystemNWIModule::StartupModule
+[2025.11.08-13.59.13:948][  0]LogHydra: StartupModule()
+[2025.11.08-13.59.13:948][  0]LogPros: StartupModule()
+[2025.11.08-13.59.13:948][  0]LogModuleManager: Warning: ModuleManager: Module 'Redstone' not found - its StaticallyLinkedModuleInitializers function is null.
+[2025.11.08-13.59.13:948][  0]LogHydra: Load Redstone module failed
+[2025.11.08-13.59.13:998][  0]LogOnline: Warning: PROS: FOnlineSubsystemHydraFactory::CreateOnlineSessionHydra unrecognized MM flow "", defaulting to "None"
+[2025.11.08-13.59.13:999][  0]LogOnlineSession: PROS: FOnlineSessionHydraStandalone::FOnlineSessionHydraStandalone creation 100
+[2025.11.08-13.59.14:061][  0]LogConsoleManager: Warning: Console object named 'StartFPSCounter' already exists but is being registered again, but we weren't expected it to be! (FConsoleManager::AddConsoleObject)
+[2025.11.08-13.59.14:061][  0]VivoxCore: FVivoxCoreModule::StartupModule
+[2025.11.08-13.59.14:106][  0]VivoxCore: Loaded Library (../../../Insurgency/Plugins/VivoxCore/Source/ThirdParty/VivoxCoreLibrary/Windows/Release/x64/vivoxsdk.dll)
+[2025.11.08-13.59.14:107][  0]LogEngine: Initializing Engine...
+[2025.11.08-13.59.14:108][  0]LogStats: UGameplayTagsManager::InitializeManager -  0.001 s
+[2025.11.08-13.59.14:116][  0]LogInit: Initializing FReadOnlyCVARCache
+[2025.11.08-13.59.14:116][  0]LogNetVersion: Set ProjectVersion to 1.19.0. Version Checksum will be recalculated on next use.
+[2025.11.08-13.59.14:116][  0]LogInit: Texture streaming: Disabled
+[2025.11.08-13.59.14:439][  0]LogINSAssetManager: Display: Preloading 2357 cosmetic assets
+[2025.11.08-13.59.14:447][  0]LogStreaming: Error: Couldn't find file for package /Engine/Transient requested by async loading code. NameToLoad: /Engine/Transient
+[2025.11.08-13.59.14:447][  0]LogStreaming: Error: This will hitch streaming because it ends up searching the disk instead of finding the file in the pak file.
+[2025.11.08-13.59.14:447][  0]LogStreaming: Error: Found 0 dependent packages...
+[2025.11.08-13.59.14:457][  0]LogStreaming: Error: Couldn't find file for package /Game/Game/Collectibles/Cosmetics/Character/FaceWear/CC_INS_FACEWEAR_Prisoner_Shemagh requested by async loading code. NameToLoad: /Game/Game/Collectibles/Cosmetics/Character/FaceWear/CC_INS_FACEWEAR_Prisoner_Shemagh
+[2025.11.08-13.59.14:457][  0]LogStreaming: Error: This will hitch streaming because it ends up searching the disk instead of finding the file in the pak file.
+[2025.11.08-13.59.14:457][  0]LogStreaming: Error: Found 0 dependent packages...
+[2025.11.08-13.59.14:457][  0]LogStreaming: Error: Couldn't find file for package /Game/Game/Collectibles/Cosmetics/Character/FaceWear/CC_INS_FACEWEAR_SmoothMask_BalaclavaEyehole requested by async loading code. NameToLoad: /Game/Game/Collectibles/Cosmetics/Character/FaceWear/CC_INS_FACEWEAR_SmoothMask_BalaclavaEyehole
+[2025.11.08-13.59.14:457][  0]LogStreaming: Error: This will hitch streaming because it ends up searching the disk instead of finding the file in the pak file.
+[2025.11.08-13.59.14:457][  0]LogStreaming: Error: Found 0 dependent packages...
+[2025.11.08-13.59.14:457][  0]LogStreaming: Error: Couldn't find file for package /Game/Animated/Characters/Insurgent/Patterns/T_Arabian_Pattern requested by async loading code. NameToLoad: /Game/Animated/Characters/Insurgent/Patterns/T_Arabian_Pattern
+[2025.11.08-13.59.14:457][  0]LogStreaming: Error: This will hitch streaming because it ends up searching the disk instead of finding the file in the pak file.
+[2025.11.08-13.59.14:457][  0]LogStreaming: Error: Found 0 dependent packages...
+[2025.11.08-13.59.15:462][  0]LogPakFile: Precache HighWater 16MB
+
+[2025.11.08-13.59.15:462][  0]LogPakFile: Precache HighWater 32MB
+
+[2025.11.08-13.59.15:462][  0]LogPakFile: Precache HighWater 48MB
+
+[2025.11.08-13.59.15:462][  0]LogPakFile: Precache HighWater 64MB
+
+[2025.11.08-13.59.15:462][  0]LogAnimation: Warning: Additivie type (AnimSequence /Game/Animated/Weapons/Rifle/G36/Animations/AN_1P_G36_B_Reload_BoltRelease.AN_1P_G36_B_Reload_BoltRelease) does not match. Make sure you add same type of additive animation.
+[2025.11.08-13.59.15:728][  0]LogStreamableManager: Error: RequestAsyncLoad called with empty or only null assets!
+[2025.11.08-13.59.15:729][  0]LogStreamableManager: Error: RequestAsyncLoad called with empty or only null assets!
+[2025.11.08-13.59.15:729][  0]LogStreamableManager: Error: RequestAsyncLoad called with empty or only null assets!
+[2025.11.08-13.59.15:729][  0]LogStreamableManager: Error: RequestAsyncLoad called with empty or only null assets!
+[2025.11.08-13.59.15:745][  0]LogGameStatsServer: Display: GameStatsServer INIT: No authentication provided, -GameStatsToken= required for statistics collection.
+[2025.11.08-13.59.15:746][  0]LogAnalytics: Display: [NewWorld.Sandstorm.Release] APIServer = https://analytics.sandstorm.game/prod1/. AppVersion = Unknown-CL-357729
+[2025.11.08-13.59.15:747][  0]LogOnline: Display: Printing active map cycle with 63 entries:
+[2025.11.08-13.59.15:748][  0]LogOnline: Display: 	[0] Map: , Scenario: Scenario_Hideout_Firefight_East, Mode: Default, Lighting: , Options: None Specified
+[2025.11.08-13.59.15:748][  0]LogOnline: Display: 	[1] Map: , Scenario: Scenario_Hideout_Firefight_West, Mode: Default, Lighting: , Options: None Specified
+[2025.11.08-13.59.15:748][  0]LogOnline: Display: 	[2] Map: , Scenario: Scenario_Hideout_Push_Security, Mode: Default, Lighting: , Options: None Specified
+[2025.11.08-13.59.15:748][  0]LogOnline: Display: 	[3] Map: , Scenario: Scenario_Hideout_Push_Insurgents, Mode: Default, Lighting: , Options: None Specified
+[2025.11.08-13.59.15:748][  0]LogOnline: Display: 	[4] Map: , Scenario: Scenario_Hideout_Skirmish, Mode: Default, Lighting: , Options: None Specified
+[2025.11.08-13.59.15:748][  0]LogOnline: Display: 	[5] Map: , Scenario: Scenario_Refinery_Firefight_West, Mode: Default, Lighting: , Options: None Specified
+[2025.11.08-13.59.15:748][  0]LogOnline: Display: 	[6] Map: , Scenario: Scenario_Refinery_Push_Security, Mode: Default, Lighting: , Options: None Specified
+[2025.11.08-13.59.15:748][  0]LogOnline: Display: 	[7] Map: , Scenario: Scenario_Refinery_Push_Insurgents, Mode: Default, Lighting: , Options: None Specified
+[2025.11.08-13.59.15:748][  0]LogOnline: Display: 	[8] Map: , Scenario: Scenario_Refinery_Skirmish, Mode: Default, Lighting: , Options: None Specified
+[2025.11.08-13.59.15:748][  0]LogOnline: Display: 	[9] Map: , Scenario: Scenario_Farmhouse_Firefight_East, Mode: Default, Lighting: , Options: None Specified
+[2025.11.08-13.59.15:748][  0]LogOnline: Display: 	[10] Map: , Scenario: Scenario_Farmhouse_Firefight_West, Mode: Default, Lighting: , Options: None Specified
+[2025.11.08-13.59.15:748][  0]LogOnline: Display: 	[11] Map: , Scenario: Scenario_Farmhouse_Push_Security, Mode: Default, Lighting: , Options: None Specified
+[2025.11.08-13.59.15:748][  0]LogOnline: Display: 	[12] Map: , Scenario: Scenario_Farmhouse_Push_Insurgents, Mode: Default, Lighting: , Options: None Specified
+[2025.11.08-13.59.15:748][  0]LogOnline: Display: 	[13] Map: , Scenario: Scenario_Farmhouse_Skirmish, Mode: Default, Lighting: , Options: None Specified
+[2025.11.08-13.59.15:748][  0]LogOnline: Display: 	[14] Map: , Scenario: Scenario_Summit_Firefight_East, Mode: Default, Lighting: , Options: None Specified
+[2025.11.08-13.59.15:748][  0]LogOnline: Display: 	[15] Map: , Scenario: Scenario_Summit_Firefight_West, Mode: Default, Lighting: , Options: None Specified
+[2025.11.08-13.59.15:748][  0]LogOnline: Display: 	[16] Map: , Scenario: Scenario_Summit_Push_Security, Mode: Default, Lighting: , Options: None Specified
+[2025.11.08-13.59.15:748][  0]LogOnline: Display: 	[17] Map: , Scenario: Scenario_Summit_Push_Insurgents, Mode: Default, Lighting: , Options: None Specified
+[2025.11.08-13.59.15:748][  0]LogOnline: Display: 	[18] Map: , Scenario: Scenario_Summit_Skirmish, Mode: Default, Lighting: , Options: None Specified
+[2025.11.08-13.59.15:748][  0]LogOnline: Display: 	[19] Map: , Scenario: Scenario_Precinct_Firefight_East, Mode: Default, Lighting: , Options: None Specified
+[2025.11.08-13.59.15:748][  0]LogOnline: Display: 	[20] Map: , Scenario: Scenario_Precinct_Firefight_West, Mode: Default, Lighting: , Options: None Specified
+[2025.11.08-13.59.15:748][  0]LogOnline: Display: 	[21] Map: , Scenario: Scenario_Precinct_Push_Security, Mode: Default, Lighting: , Options: None Specified
+[2025.11.08-13.59.15:748][  0]LogOnline: Display: 	[22] Map: , Scenario: Scenario_Precinct_Push_Insurgents, Mode: Default, Lighting: , Options: None Specified
+[2025.11.08-13.59.15:748][  0]LogOnline: Display: 	[23] Map: , Scenario: Scenario_Precinct_Skirmish, Mode: Default, Lighting: , Options: None Specified
+[2025.11.08-13.59.15:748][  0]LogOnline: Display: 	[24] Map: , Scenario: Scenario_Precinct_Defuse, Mode: Default, Lighting: , Options: None Specified
+[2025.11.08-13.59.15:748][  0]LogOnline: Display: 	[25] Map: , Scenario: Scenario_Precinct_FFA, Mode: Default, Lighting: , Options: None Specified
+[2025.11.08-13.59.15:748][  0]LogOnline: Display: 	[26] Map: , Scenario: Scenario_Prison_FFA, Mode: Default, Lighting: , Options: None Specified
+[2025.11.08-13.59.15:748][  0]LogOnline: Display: 	[27] Map: , Scenario: Scenario_Crossing_Firefight_West, Mode: Default, Lighting: , Options: None Specified
+[2025.11.08-13.59.15:748][  0]LogOnline: Display: 	[28] Map: , Scenario: Scenario_Crossing_Push_Security, Mode: Default, Lighting: , Options: None Specified
+[2025.11.08-13.59.15:748][  0]LogOnline: Display: 	[29] Map: , Scenario: Scenario_Crossing_Push_Insurgents, Mode: Default, Lighting: , Options: None Specified
+[2025.11.08-13.59.15:748][  0]LogOnline: Display: 	[30] Map: , Scenario: Scenario_Crossing_Skirmish, Mode: Default, Lighting: , Options: None Specified
+[2025.11.08-13.59.15:748][  0]LogOnline: Display: 	[31] Map: , Scenario: Scenario_Crossing_FFA, Mode: Default, Lighting: , Options: None Specified
+[2025.11.08-13.59.15:748][  0]LogOnline: Display: 	[32] Map: , Scenario: Scenario_Ministry_Firefight_A, Mode: Default, Lighting: , Options: None Specified
+[2025.11.08-13.59.15:748][  0]LogOnline: Display: 	[33] Map: , Scenario: Scenario_Ministry_Skirmish, Mode: Default, Lighting: , Options: None Specified
+[2025.11.08-13.59.15:748][  0]LogOnline: Display: 	[34] Map: , Scenario: Scenario_Outskirts_Push_Security, Mode: Default, Lighting: , Options: None Specified
+[2025.11.08-13.59.15:748][  0]LogOnline: Display: 	[35] Map: , Scenario: Scenario_Outskirts_Push_Insurgents, Mode: Default, Lighting: , Options: None Specified
+[2025.11.08-13.59.15:748][  0]LogOnline: Display: 	[36] Map: , Scenario: Scenario_Outskirts_Firefight_West, Mode: Default, Lighting: , Options: None Specified
+[2025.11.08-13.59.15:748][  0]LogOnline: Display: 	[37] Map: , Scenario: Scenario_Outskirts_Firefight_East, Mode: Default, Lighting: , Options: None Specified
+[2025.11.08-13.59.15:748][  0]LogOnline: Display: 	[38] Map: , Scenario: Scenario_Hillside_Push_security, Mode: Default, Lighting: , Options: None Specified
+[2025.11.08-13.59.15:748][  0]LogOnline: Display: 	[39] Map: , Scenario: Scenario_Hillside_Push_Insurgents, Mode: Default, Lighting: , Options: None Specified
+[2025.11.08-13.59.15:748][  0]LogOnline: Display: 	[40] Map: , Scenario: Scenario_Hillside_Firefight_West, Mode: Default, Lighting: , Options: None Specified
+[2025.11.08-13.59.15:748][  0]LogOnline: Display: 	[41] Map: , Scenario: Scenario_Hillside_Firefight_East, Mode: Default, Lighting: , Options: None Specified
+[2025.11.08-13.59.15:748][  0]LogOnline: Display: 	[42] Map: , Scenario: Scenario_PowerPlant_Push_Security, Mode: Default, Lighting: , Options: None Specified
+[2025.11.08-13.59.15:748][  0]LogOnline: Display: 	[43] Map: , Scenario: Scenario_PowerPlant_Push_Insurgents, Mode: Default, Lighting: , Options: None Specified
+[2025.11.08-13.59.15:748][  0]LogOnline: Display: 	[44] Map: , Scenario: Scenario_PowerPlant_Firefight_West, Mode: Default, Lighting: , Options: None Specified
+[2025.11.08-13.59.15:748][  0]LogOnline: Display: 	[45] Map: , Scenario: Scenario_PowerPlant_Firefight_East, Mode: Default, Lighting: , Options: None Specified
+[2025.11.08-13.59.15:748][  0]LogOnline: Display: 	[46] Map: , Scenario: Scenario_PowerPlant_FFA, Mode: Default, Lighting: , Options: None Specified
+[2025.11.08-13.59.15:748][  0]LogOnline: Display: 	[47] Map: , Scenario: Scenario_Tideway_Push_Security, Mode: Default, Lighting: , Options: None Specified
+[2025.11.08-13.59.15:748][  0]LogOnline: Display: 	[48] Map: , Scenario: Scenario_Tideway_Push_Insurgents, Mode: Default, Lighting: , Options: None Specified
+[2025.11.08-13.59.15:748][  0]LogOnline: Display: 	[49] Map: , Scenario: Scenario_Tideway_Firefight_West, Mode: Default, Lighting: , Options: None Specified
+[2025.11.08-13.59.15:748][  0]LogOnline: Display: 	[50] Map: , Scenario: Scenario_Tideway_Frontline, Mode: Default, Lighting: , Options: None Specified
+[2025.11.08-13.59.15:748][  0]LogOnline: Display: 	[51] Map: , Scenario: Scenario_Tideway_Domination, Mode: Default, Lighting: , Options: None Specified
+[2025.11.08-13.59.15:748][  0]LogOnline: Display: 	[52] Map: , Scenario: Scenario_Tell_Push_Security, Mode: Default, Lighting: , Options: None Specified
+[2025.11.08-13.59.15:748][  0]LogOnline: Display: 	[53] Map: , Scenario: Scenario_Tell_Push_Insurgents, Mode: Default, Lighting: , Options: None Specified
+[2025.11.08-13.59.15:748][  0]LogOnline: Display: 	[54] Map: , Scenario: Scenario_Tell_Firefight_West, Mode: Default, Lighting: , Options: None Specified
+[2025.11.08-13.59.15:748][  0]LogOnline: Display: 	[55] Map: , Scenario: Scenario_Tell_Firefight_East, Mode: Default, Lighting: , Options: None Specified
+[2025.11.08-13.59.15:748][  0]LogOnline: Display: 	[56] Map: , Scenario: Scenario_Tell_Frontline, Mode: Default, Lighting: , Options: None Specified
+[2025.11.08-13.59.15:748][  0]LogOnline: Display: 	[57] Map: , Scenario: Scenario_Tell_Domination, Mode: Default, Lighting: , Options: None Specified
+[2025.11.08-13.59.15:748][  0]LogOnline: Display: 	[58] Map: , Scenario: Scenario_Tell_FFA, Mode: Default, Lighting: , Options: None Specified
+[2025.11.08-13.59.15:748][  0]LogOnline: Display: 	[59] Map: , Scenario: Scenario_Bab_Push_Security, Mode: Default, Lighting: , Options: None Specified
+[2025.11.08-13.59.15:748][  0]LogOnline: Display: 	[60] Map: , Scenario: Scenario_Bab_Push_Insurgents, Mode: Default, Lighting: , Options: None Specified
+[2025.11.08-13.59.15:748][  0]LogOnline: Display: 	[61] Map: , Scenario: Scenario_Bab_Firefight_East, Mode: Default, Lighting: , Options: None Specified
+[2025.11.08-13.59.15:748][  0]LogOnline: Display: 	[62] Map: , Scenario: Scenario_Bab_Domination, Mode: Default, Lighting: , Options: None Specified
+[2025.11.08-13.59.15:752][  0]LogOnline: OSS: Creating online subsystem instance for: NWI
+[2025.11.08-13.59.15:753][  0]LogOnline: OSS: Creating online subsystem instance for: EOS
+[2025.11.08-13.59.15:758][  0]LogEOSAntiCheat: Warning: Init: EOS Anti-Cheat is enabled.
+[2025.11.08-13.59.15:759][  0]LogInit: Using OS detected language (en-US).
+[2025.11.08-13.59.15:759][  0]LogInit: Using OS detected locale (en-US).
+[2025.11.08-13.59.15:760][  0]LogInit: Valid culture detected: en in place of: (en-US).
+[2025.11.08-13.59.15:781][  0]LogInit: Display: Game Engine Initialized.
+[2025.11.08-13.59.15:783][  0]LogInit: Display: Starting Game.
+[2025.11.08-13.59.15:784][  0]LogNet: Browse: /Game/Maps/Ministry/Ministry?Name=Player?Scenario=Scenario_Ministry_Checkpoint_Security?MaxPlayers=8?Lighting=Day
+[2025.11.08-13.59.15:784][  0]LogLoad: UINSGameInstance::OnBeginLoadMap(/Game/Maps/Ministry/Ministry?Name=Player?Scenario=Scenario_Ministry_Checkpoint_Security?MaxPlayers=8?Lighting=Day)
+[2025.11.08-13.59.15:784][  0]LogLoad: Warning: UINSGameInstance::OnPreLoadMap: Invalid NextURL, loading /Game/Maps/Ministry/Ministry
+[2025.11.08-13.59.15:803][  0]LogLoad: LoadMap: /Game/Maps/Ministry/Ministry?Name=Player?Scenario=Scenario_Ministry_Checkpoint_Security?MaxPlayers=8?Lighting=Day
+[2025.11.08-13.59.15:804][  0]LogWorld: BeginTearingDown for /Temp/Untitled_28
+[2025.11.08-13.59.15:806][  0]LogWorld: UWorld::CleanupWorld for Untitled, bSessionEnded=true, bCleanupResources=true
+[2025.11.08-13.59.15:823][  0]LogUObjectHash: Compacting FUObjectHashTables data took   2.61ms
+[2025.11.08-13.59.15:841][  0]LogPakFile: New pak file ../../../Insurgency/Content/Paks/pakchunk17-WindowsServer.pak added to pak precacher.
+[2025.11.08-13.59.16:140][  0]LogAIModule: Creating AISystem for world Ministry
+[2025.11.08-13.59.16:140][  0]LogLoad: Warning: Scenario 'Scenario_Ministry_Checkpoint_Security' is created for gamemode 'Class'/Script/Insurgency.INSCheckpointGameMode''
+[2025.11.08-13.59.16:140][  0]LogLoad: Game class is 'INSCheckpointGameMode'
+[2025.11.08-13.59.16:142][  0]LogNet: ReplicationDriverClass is null! Not using ReplicationDriver.
+[2025.11.08-13.59.16:142][  0]LogNetCore: DDoS detection status: detection enabled: 0 analytics enabled: 0
+[2025.11.08-13.59.16:142][  0]LogInit: WinSock: Socket queue. Rx: 131072 (config 131072) Tx: 131072 (config 131072)
+[2025.11.08-13.59.16:142][  0]LogNet: Created socket for bind address: 0.0.0.0 on port 7777
+[2025.11.08-13.59.16:142][  0]PacketHandlerLog: Loaded PacketHandler component: Engine.EngineHandlerComponentFactory (StatelessConnectHandlerComponent)
+[2025.11.08-13.59.16:142][  0]LogNet: GameNetDriver IpNetDriver_2147482541 IpNetDriver listening on port 7777
+[2025.11.08-13.59.16:142][  0]LogStreaming: Display: ULevelStreaming::RequestLevel(/Game/Maps/Ministry/Ministry_Structures_Mid_Merged) is flushing async loading
+[2025.11.08-13.59.16:190][  0]LogStreaming: Display: ULevelStreaming::RequestLevel(/Game/Maps/Ministry/Ministry_Structures_Spawn_B_Merged) is flushing async loading
+[2025.11.08-13.59.16:250][  0]LogStreaming: Display: ULevelStreaming::RequestLevel(/Game/Maps/Ministry/Ministry_Structures_Offices_B_Merged) is flushing async loading
+[2025.11.08-13.59.16:287][  0]LogStreaming: Display: ULevelStreaming::RequestLevel(/Game/Maps/Ministry/Ministry_Structures_Spawn_A_Merged) is flushing async loading
+[2025.11.08-13.59.16:327][  0]LogStreaming: Display: ULevelStreaming::RequestLevel(/Game/Maps/Ministry/Ministry_Structures_Main) is flushing async loading
+[2025.11.08-13.59.16:327][  0]LogStreaming: Display: ULevelStreaming::RequestLevel(/Game/Maps/Ministry/Ministry_Structures_Offices_A_Merged) is flushing async loading
+[2025.11.08-13.59.16:356][  0]LogStreaming: Display: ULevelStreaming::RequestLevel(/Game/Maps/Ministry/Ministry_Structures_Lobby_Merged) is flushing async loading
+[2025.11.08-13.59.16:375][  0]LogStreaming: Display: ULevelStreaming::RequestLevel(/Game/Maps/Ministry/Ministry_Sound) is flushing async loading
+[2025.11.08-13.59.16:378][  0]LogStreaming: Display: ULevelStreaming::RequestLevel(/Game/Maps/Ministry/Ministry_KitRoomSelection_SEC_Merged) is flushing async loading
+[2025.11.08-13.59.16:414][  0]LogStreaming: Display: ULevelStreaming::RequestLevel(/Game/Maps/Ministry/Ministry_AI) is flushing async loading
+[2025.11.08-13.59.16:415][  0]LogStreaming: Display: ULevelStreaming::RequestLevel(/Game/Maps/Ministry/Ministry_DynamicProps) is flushing async loading
+[2025.11.08-13.59.16:520][  0]LogStreaming: Display: ULevelStreaming::RequestLevel(/Game/Maps/Ministry/Ministry_Landscape) is flushing async loading
+[2025.11.08-13.59.16:540][  0]LogStreaming: Display: ULevelStreaming::RequestLevel(/Game/Maps/Ministry/Ministry_Rocks) is flushing async loading
+[2025.11.08-13.59.16:541][  0]LogStreaming: Display: ULevelStreaming::RequestLevel(/Game/Maps/Ministry/Ministry_Structures_Backdrop_Merged) is flushing async loading
+[2025.11.08-13.59.16:564][  0]LogStreaming: Display: ULevelStreaming::RequestLevel(/Game/Maps/Ministry/Ministry_Structures_Garage_Merged) is flushing async loading
+[2025.11.08-13.59.16:623][  0]LogPhysics: Warning: PopulatePhysXGeometryAndTransform(Convex): ConvexElem is missing ConvexMesh
+[2025.11.08-13.59.16:623][  0]LogPhysics: Warning: ForeachShape(Convex): ScaledElem[0] invalid
+[2025.11.08-13.59.16:629][  0]LogStreaming: Display: ULevelStreaming::RequestLevel(/Game/Maps/Ministry/Ministry_Extension_Merged) is flushing async loading
+[2025.11.08-13.59.16:648][  0]LogStreaming: Display: ULevelStreaming::RequestLevel(/Game/Maps/Ministry/Ministry_BlockingVolumes) is flushing async loading
+[2025.11.08-13.59.16:652][  0]LogStreaming: Display: ULevelStreaming::RequestLevel(/Game/Maps/Ministry/Ministry_Doors) is flushing async loading
+[2025.11.08-13.59.16:653][  0]LogStreaming: Display: ULevelStreaming::RequestLevel(/Game/Maps/Ministry/Ministry_Decals) is flushing async loading
+[2025.11.08-13.59.16:672][  0]LogStreaming: Display: ULevelStreaming::RequestLevel(/Game/Maps/Ministry/Ministry_Structures_Front_Merged) is flushing async loading
+[2025.11.08-13.59.16:740][  0]LogStreaming: Display: ULevelStreaming::RequestLevel(/Game/Maps/Ministry/Ministry_KitRoomSelection_INS) is flushing async loading
+[2025.11.08-13.59.16:757][  0]LogStreaming: Display: ULevelStreaming::RequestLevel(/Game/Maps/Ministry/Ministry_Reflections) is flushing async loading
+[2025.11.08-13.59.16:759][  0]LogStreaming: Display: ULevelStreaming::RequestLevel(/Game/Maps/Ministry/Ministry_Particles) is flushing async loading
+[2025.11.08-13.59.16:796][  0]LogWorld: Bringing World /Game/Maps/Ministry/Ministry.Ministry up for play (max tick rate 60) at 2025.11.08-13.59.16
+[2025.11.08-13.59.16:800][  0]LogServerQuery: FServerQueryModule::StartupModule
+[2025.11.08-13.59.16:807][  0]LogActor: Warning: SetReplicates called on non-initialized actor INSSoldier_2147482424. Directly setting bReplicates is the correct procedure for pre-init actors.
+[2025.11.08-13.59.16:809][  0]LogSession: ----- Register Server (SteamNWI) ----- 
+[2025.11.08-13.59.16:809][  0]LogSession: ----- Register Server (EOS) ----- 
+[2025.11.08-13.59.16:817][  0]LogAI: Warning: AI difficulty set to 0.5
+[2025.11.08-13.59.16:821][  0]LogWorld: Bringing up level for play took: 0.037573
+[2025.11.08-13.59.16:823][  0]LogGameMode: Display: State: EnteringMap -> LoadingAssets
+[2025.11.08-13.59.16:823][  0]LogGameState: Match State Changed from EnteringMap to LoadingAssets
+[2025.11.08-13.59.16:824][  0]LogScenario: Display: Loading scenario 'Scenario_Ministry_Checkpoint_Security' (Specified)...
+[2025.11.08-13.59.16:824][  0]LogINSAssetManager: Display: Loading scenario asset 'Scenario_Ministry_Checkpoint_Security' (path: /Game/Game/Scenarios/Coop/Ministry/Scenario_Ministry_Checkpoint_Security.Scenario_Ministry_Checkpoint_Security)...
+[2025.11.08-13.59.16:824][  0]LogScenario: Display: CheckLoadingComplete - Pending, scenario assets not loaded.
+[2025.11.08-13.59.16:824][  0]LogGameMode: Display: High priority async loading ENABLED
+[2025.11.08-13.59.16:826][  0]LogRcon: InitRconServer: Initialzing rcon server at 0.0.0.0:27015
+[2025.11.08-13.59.16:827][  0]LogRcon: Rcon listening at 0.0.0.0:27015
+[2025.11.08-13.59.16:827][  0]LogLoad: Took 1.023770 seconds to LoadMap(/Game/Maps/Ministry/Ministry)
+[2025.11.08-13.59.16:827][  0]LogInit: Display: Engine is initialized. Leaving FEngineLoop::Init()
+[2025.11.08-13.59.16:827][  0]LogLoad: (Engine Initialization) Total time: 4.22 seconds
+[2025.11.08-13.59.16:857][  0]LogINSAssetManager: Display: OnUpgradePreloadComplete : Loaded upgrades count : (24)/(24)
+[2025.11.08-13.59.16:867][  1]LogINSGameInstance: Error: HydraError: ServerCreateOnce::StateChangedCb, From EProsServiceState::CONNECTING ResultCode=0(Not an error. Returned on success.) -- Not an error. Returned on success.
+[2025.11.08-13.59.16:867][  1]LogHydra: Error: ServerCreateOnce::StateChangedCb, From EProsServiceState::CONNECTING ResultCode=0(Not an error. Returned on success.) -- Not an error. Returned on success.
+[2025.11.08-13.59.16:867][  1]LogOnline: Display: HydraServerStateChanged: Start State: 1, ErrorCode: 0, Message: [] 
+[2025.11.08-13.59.16:880][  1]LogINSAssetManager: Display: Loading scenario factions...
+[2025.11.08-13.59.16:920][  3]LogINSAssetManager: Display: Loading 671 scenario assets...
+[2025.11.08-13.59.16:929][  4]LogStreaming: Error: Couldn't find file for package /Game/Game/Actors/Weapons/Upgrades/Underbarrel/BP_UG_Foregrip_Flashlight requested by async loading code. NameToLoad: /Game/Game/Actors/Weapons/Upgrades/Underbarrel/BP_UG_Foregrip_Flashlight
+[2025.11.08-13.59.16:929][  4]LogStreaming: Error: This will hitch streaming because it ends up searching the disk instead of finding the file in the pak file.
+[2025.11.08-13.59.16:929][  4]LogStreaming: Error: Found 0 dependent packages...
+[2025.11.08-13.59.16:957][  5]LogINSAssetManager: Display: Scenario loading complete.
+[2025.11.08-13.59.16:957][  5]LogScenario: Display: Successfully loaded scenario 'Scenario_Ministry_Checkpoint_Security' and 671 referenced assets.
+[2025.11.08-13.59.16:959][  5]LogWorldSettings: Loading lighting scenario 'Ministry_GlobalDay'...
+[2025.11.08-13.59.16:959][  5]LogStreaming: Display: ULevelStreaming::RequestLevel(/Game/Maps/Ministry/Ministry_GlobalDay) is flushing async loading
+[2025.11.08-13.59.17:041][  5]LogScenario: Warning: Skipping sublevel 'Ministry_CheckpointHardcore_Security' as it is not linked to a child gamemode of 'INSCheckpointGameMode_2147482542'
+[2025.11.08-13.59.17:041][  5]LogStreaming: Display: ULevelStreaming::RequestLevel(/Game/Maps/Ministry/Ministry_Checkpoint_Security) is flushing async loading
+[2025.11.08-13.59.17:052][  5]LogObjectives: Ownership of objective 'ODCheckpoint_A' changed from 255 to 1
+[2025.11.08-13.59.17:052][  5]LogObjectives: Ownership of objective 'ODCheckpoint_B' changed from 255 to 1
+[2025.11.08-13.59.17:052][  5]LogObjectives: Ownership of objective 'OCCheckpoint_C' changed from 255 to 1
+[2025.11.08-13.59.17:052][  5]LogObjectives: Ownership of objective 'OCCheckpoint_D' changed from 255 to 1
+[2025.11.08-13.59.17:052][  5]LogObjectives: Ownership of objective 'ODCheckpoint_E' changed from 255 to 1
+[2025.11.08-13.59.17:052][  5]LogObjectives: Ownership of objective 'OCCheckpoint_F' changed from 255 to 1
+[2025.11.08-13.59.17:052][  5]LogGameMode: Warning: Trying to enable spawn zone 'SZCheckpointA_Team1' but it has no player starts!
+[2025.11.08-13.59.17:052][  5]LogGameMode: Warning: Trying to enable spawn zone 'SZCheckpointA_RA' but it has no player starts!
+[2025.11.08-13.59.17:052][  5]LogGameMode: Display: Advancing spawns for faction 255 to obj 0: 0 zones enabled (0 player starts), 0 disabled
+[2025.11.08-13.59.17:058][  5]LogTemp: Warning: Generated 73 spawn points for objective 'ODCheckpoint_A'
+[2025.11.08-13.59.17:061][  5]LogTemp: Warning: Generated 68 spawn points for objective 'ODCheckpoint_B'
+[2025.11.08-13.59.17:062][  5]LogTemp: Warning: Generated 110 spawn points for objective 'OCCheckpoint_C'
+[2025.11.08-13.59.17:063][  5]LogGameMode: Warning: Checkpoint: Generated 66 spawn points for counter-attack spawn 'SZCheckpointC1_Team2'
+[2025.11.08-13.59.17:065][  5]LogGameMode: Warning: Checkpoint: Generated 29 spawn points for counter-attack spawn 'SZCheckpointC2_Team2'
+[2025.11.08-13.59.17:067][  5]LogGameMode: Warning: Checkpoint: Generated 54 spawn points for counter-attack spawn 'SZCheckpointC3_Team2'
+[2025.11.08-13.59.17:069][  5]LogTemp: Warning: Generated 43 spawn points for objective 'OCCheckpoint_D'
+[2025.11.08-13.59.17:070][  5]LogGameMode: Warning: Checkpoint: Generated 66 spawn points for counter-attack spawn 'SZCheckpointD1_Team2'
+[2025.11.08-13.59.17:071][  5]LogGameMode: Warning: Checkpoint: Generated 60 spawn points for counter-attack spawn 'SZCheckpointD2_Team2'
+[2025.11.08-13.59.17:072][  5]LogGameMode: Warning: Checkpoint: Generated 64 spawn points for counter-attack spawn 'SZCheckpointD3_Team2'
+[2025.11.08-13.59.17:073][  5]LogTemp: Warning: Generated 50 spawn points for objective 'ODCheckpoint_E'
+[2025.11.08-13.59.17:073][  5]LogTemp: Warning: Generated 60 spawn points for objective 'OCCheckpoint_F'
+[2025.11.08-13.59.17:075][  5]LogGameMode: Warning: Checkpoint: Generated 47 spawn points for counter-attack spawn 'SZCheckpointF2_Team2'
+[2025.11.08-13.59.17:078][  5]LogGameMode: Warning: Checkpoint: Generated 107 spawn points for counter-attack spawn 'SZCheckpointF3_Team2'
+[2025.11.08-13.59.17:091][  5]LogSoundscape: Registering pending soundscape emitters/components.
+[2025.11.08-13.59.17:091][  5]LogSoundscape: Registered pending soundscape emitters/components.
+[2025.11.08-13.59.17:091][  5]LogVOIP: Warning: Voice interface is invalid
+[2025.11.08-13.59.17:092][  5]LogGameMode: Display: Spawned team 0 of faction Security
+[2025.11.08-13.59.17:092][  5]LogGameMode: Display: Spawned team 1 of faction Insurgents
+[2025.11.08-13.59.17:092][  5]LogSpawning: Spawnzone 'SZCheckpointA_RA' disabled for team 1
+[2025.11.08-13.59.17:092][  5]LogSpawning: Spawnzone 'SZCheckpointA_Team1' disabled for team 0
+[2025.11.08-13.59.17:092][  5]LogSpawning: Spawnzone 'SZCheckpointB_RA' disabled for team 1
+[2025.11.08-13.59.17:092][  5]LogSpawning: Spawnzone 'SZCheckpointB_Team1' disabled for team 0
+[2025.11.08-13.59.17:092][  5]LogSpawning: Spawnzone 'SZCheckpointC_RA' disabled for team 1
+[2025.11.08-13.59.17:092][  5]LogSpawning: Spawnzone 'SZCheckpointC_Team1' disabled for team 0
+[2025.11.08-13.59.17:092][  5]LogSpawning: Spawnzone 'SZCheckpointD_RA' disabled for team 1
+[2025.11.08-13.59.17:092][  5]LogSpawning: Spawnzone 'SZCheckpointD_Team1' disabled for team 0
+[2025.11.08-13.59.17:092][  5]LogSpawning: Spawnzone 'SZCheckpointE_RA' disabled for team 1
+[2025.11.08-13.59.17:092][  5]LogSpawning: Spawnzone 'SZCheckpointE_Team1' disabled for team 0
+[2025.11.08-13.59.17:092][  5]LogSpawning: Spawnzone 'SZCheckpointF_RA' disabled for team 1
+[2025.11.08-13.59.17:092][  5]LogSpawning: Spawnzone 'SZCheckpointF_Team1' disabled for team 0
+[2025.11.08-13.59.17:092][  5]LogSpawning: Spawnzone 'SZCheckpointC1_Team2' disabled for team 1
+[2025.11.08-13.59.17:092][  5]LogSpawning: Spawnzone 'SZCheckpointC2_Team2' disabled for team 1
+[2025.11.08-13.59.17:092][  5]LogSpawning: Spawnzone 'SZCheckpointC3_Team2' disabled for team 1
+[2025.11.08-13.59.17:092][  5]LogSpawning: Spawnzone 'SZCheckpointD1_Team2' disabled for team 1
+[2025.11.08-13.59.17:092][  5]LogSpawning: Spawnzone 'SZCheckpointD2_Team2' disabled for team 1
+[2025.11.08-13.59.17:092][  5]LogSpawning: Spawnzone 'SZCheckpointD3_Team2' disabled for team 1
+[2025.11.08-13.59.17:092][  5]LogSpawning: Spawnzone 'SZCheckpointF1_Team2' disabled for team 1
+[2025.11.08-13.59.17:092][  5]LogSpawning: Spawnzone 'SZCheckpointF2_Team2' disabled for team 1
+[2025.11.08-13.59.17:092][  5]LogSpawning: Spawnzone 'SZCheckpointF3_Team2' disabled for team 1
+[2025.11.08-13.59.17:092][  5]LogGameMode: Error: Reinforcement system for invalid faction 255, ignoring
+[2025.11.08-13.59.17:092][  5]LogGameMode: Display: Gamemode assets loaded, exiting LoadingAssets state, entering WaitingToStart
+[2025.11.08-13.59.17:093][  5]LogGameMode: Display: State: LoadingAssets -> WaitingToStart
+[2025.11.08-13.59.17:093][  5]LogGameState: Match State Changed from LoadingAssets to WaitingToStart
+[2025.11.08-13.59.17:093][  5]LogSession: Display: AINSGameSession::HandleMatchIsWaitingToStart
+[2025.11.08-13.59.17:093][  5]LogAI: Warning: AI difficulty set to 0.5
+[2025.11.08-13.59.17:094][  5]LogActor: Warning: SetReplicates called on non-initialized actor INSSoldier_2147482304. Directly setting bReplicates is the correct procedure for pre-init actors.
+[2025.11.08-13.59.17:122][  5]LogGameState: Round reset. Authority:3
+[2025.11.08-13.59.17:140][  5]LogActor: Warning: SetReplicates called on non-initialized actor INSSoldier_2147482135. Directly setting bReplicates is the correct procedure for pre-init actors.
+[2025.11.08-13.59.17:140][  5]LogObjectives: Ownership of objective 'ODCheckpoint_A' changed from 1 to 1
+[2025.11.08-13.59.17:140][  5]LogObjectives: Ownership of objective 'ODCheckpoint_B' changed from 1 to 1
+[2025.11.08-13.59.17:140][  5]LogObjectives: Ownership of objective 'OCCheckpoint_C' changed from 1 to 1
+[2025.11.08-13.59.17:140][  5]LogObjectives: Ownership of objective 'OCCheckpoint_D' changed from 1 to 1
+[2025.11.08-13.59.17:140][  5]LogObjectives: Ownership of objective 'ODCheckpoint_E' changed from 1 to 1
+[2025.11.08-13.59.17:140][  5]LogObjectives: Ownership of objective 'OCCheckpoint_F' changed from 1 to 1
+[2025.11.08-13.59.17:140][  5]LogSpawning: Spawnzone 'SZCheckpointA_Team1' enabled for team 0
+[2025.11.08-13.59.17:140][  5]LogGameMode: Warning: Trying to enable spawn zone 'SZCheckpointA_RA' but it has no player starts!
+[2025.11.08-13.59.17:140][  5]LogGameMode: Display: Advancing spawns for faction 255 to obj 0: 1 zones enabled (16 player starts), 0 disabled
+[2025.11.08-13.59.18:033][ 60]LogSession: Display: OnCreateSessionComplete: Session: (GameSession) Result: (1)
+[2025.11.08-13.59.18:034][ 60]LogEOSAntiCheat: Display: ServerBeginSession: Result : (EOS_Success)
+[2025.11.08-13.59.18:134][ 66]LogINSGameInstance: Error: HydraError: ServerCreateOnce::StateChangedCb, From EProsServiceState::DISCONNECTING ResultCode=127(The server DSM communication channel has failed or the DSM communication endpoint is unreachable.) -- The server DSM communication channel has failed or the DSM communication endpoint is unreachable.
+[2025.11.08-13.59.18:134][ 66]LogHydra: Error: ServerCreateOnce::StateChangedCb, From EProsServiceState::DISCONNECTING ResultCode=127(The server DSM communication channel has failed or the DSM communication endpoint is unreachable.) -- The server DSM communication channel has failed or the DSM communication endpoint is unreachable.
+[2025.11.08-13.59.18:134][ 66]LogINSGameInstance: Error: HydraError: UHydra5ServerService::ServerCreateOnce::<lambda_b7e32835640b0160cf192ba3c0c7c2cd>::operator () ResultCode=127(EProsdkErrorCodeAuthorization::SDK_DSM_COMMUNICATION_CHANNEL_FAILED) -- The server DSM communication channel has failed or the DSM communication endpoint is unreachable.
+[2025.11.08-13.59.18:134][ 66]LogHydra: Error: UHydra5ServerService::ServerCreateOnce::<lambda_b7e32835640b0160cf192ba3c0c7c2cd>::operator () ResultCode=127(EProsdkErrorCodeAuthorization::SDK_DSM_COMMUNICATION_CHANNEL_FAILED) -- The server DSM communication channel has failed or the DSM communication endpoint is unreachable.
+[2025.11.08-13.59.18:134][ 66]LogOnline: Display: HydraServerStateChanged: Start State: 3, ErrorCode: 121, Message: [DSM communication handshake failed] 
+[2025.11.08-13.59.18:151][ 67]LogINSGameInstance: Error: HydraError: ServerCreateOnce::StateChangedCb, From EProsServiceState::OFFLINE ResultCode=0(Not an error. Returned on success.) -- Not an error. Returned on success.
+[2025.11.08-13.59.18:151][ 67]LogHydra: Error: ServerCreateOnce::StateChangedCb, From EProsServiceState::OFFLINE ResultCode=0(Not an error. Returned on success.) -- Not an error. Returned on success.
+[2025.11.08-13.59.18:151][ 67]LogOnline: Display: HydraServerStateChanged: Start State: 0, ErrorCode: 0, Message: [] 
+[2025.11.08-13.59.18:353][ 79]LogSession: Display: OnCreateSessionComplete: Session: (GameSession) Result: (1)
+[2025.11.08-13.59.22:042][300]LogRcon: Accepted connection from 127.0.0.1:54339
+[2025.11.08-13.59.22:060][300]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-13.59.27:060][599]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-13.59.32:071][899]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-13.59.37:073][198]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-13.59.42:056][496]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-13.59.47:076][796]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-13.59.52:068][ 94]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-13.59.57:181][400]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.00.02:182][699]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.00.07:307][  5]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.00.12:176][297]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.00.17:174][596]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.00.22:178][894]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.00.27:181][191]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.00.32:176][487]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.00.37:166][784]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.00.42:173][ 82]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.00.47:173][379]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.00.52:172][676]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.00.57:178][971]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.01.02:579][285]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.01.07:219][558]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.01.12:279][858]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.01.14:474][988]LogNet: NotifyAcceptingConnection accepted from: 127.0.0.1:51528
+[2025.11.08-14.01.14:490][989]LogNet: NotifyAcceptingConnection accepted from: 127.0.0.1:51528
+[2025.11.08-14.01.14:490][989]LogNet: Server accepting post-challenge connection from: 127.0.0.1:51528
+[2025.11.08-14.01.14:490][989]PacketHandlerLog: Loaded PacketHandler component: OnlineSubsystemSteamNWI.SteamAuthComponentModuleInterface ()
+[2025.11.08-14.01.14:490][989]PacketHandlerLog: Loaded PacketHandler component: OnlineSubsystemEOS.AuthComponentModuleInterfaceEOS ()
+[2025.11.08-14.01.14:490][989]PacketHandlerLog: Loaded PacketHandler component: Engine.EngineHandlerComponentFactory (StatelessConnectHandlerComponent)
+[2025.11.08-14.01.14:491][989]LogOnline: Warning: STEAM (NWI): AUTH HANDLER: Deactivating due to missing requirements
+[2025.11.08-14.01.14:491][989]PacketHandlerLog: Display: Initializing handler with count: (1) due to AllowMultiHandlers=true
+[2025.11.08-14.01.14:491][989]LogOnline: Warning: OSS: EOS AUTH HANDLER:  Deactivating due to missing requirements
+[2025.11.08-14.01.14:491][989]LogNet: NotifyAcceptedConnection: Name: Ministry, TimeStamp: 11/08/25 14:01:14, [UNetConnection] RemoteAddr: 127.0.0.1:51528, Name: IpConnection_2147482108, Driver: GameNetDriver IpNetDriver_2147482541, IsServer: YES, PC: NULL, Owner: NULL, UniqueId: INVALID
+[2025.11.08-14.01.14:491][989]LogNet: AddClientConnection: Added client connection: [UNetConnection] RemoteAddr: 127.0.0.1:51528, Name: IpConnection_2147482108, Driver: GameNetDriver IpNetDriver_2147482541, IsServer: YES, PC: NULL, Owner: NULL, UniqueId: INVALID
+[2025.11.08-14.01.14:509][990]LogNet: NotifyAcceptingChannel Control 0 server World /Game/Maps/Ministry/Ministry.Ministry: Accepted
+[2025.11.08-14.01.14:509][990]LogNet: Remote platform little endian=1
+[2025.11.08-14.01.14:509][990]LogNet: This platform little endian=1
+[2025.11.08-14.01.14:509][990]LogNetVersion: Insurgency 1.19.0, NetCL: 357729, EngineNetVer: 17, GameNetVer: 0 (Checksum: 2393610496)
+[2025.11.08-14.01.14:526][991]LogNet: Login request: ?InitialConnectTimeout=30?Name=ArmoredBear userId: SteamNWI:76561198995742987 platform: SteamNWI
+[2025.11.08-14.01.16:212][ 91]LogNet: Client netspeed is 120000
+[2025.11.08-14.01.16:212][ 91]LogNet: Join request: /Game/Maps/Farmhouse/Farmhouse?InitialConnectTimeout=30?Name=ArmoredBear?SplitscreenCount=1
+[2025.11.08-14.01.16:213][ 91]LogOnline: Warning: OSS: AINSPlayerState::UpdateProductUserId: AccountEnvironmentType is Unknown
+[2025.11.08-14.01.16:214][ 91]LogOnline: OSS: Failed finding session GameSession during registration.
+[2025.11.08-14.01.16:214][ 91]LogGameMode: Warning: Select Activity Host: ArmoredBear
+[2025.11.08-14.01.16:214][ 91]LogINSPlayerController: Begin spectating state for 'ArmoredBear. Player ID: 256
+[2025.11.08-14.01.16:215][ 91]LogINSPlayerController: Update spectating state for 'ArmoredBear. Player ID: 256
+[2025.11.08-14.01.16:215][ 91]LogGameMode: Display: Initializing player 'ArmoredBear'... (Travelling: No)
+[2025.11.08-14.01.16:215][ 91]LogGameMode: Display: ArmoredBear has been automatically assigned to team 0
+[2025.11.08-14.01.16:215][ 91]LogINSPlayerController: AINSPlayerController::OnTeamChanged Authority TeamId: 0, TeamInfo: TeamInfo_2147482358, Faction: Security
+[2025.11.08-14.01.16:215][ 91]LogGameMode: Display: Player 256 'ArmoredBear' joined team 0
+[2025.11.08-14.01.16:216][ 91]LogEOSAntiCheat: Warning: OnClientConnect: Client: (000001F1D54650B0)
+[2025.11.08-14.01.16:218][ 91]LogEOSAntiCheat: Display: ServerRegisterClient: Client: (76561198995742987) Result: (EOS_Success)
+[2025.11.08-14.01.16:218][ 91]LogNet: Join succeeded: ArmoredBear
+[2025.11.08-14.01.16:218][ 91]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.01.16:886][132]LogINSChallangesEventProcessor: Register User ProsID: 6ece8fb6-4680-41f4-8e3d-b0a4b9f268d0, PlayerState Name: INSPlayerState_2147482103
+[2025.11.08-14.01.16:903][133]LogINSPlayerController: Display: 'ArmoredBear' acknowledged scenario assets loaded.
+[2025.11.08-14.01.16:904][133]LogINSChallangesEventProcessor: Display: UpdateExpiration 6ece8fb6-4680-41f4-8e3d-b0a4b9f268d0 17997
+[2025.11.08-14.01.17:313][153]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.01.17:691][172]LogINSPlayerController: Display: 'ArmoredBear' acknowledged scenario assets loaded.
+[2025.11.08-14.01.17:724][174]LogINSPlayerController: Display: 'ArmoredBear' acknowledged scenario assets loaded.
+[2025.11.08-14.01.17:972][189]LogINSPlayerController: Display: 'ArmoredBear' acknowledged scenario audio banks loaded.
+[2025.11.08-14.01.18:971][250]LogEOSAntiCheat: Display: NotifyClientAuthStatusChanged: Client: (000001F1DBDB7F60) Status: (1)
+[2025.11.08-14.01.18:971][250]LogEOSAntiCheat: Display: NotifyClientAuthStatusChanged: Client: (000001F1DBDB7F60) Status: (2)
+[2025.11.08-14.01.22:277][450]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.01.27:271][749]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.01.30:482][939]LogSkinnedMeshComp: Warning: GetBoneTransform : BoneIndex(59) out of range of MasterBoneMap for CharacterMesh1P
+[2025.11.08-14.01.30:482][939]LogSkinnedMeshComp: Warning: GetBoneTransform : BoneIndex(59) out of range of MasterBoneMap for CharacterMesh1P
+[2025.11.08-14.01.30:482][939]LogSkinnedMeshComp: Warning: GetBoneTransform : BoneIndex(59) out of range of MasterBoneMap for CharacterMesh1P
+[2025.11.08-14.01.30:482][939]LogSkinnedMeshComp: Warning: GetBoneTransform : BoneIndex(59) out of range of MasterBoneMap for CharacterMesh1P
+[2025.11.08-14.01.30:482][939]LogSkinnedMeshComp: Warning: GetBoneTransform : BoneIndex(59) out of range of MasterBoneMap for CharacterMesh1P
+[2025.11.08-14.01.30:482][939]LogSkinnedMeshComp: Warning: GetBoneTransform : BoneIndex(59) out of range of MasterBoneMap for CharacterMesh1P
+[2025.11.08-14.01.30:483][939]LogSkinnedMeshComp: Warning: GetBoneTransform : BoneIndex(59) out of range of MasterBoneMap for CharacterMesh1P
+[2025.11.08-14.01.30:483][939]LogSkinnedMeshComp: Warning: GetBoneTransform : BoneIndex(59) out of range of MasterBoneMap for CharacterMesh1P
+[2025.11.08-14.01.30:488][939]LogAnalyticsSubsystem: Display: LogTelemetryServerEvent: Logging event: (ServerOnResupply)
+[2025.11.08-14.01.30:500][939]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.01.30:500][939]LogGameMode: Display: State: WaitingToStart -> GameStarting
+[2025.11.08-14.01.30:500][939]LogGameState: Match State Changed from WaitingToStart to GameStarting
+[2025.11.08-14.01.30:500][939]LogGameMode: Warning: ACTIVITY: Creating match Activity: ArmoredBear
+[2025.11.08-14.01.30:501][939]LogAnalyticsSubsystem: Display: LogTelemetryServerEvent: Logging event: (ServerMatchStart)
+[2025.11.08-14.01.32:430][ 54]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.01.35:486][236]LogGameMode: Display: State: GameStarting -> PreRound
+[2025.11.08-14.01.35:486][236]LogGameState: Match State Changed from GameStarting to PreRound
+[2025.11.08-14.01.35:486][236]LogAI: Warning: AI difficulty set to 0.5
+[2025.11.08-14.01.35:487][236]LogActor: Warning: SetReplicates called on non-initialized actor INSSoldier_2147481741. Directly setting bReplicates is the correct procedure for pre-init actors.
+[2025.11.08-14.01.35:487][236]LogGameState: Round reset. Authority:3
+[2025.11.08-14.01.35:498][236]LogActor: Warning: SetReplicates called on non-initialized actor INSSoldier_2147481738. Directly setting bReplicates is the correct procedure for pre-init actors.
+[2025.11.08-14.01.35:498][236]LogObjectives: Ownership of objective 'ODCheckpoint_A' changed from 1 to 1
+[2025.11.08-14.01.35:498][236]LogObjectives: Ownership of objective 'ODCheckpoint_B' changed from 1 to 1
+[2025.11.08-14.01.35:499][236]LogObjectives: Ownership of objective 'OCCheckpoint_C' changed from 1 to 1
+[2025.11.08-14.01.35:499][236]LogObjectives: Ownership of objective 'OCCheckpoint_D' changed from 1 to 1
+[2025.11.08-14.01.35:499][236]LogObjectives: Ownership of objective 'ODCheckpoint_E' changed from 1 to 1
+[2025.11.08-14.01.35:499][236]LogObjectives: Ownership of objective 'OCCheckpoint_F' changed from 1 to 1
+[2025.11.08-14.01.35:499][236]LogGameMode: Warning: Trying to enable spawn zone 'SZCheckpointA_RA' but it has no player starts!
+[2025.11.08-14.01.35:499][236]LogGameMode: Display: Advancing spawns for faction 255 to obj 0: 1 zones enabled (16 player starts), 0 disabled
+[2025.11.08-14.01.35:499][236]LogGameMode: PAWNREUSE: 'INSPlayerController_2147482104' possessing existing pawn 'BP_Character_Player_C_2147481778' at 'X=9929.998 Y=3166.000 Z=193.907'
+[2025.11.08-14.01.35:499][236]LogSkinnedMeshComp: Warning: GetBoneTransform : BoneIndex(89) out of range of MasterBoneMap for WeaponMesh3P
+[2025.11.08-14.01.35:501][236]LogSkinnedMeshComp: Warning: GetSocketByName(b_wpn): No SkeletalMesh for Component(CharacterMesh0) Actor(BP_Character_Player_C_2147481778)
+[2025.11.08-14.01.35:501][236]LogSkinnedMeshComp: Warning: GetSocketByName(b_wpn): No SkeletalMesh for Component(CharacterMesh0) Actor(BP_Character_Player_C_2147481778)
+[2025.11.08-14.01.35:501][236]LogSkinnedMeshComp: Warning: GetSocketByName(b_wpn): No SkeletalMesh for Component(CharacterMesh0) Actor(BP_Character_Player_C_2147481778)
+[2025.11.08-14.01.35:501][236]LogSkinnedMeshComp: Warning: GetSocketByName(b_wpn): No SkeletalMesh for Component(CharacterMesh0) Actor(BP_Character_Player_C_2147481778)
+[2025.11.08-14.01.35:502][236]LogSkinnedMeshComp: Warning: GetBoneTransform : BoneIndex(89) out of range of MasterBoneMap for WeaponMesh3P
+[2025.11.08-14.01.35:503][236]LogSession: Display: AINSGameSession::HandleMatchHasStarted
+[2025.11.08-14.01.35:503][236]LogOnlineGame: Display: OnStartSessionComplete GameSession bSuccess: 1
+[2025.11.08-14.01.35:504][236]LogAI: SpawnFakeClient: Spawned client on team '1' in class 'Observer'
+[2025.11.08-14.01.35:504][236]LogAI: SpawnFakeClient: Spawned client on team '1' in class 'Commander'
+[2025.11.08-14.01.35:505][236]LogAI: SpawnFakeClient: Spawned client on team '1' in class 'Marksman'
+[2025.11.08-14.01.35:505][236]LogGameMode: Display: Starting round replay recording, filename: "Ministry_2025.11.08-21.01.35", name: "Ministry-Checkpoint-Security"
+[2025.11.08-14.01.35:506][236]LogNet: ReplicationDriverClass is null! Not using ReplicationDriver.
+[2025.11.08-14.01.35:506][236]LogNetCore: DDoS detection status: detection enabled: 0 analytics enabled: 0
+[2025.11.08-14.01.35:506][236]LogNet: AddClientConnection: Added client connection: [UNetConnection] RemoteAddr: UDemoNetConnection, Name: DemoNetConnection_2147481668, Driver: DemoNetDriver INSDemoNetDriver_2147481669, IsServer: YES, PC: NULL, Owner: NULL, UniqueId: INVALID
+[2025.11.08-14.01.35:508][236]LogINSAssetManager: Display: Loading scenario asset 'Scenario_Ministry_Checkpoint_Security' (path: /Game/Game/Scenarios/Coop/Ministry/Scenario_Ministry_Checkpoint_Security.Scenario_Ministry_Checkpoint_Security)...
+[2025.11.08-14.01.35:508][236]LogDemo: Num Network Actors: 301
+[2025.11.08-14.01.35:508][236]LogSession: Display: AINSGameSession::HandleMatchPreRound
+[2025.11.08-14.01.35:508][236]LogGameplayEvents: Display: Pre-round 1 started
+[2025.11.08-14.01.35:511][236]LogDemo: WriteDemoFrame: StreamingLevel: /Game/Maps/Ministry/Ministry_Doors, None
+[2025.11.08-14.01.35:511][236]LogDemo: WriteDemoFrame: StreamingLevel: /Game/Maps/Ministry/Ministry_BlockingVolumes, None
+[2025.11.08-14.01.35:527][236]LogUObjectHash: Compacting FUObjectHashTables data took   3.09ms
+[2025.11.08-14.01.35:531][236]LogINSAssetManager: Display: Loading scenario factions...
+[2025.11.08-14.01.35:534][237]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.01.35:535][237]LogSkinnedMeshComp: Warning: GetBoneTransform : BoneIndex(59) out of range of MasterBoneMap for CharacterMesh1P
+[2025.11.08-14.01.35:536][237]LogSkinnedMeshComp: Warning: GetBoneTransform : BoneIndex(59) out of range of MasterBoneMap for CharacterMesh1P
+[2025.11.08-14.01.35:536][237]LogSkinnedMeshComp: Warning: GetBoneTransform : BoneIndex(59) out of range of MasterBoneMap for CharacterMesh1P
+[2025.11.08-14.01.35:536][237]LogSkinnedMeshComp: Warning: GetBoneTransform : BoneIndex(59) out of range of MasterBoneMap for CharacterMesh1P
+[2025.11.08-14.01.35:536][237]LogSkinnedMeshComp: Warning: GetBoneTransform : BoneIndex(59) out of range of MasterBoneMap for CharacterMesh1P
+[2025.11.08-14.01.35:536][237]LogSkinnedMeshComp: Warning: GetBoneTransform : BoneIndex(59) out of range of MasterBoneMap for CharacterMesh1P
+[2025.11.08-14.01.35:536][237]LogSkinnedMeshComp: Warning: GetBoneTransform : BoneIndex(59) out of range of MasterBoneMap for CharacterMesh1P
+[2025.11.08-14.01.35:536][237]LogSkinnedMeshComp: Warning: GetBoneTransform : BoneIndex(59) out of range of MasterBoneMap for CharacterMesh1P
+[2025.11.08-14.01.35:537][237]LogCosmetics: Error: GetSelectedCosmeticFromItemId called with id: 0 was invalid!
+[2025.11.08-14.01.35:552][237]LogINSAssetManager: Display: Loading 671 scenario assets...
+[2025.11.08-14.01.35:577][238]LogSkinnedMeshComp: Warning: GetBoneTransform : BoneIndex(59) out of range of MasterBoneMap for CharacterMesh1P
+[2025.11.08-14.01.35:577][238]LogSkinnedMeshComp: Warning: GetBoneTransform : BoneIndex(59) out of range of MasterBoneMap for CharacterMesh1P
+[2025.11.08-14.01.35:577][238]LogSkinnedMeshComp: Warning: GetBoneTransform : BoneIndex(59) out of range of MasterBoneMap for CharacterMesh1P
+[2025.11.08-14.01.35:577][238]LogSkinnedMeshComp: Warning: GetBoneTransform : BoneIndex(59) out of range of MasterBoneMap for CharacterMesh1P
+[2025.11.08-14.01.35:577][238]LogSkinnedMeshComp: Warning: GetBoneTransform : BoneIndex(59) out of range of MasterBoneMap for CharacterMesh1P
+[2025.11.08-14.01.35:577][238]LogSkinnedMeshComp: Warning: GetBoneTransform : BoneIndex(59) out of range of MasterBoneMap for CharacterMesh1P
+[2025.11.08-14.01.35:577][238]LogSkinnedMeshComp: Warning: GetBoneTransform : BoneIndex(59) out of range of MasterBoneMap for CharacterMesh1P
+[2025.11.08-14.01.35:577][238]LogSkinnedMeshComp: Warning: GetBoneTransform : BoneIndex(59) out of range of MasterBoneMap for CharacterMesh1P
+[2025.11.08-14.01.35:579][238]LogCosmetics: Error: GetSelectedCosmeticFromItemId called with id: 0 was invalid!
+[2025.11.08-14.01.35:602][239]LogSkinnedMeshComp: Warning: GetBoneTransform : BoneIndex(59) out of range of MasterBoneMap for CharacterMesh1P
+[2025.11.08-14.01.35:602][239]LogSkinnedMeshComp: Warning: GetBoneTransform : BoneIndex(59) out of range of MasterBoneMap for CharacterMesh1P
+[2025.11.08-14.01.35:602][239]LogSkinnedMeshComp: Warning: GetBoneTransform : BoneIndex(59) out of range of MasterBoneMap for CharacterMesh1P
+[2025.11.08-14.01.35:602][239]LogSkinnedMeshComp: Warning: GetBoneTransform : BoneIndex(59) out of range of MasterBoneMap for CharacterMesh1P
+[2025.11.08-14.01.35:603][239]LogSkinnedMeshComp: Warning: GetBoneTransform : BoneIndex(59) out of range of MasterBoneMap for CharacterMesh1P
+[2025.11.08-14.01.35:603][239]LogSkinnedMeshComp: Warning: GetBoneTransform : BoneIndex(59) out of range of MasterBoneMap for CharacterMesh1P
+[2025.11.08-14.01.35:603][239]LogSkinnedMeshComp: Warning: GetBoneTransform : BoneIndex(59) out of range of MasterBoneMap for CharacterMesh1P
+[2025.11.08-14.01.35:603][239]LogSkinnedMeshComp: Warning: GetBoneTransform : BoneIndex(59) out of range of MasterBoneMap for CharacterMesh1P
+[2025.11.08-14.01.35:604][239]LogCosmetics: Error: GetSelectedCosmeticFromItemId called with id: 0 was invalid!
+[2025.11.08-14.01.35:641][240]LogINSAssetManager: Display: Scenario loading complete.
+[2025.11.08-14.01.35:697][240]LogStreaming: Display: ULevelStreaming::RequestLevel(/Game/Maps/Ministry/Ministry_CheckpointHardcore_Security) is flushing async loading
+[2025.11.08-14.01.35:700][240]LogINSGameInstance: IndicateGameLoaded: All game assets should now be loaded, removing loading screen.
+[2025.11.08-14.01.35:704][241]LogDemo: WriteDemoFrame: StreamingLevel: /Game/Maps/Ministry/Ministry_Doors, None
+[2025.11.08-14.01.35:720][243]LogOnlineGame: Display: OnStartSessionComplete GameSession bSuccess: 1
+[2025.11.08-14.01.36:069][264]LogHttpReplay: Error: FHttpNetworkReplayStreamer::HttpStartUploadingFinished. FAILED, Response code: 401, Extra info: URL: https://replays.newworldinteractive.com/client_14/replay/ministry_2025.11.08-21.01.35?app=Insurgency&version=2&cl=357729&friendlyName=Ministry-Checkpoint-Security, Verb: POST, Content-Type: application/json, User-Agent: Insurgency/Unknown-CL-357729 Windows/10.0.26100.1.768.64bit, Content-Length: 0, Expect: 
+[2025.11.08-14.01.36:086][264]LogDemo: Error: UDemoNetDriver::TickFlush: ReplayStreamer ERROR: ServiceUnavailable
+[2025.11.08-14.01.36:086][264]LogDemo: StopDemo: Demo Ministry_2025.11.08-21.01.35 stopped at frame 28
+[2025.11.08-14.01.36:086][264]LogNet: UNetConnection::Close: [UNetConnection] RemoteAddr: UDemoNetConnection, Name: DemoNetConnection_2147481668, Driver: DemoNetDriver INSDemoNetDriver_2147481669, IsServer: YES, PC: INSDemoSpectator_2147481666, Owner: INSDemoSpectator_2147481666, UniqueId: INVALID, Channels: 324, Time: 2025.11.08-21.01.36
+[2025.11.08-14.01.36:086][264]LogHttpReplay: Warning: FHttpNetworkReplayStreamer::StopStreaming. Called while existing StartStreaming request wasn't finished
+[2025.11.08-14.01.37:392][342]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.01.37:542][351]LogRcon: 127.0.0.1:54339 << say Welcome, ArmoredBear!
+[2025.11.08-14.01.42:389][638]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.01.47:386][935]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.01.50:499][120]LogGameMode: Display: State: PreRound -> RoundActive
+[2025.11.08-14.01.50:499][120]LogGameState: Match State Changed from PreRound to RoundActive
+[2025.11.08-14.01.50:499][120]LogGameMode: Display: High priority async loading DISABLED
+[2025.11.08-14.01.50:499][120]LogGameMode: Warning: ACTIVITY: Updating match status InProgress: ArmoredBear
+[2025.11.08-14.01.50:500][120]LogSession: Display: AINSGameSession::HandleMatchRoundActive
+[2025.11.08-14.01.50:500][120]LogGameplayEvents: Display: Round 1 started
+[2025.11.08-14.01.52:379][233]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.01.57:388][533]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.01.57:656][549]LogGameMode: Display: [DoubleKillProtection] Registered kill: PlayerState=Marksman at Time=160.812
+[2025.11.08-14.01.57:657][549]LogHttpReplay: Warning: FHttpNetworkReplayStreamer::AddOrUpdateEvent. Not streaming.
+[2025.11.08-14.01.57:657][549]LogGameplayEvents: Display: ArmoredBear[76561198995742987, team 0] killed Marksman[INVALID, team 1] with BP_Firearm_PF940_C_2147481687
+[2025.11.08-14.01.57:657][549]LogEOSAntiCheat: Warning: LogPlayerDespawn: Invalid Controller
+[2025.11.08-14.01.58:711][612]LogAI: AIDebug: ADS with Primary finished
+[2025.11.08-14.01.59:157][639]LogGameMode: Display: [DoubleKillProtection] Removing PlayerState=Marksman at Time=162.313
+[2025.11.08-14.01.59:157][639]LogGameMode: Display: [DoubleKillProtection] Registered kill: PlayerState=Commander at Time=162.313
+[2025.11.08-14.01.59:157][639]LogHttpReplay: Warning: FHttpNetworkReplayStreamer::AddOrUpdateEvent. Not streaming.
+[2025.11.08-14.01.59:158][639]LogGameplayEvents: Display: ArmoredBear[76561198995742987, team 0] killed Commander[INVALID, team 1] with BP_Firearm_PF940_C_2147481687
+[2025.11.08-14.01.59:158][639]LogEOSAntiCheat: Warning: LogPlayerDespawn: Invalid Controller
+[2025.11.08-14.02.00:592][725]LogTemp: Warning: ATeamInfo::PlayQueuedRadioEvent: Queued audio had a duration of Zero.
+[2025.11.08-14.02.02:379][832]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.02.07:383][133]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.02.10:698][332]LogAI: AIDebug: HipFire Behavior finished
+[2025.11.08-14.02.10:699][332]LogCosmetics: Error: GetSelectedCosmeticFromItemId called with id: 0 was invalid!
+[2025.11.08-14.02.10:701][332]LogSkinnedMeshComp: Warning: GetBoneTransform : BoneIndex(89) out of range of MasterBoneMap for WeaponMesh3P
+[2025.11.08-14.02.10:732][334]LogAI: AIDebug: ADS with Primary finished
+[2025.11.08-14.02.10:732][334]LogCosmetics: Error: GetSelectedCosmeticFromItemId called with id: 0 was invalid!
+[2025.11.08-14.02.12:381][433]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.02.17:394][734]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.02.18:156][780]LogGameMode: Display: [DoubleKillProtection] Removing PlayerState=Commander at Time=181.312
+[2025.11.08-14.02.18:156][780]LogGameMode: Display: [DoubleKillProtection] Registered kill: PlayerState=Observer at Time=181.312
+[2025.11.08-14.02.18:157][780]LogHttpReplay: Warning: FHttpNetworkReplayStreamer::AddOrUpdateEvent. Not streaming.
+[2025.11.08-14.02.18:157][780]LogGameplayEvents: Display: ArmoredBear[76561198995742987, team 0] killed Observer[INVALID, team 1] with BP_Firearm_PF940_C_2147481687
+[2025.11.08-14.02.18:157][780]LogEOSAntiCheat: Warning: LogPlayerDespawn: Invalid Controller
+[2025.11.08-14.02.18:345][791]LogAI: Warning: UINSAIDirector: Purging empty squad INSAISquad_2147481196
+[2025.11.08-14.02.22:384][ 34]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.02.27:392][335]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.02.30:924][547]LogCosmetics: Error: GetSelectedCosmeticFromItemId called with id: 0 was invalid!
+[2025.11.08-14.02.30:926][547]LogSkinnedMeshComp: Warning: GetBoneTransform : BoneIndex(89) out of range of MasterBoneMap for WeaponMesh3P
+[2025.11.08-14.02.32:392][635]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.02.32:509][642]LogAI: Warning: UINSAIDirector: Purging empty squad INSAISquad_2147480740
+[2025.11.08-14.02.37:391][936]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.02.42:392][237]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.02.44:780][380]LogGameMode: Display: [DoubleKillProtection] Removing PlayerState=Observer at Time=207.936
+[2025.11.08-14.02.44:781][380]LogGameMode: Display: [DoubleKillProtection] Registered kill: PlayerState=Commander at Time=207.936
+[2025.11.08-14.02.44:781][380]LogHttpReplay: Warning: FHttpNetworkReplayStreamer::AddOrUpdateEvent. Not streaming.
+[2025.11.08-14.02.44:781][380]LogGameplayEvents: Display: ArmoredBear[76561198995742987, team 0] killed Commander[INVALID, team 1] with ODCheckpoint_A
+[2025.11.08-14.02.44:781][380]LogEOSAntiCheat: Warning: LogPlayerDespawn: Invalid Controller
+[2025.11.08-14.02.44:782][380]LogGameplayEvents: Display: Objective 0 owned by team 1 was destroyed for team 0 by ArmoredBear[76561198995742987].
+[2025.11.08-14.02.44:782][380]LogHttpReplay: Warning: FHttpNetworkReplayStreamer::AddOrUpdateEvent. Not streaming.
+[2025.11.08-14.02.44:782][380]LogGameMode: Warning: Trying to enable spawn zone 'SZCheckpointB_RA' but it has no player starts!
+[2025.11.08-14.02.44:782][380]LogSpawning: Spawnzone 'SZCheckpointB_Team1' enabled for team 0
+[2025.11.08-14.02.44:782][380]LogSpawning: Spawnzone 'SZCheckpointA_Team1' disabled for team 0
+[2025.11.08-14.02.44:782][380]LogGameMode: Display: Advancing spawns for faction 255 to obj 1: 1 zones enabled (16 player starts), 1 disabled
+[2025.11.08-14.02.44:782][380]LogObjectives: Ownership of objective 'ODCheckpoint_A' changed from 1 to 0
+[2025.11.08-14.02.45:773][440]LogCosmetics: Error: GetSelectedCosmeticFromItemId called with id: 0 was invalid!
+[2025.11.08-14.02.47:394][537]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.02.47:661][553]LogAI: Warning: UINSAIDirector: Purging empty squad INSAISquad_2147480655
+[2025.11.08-14.02.52:392][837]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.02.52:771][860]LogAI: AIDebug: ADS with Primary finished
+[2025.11.08-14.02.54:484][963]LogGameMode: Display: [DoubleKillProtection] Removing PlayerState=Commander at Time=217.641
+[2025.11.08-14.02.54:484][963]LogGameMode: Display: [DoubleKillProtection] Registered kill: PlayerState=Marksman at Time=217.641
+[2025.11.08-14.02.54:484][963]LogTemp: Warning: AINSPlayerState::ScoreHeadshot
+[2025.11.08-14.02.54:485][963]LogHttpReplay: Warning: FHttpNetworkReplayStreamer::AddOrUpdateEvent. Not streaming.
+[2025.11.08-14.02.54:485][963]LogGameplayEvents: Display: ArmoredBear[76561198995742987, team 0] killed Marksman[INVALID, team 1] with BP_Firearm_M16A2_C_2147481522
+[2025.11.08-14.02.54:485][963]LogEOSAntiCheat: Warning: LogPlayerDespawn: Invalid Controller
+[2025.11.08-14.02.57:391][138]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.03.02:391][438]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.03.04:904][589]LogAI: AIDebug: HipFire Behavior finished
+[2025.11.08-14.03.04:905][589]LogCosmetics: Error: GetSelectedCosmeticFromItemId called with id: 0 was invalid!
+[2025.11.08-14.03.04:906][589]LogSkinnedMeshComp: Warning: GetBoneTransform : BoneIndex(2) out of range of MasterBoneMap for WeaponMesh3P
+[2025.11.08-14.03.06:831][705]LogAI: Warning: UINSAIDirector: Purging empty squad INSAISquad_2147480563
+[2025.11.08-14.03.07:397][739]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.03.12:388][ 38]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.03.17:395][337]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.03.22:396][637]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.03.27:396][937]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.03.32:395][236]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.03.37:389][536]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.03.37:873][565]LogAI: AIDebug: ADS with Primary finished
+[2025.11.08-14.03.42:393][836]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.03.47:402][137]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.03.52:409][438]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.03.54:570][567]LogGameMode: Display: [DoubleKillProtection] Removing PlayerState=Marksman at Time=277.732
+[2025.11.08-14.03.54:571][567]LogGameMode: Display: [DoubleKillProtection] Registered kill: PlayerState=Commander at Time=277.732
+[2025.11.08-14.03.54:571][567]LogHttpReplay: Warning: FHttpNetworkReplayStreamer::AddOrUpdateEvent. Not streaming.
+[2025.11.08-14.03.54:571][567]LogGameplayEvents: Display: ArmoredBear[76561198995742987, team 0] killed Commander[INVALID, team 1] with ODCheckpoint_B
+[2025.11.08-14.03.54:571][567]LogEOSAntiCheat: Warning: LogPlayerDespawn: Invalid Controller
+[2025.11.08-14.03.54:571][567]LogGameMode: Display: [DoubleKillProtection] Registered kill: PlayerState=Observer at Time=277.732
+[2025.11.08-14.03.54:572][567]LogHttpReplay: Warning: FHttpNetworkReplayStreamer::AddOrUpdateEvent. Not streaming.
+[2025.11.08-14.03.54:572][567]LogGameplayEvents: Display: ArmoredBear[76561198995742987, team 0] killed Observer[INVALID, team 1] with ODCheckpoint_B
+[2025.11.08-14.03.54:572][567]LogEOSAntiCheat: Warning: LogPlayerDespawn: Invalid Controller
+[2025.11.08-14.03.54:572][567]LogGameplayEvents: Display: Objective 1 owned by team 1 was destroyed for team 0 by ArmoredBear[76561198995742987].
+[2025.11.08-14.03.54:572][567]LogHttpReplay: Warning: FHttpNetworkReplayStreamer::AddOrUpdateEvent. Not streaming.
+[2025.11.08-14.03.54:572][567]LogSpawning: Spawnzone 'SZCheckpointC_Team1' enabled for team 0
+[2025.11.08-14.03.54:572][567]LogGameMode: Warning: Trying to enable spawn zone 'SZCheckpointC_RA' but it has no player starts!
+[2025.11.08-14.03.54:573][567]LogGameMode: Warning: Trying to enable spawn zone 'SZCheckpointC1_Team2' but it has no player starts!
+[2025.11.08-14.03.54:573][567]LogGameMode: Warning: Trying to enable spawn zone 'SZCheckpointC2_Team2' but it has no player starts!
+[2025.11.08-14.03.54:573][567]LogGameMode: Warning: Trying to enable spawn zone 'SZCheckpointC3_Team2' but it has no player starts!
+[2025.11.08-14.03.54:573][567]LogSpawning: Spawnzone 'SZCheckpointB_Team1' disabled for team 0
+[2025.11.08-14.03.54:573][567]LogGameMode: Display: Advancing spawns for faction 255 to obj 2: 1 zones enabled (16 player starts), 1 disabled
+[2025.11.08-14.03.54:573][567]LogObjectives: Ownership of objective 'ODCheckpoint_B' changed from 1 to 0
+[2025.11.08-14.03.55:561][627]LogCosmetics: Error: GetSelectedCosmeticFromItemId called with id: 0 was invalid!
+[2025.11.08-14.03.55:563][627]LogSkinnedMeshComp: Warning: GetBoneTransform : BoneIndex(89) out of range of MasterBoneMap for WeaponMesh3P
+[2025.11.08-14.03.55:594][629]LogAI: AIDebug: ADS with Primary finished
+[2025.11.08-14.03.55:595][629]LogCosmetics: Error: GetSelectedCosmeticFromItemId called with id: 0 was invalid!
+[2025.11.08-14.03.55:596][629]LogSkinnedMeshComp: Warning: GetBoneTransform : BoneIndex(89) out of range of MasterBoneMap for WeaponMesh3P
+[2025.11.08-14.03.57:217][726]LogAI: Warning: UINSAIDirector: Purging empty squad INSAISquad_2147480918
+[2025.11.08-14.03.57:399][737]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.04.02:401][ 37]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.04.07:409][338]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.04.12:401][638]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.04.17:390][939]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.04.22:403][242]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.04.27:388][542]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.04.32:402][843]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.04.37:391][143]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.04.42:398][444]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.04.47:405][745]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.04.48:137][789]LogGameMode: Display: [DoubleKillProtection] Removing PlayerState=Commander at Time=331.293
+[2025.11.08-14.04.48:137][789]LogGameMode: Display: [DoubleKillProtection] Removing PlayerState=Observer at Time=331.293
+[2025.11.08-14.04.48:137][789]LogGameMode: Display: [DoubleKillProtection] Registered kill: PlayerState=Observer at Time=331.293
+[2025.11.08-14.04.48:137][789]LogHttpReplay: Warning: FHttpNetworkReplayStreamer::AddOrUpdateEvent. Not streaming.
+[2025.11.08-14.04.48:137][789]LogGameplayEvents: Display: ArmoredBear[76561198995742987, team 0] killed Observer[INVALID, team 1] with BP_Firearm_PF940_C_2147480339
+[2025.11.08-14.04.48:137][789]LogEOSAntiCheat: Warning: LogPlayerDespawn: Invalid Controller
+[2025.11.08-14.04.48:368][803]LogAI: AIDebug: ADS with Primary finished
+[2025.11.08-14.04.48:370][803]LogCosmetics: Error: GetSelectedCosmeticFromItemId called with id: 0 was invalid!
+[2025.11.08-14.04.48:371][803]LogSkinnedMeshComp: Warning: GetBoneTransform : BoneIndex(89) out of range of MasterBoneMap for WeaponMesh3P
+[2025.11.08-14.04.52:413][ 45]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.04.57:403][345]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.05.02:397][645]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.05.07:413][947]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.05.09:997][103]LogGameMode: Display: [DoubleKillProtection] Removing PlayerState=Observer at Time=353.152
+[2025.11.08-14.05.09:997][103]LogGameMode: Display: [DoubleKillProtection] Registered kill: PlayerState=Commander at Time=353.152
+[2025.11.08-14.05.09:997][103]LogHttpReplay: Warning: FHttpNetworkReplayStreamer::AddOrUpdateEvent. Not streaming.
+[2025.11.08-14.05.09:997][103]LogGameplayEvents: Display: ArmoredBear[76561198995742987, team 0] killed Commander[INVALID, team 1] with BP_Firearm_PF940_C_2147480339
+[2025.11.08-14.05.09:997][103]LogEOSAntiCheat: Warning: LogPlayerDespawn: Invalid Controller
+[2025.11.08-14.05.10:212][116]LogAI: AIDebug: ADS with Primary finished
+[2025.11.08-14.05.10:212][116]LogCosmetics: Error: GetSelectedCosmeticFromItemId called with id: 0 was invalid!
+[2025.11.08-14.05.10:215][116]LogSkinnedMeshComp: Warning: GetBoneTransform : BoneIndex(89) out of range of MasterBoneMap for WeaponMesh3P
+[2025.11.08-14.05.10:972][162]LogGameMode: Display: [DoubleKillProtection] Removing PlayerState=Commander at Time=354.128
+[2025.11.08-14.05.10:972][162]LogGameMode: Display: [DoubleKillProtection] Registered kill: PlayerState=Marksman at Time=354.128
+[2025.11.08-14.05.10:972][162]LogHttpReplay: Warning: FHttpNetworkReplayStreamer::AddOrUpdateEvent. Not streaming.
+[2025.11.08-14.05.10:974][162]LogGameplayEvents: Display: ArmoredBear[76561198995742987, team 0] killed Marksman[INVALID, team 1] with BP_Firearm_PF940_C_2147480339
+[2025.11.08-14.05.10:974][162]LogEOSAntiCheat: Warning: LogPlayerDespawn: Invalid Controller
+[2025.11.08-14.05.12:410][248]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.05.17:401][548]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.05.18:791][632]LogSpawning: Spawnzone 'SZCheckpointC1_Team2' enabled for team 1
+[2025.11.08-14.05.18:791][632]LogSpawning: Spawnzone 'SZCheckpointC2_Team2' enabled for team 1
+[2025.11.08-14.05.18:791][632]LogSpawning: Spawnzone 'SZCheckpointC3_Team2' enabled for team 1
+[2025.11.08-14.05.18:791][632]LogAI: AIDebug: ADS with Primary finished
+[2025.11.08-14.05.18:791][632]LogCosmetics: Error: GetSelectedCosmeticFromItemId called with id: 0 was invalid!
+[2025.11.08-14.05.18:792][632]LogCosmetics: Error: GetSelectedCosmeticFromItemId called with id: 0 was invalid!
+[2025.11.08-14.05.18:793][632]LogObjectives: Ownership of objective 'OCCheckpoint_C' changed from 1 to 0
+[2025.11.08-14.05.18:794][632]LogTemp: Warning: AINSPlayerState::ReportChallengeEvent
+[2025.11.08-14.05.18:794][632]LogGameplayEvents: Display: Objective 2 was captured for team 0 from team 1 by ArmoredBear[76561198995742987].
+[2025.11.08-14.05.18:794][632]LogHttpReplay: Warning: FHttpNetworkReplayStreamer::AddOrUpdateEvent. Not streaming.
+[2025.11.08-14.05.21:184][776]LogTemp: Warning: ATeamInfo::PlayQueuedRadioEvent: Queued audio had a duration of Zero.
+[2025.11.08-14.05.22:403][849]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.05.27:410][149]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.05.32:407][450]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.05.37:414][752]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.05.42:411][ 52]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.05.47:409][352]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.05.50:668][548]LogGameMode: Display: [DoubleKillProtection] Removing PlayerState=Suicide Bomber at Time=393.824
+[2025.11.08-14.05.50:668][548]LogGameMode: Display: [DoubleKillProtection] Registered kill: PlayerState=Commander at Time=393.824
+[2025.11.08-14.05.50:669][548]LogHttpReplay: Warning: FHttpNetworkReplayStreamer::AddOrUpdateEvent. Not streaming.
+[2025.11.08-14.05.50:669][548]LogGameplayEvents: Display: ArmoredBear[76561198995742987, team 0] killed Commander[INVALID, team 1] with BP_Firearm_PF940_C_2147480339
+[2025.11.08-14.05.50:669][548]LogEOSAntiCheat: Warning: LogPlayerDespawn: Invalid Controller
+[2025.11.08-14.05.50:801][556]LogAI: AIDebug: ADS with Primary finished
+[2025.11.08-14.05.50:802][556]LogCosmetics: Error: GetSelectedCosmeticFromItemId called with id: 0 was invalid!
+[2025.11.08-14.05.50:803][556]LogSkinnedMeshComp: Warning: GetBoneTransform : BoneIndex(89) out of range of MasterBoneMap for WeaponMesh3P
+[2025.11.08-14.05.50:985][567]LogAI: AIDebug: ADS with Primary finished
+[2025.11.08-14.05.52:186][639]LogAI: Warning: UINSAIDirector: Purging empty squad INSAISquad_2147479959
+[2025.11.08-14.05.52:419][653]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.05.54:117][755]LogTemp: Warning: ATeamInfo::PlayQueuedRadioEvent: Queued audio had a duration of Zero.
+[2025.11.08-14.05.57:410][953]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.05.58:220][  2]LogGameMode: Display: [DoubleKillProtection] Removing PlayerState=Commander at Time=401.377
+[2025.11.08-14.05.58:220][  2]LogGameMode: Display: [DoubleKillProtection] Registered kill: PlayerState=Observer at Time=401.377
+[2025.11.08-14.05.58:221][  2]LogHttpReplay: Warning: FHttpNetworkReplayStreamer::AddOrUpdateEvent. Not streaming.
+[2025.11.08-14.05.58:221][  2]LogGameplayEvents: Display: ArmoredBear[76561198995742987, team 0] killed Observer[INVALID, team 1] with BP_Firearm_PF940_C_2147480339
+[2025.11.08-14.05.58:221][  2]LogEOSAntiCheat: Warning: LogPlayerDespawn: Invalid Controller
+[2025.11.08-14.06.02:412][253]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.06.07:423][554]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.06.11:028][771]LogAI: AIDebug: ADS with Primary finished
+[2025.11.08-14.06.11:028][771]LogCosmetics: Error: GetSelectedCosmeticFromItemId called with id: 0 was invalid!
+[2025.11.08-14.06.11:031][771]LogSkinnedMeshComp: Warning: GetBoneTransform : BoneIndex(89) out of range of MasterBoneMap for WeaponMesh3P
+[2025.11.08-14.06.12:357][851]LogAI: Warning: UINSAIDirector: Purging empty squad INSAISquad_2147479863
+[2025.11.08-14.06.12:407][854]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.06.17:413][154]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.06.22:421][455]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.06.27:410][754]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.06.30:676][949]LogTemp: Warning: ATeamInfo::PlayQueuedRadioEvent: Queued audio had a duration of Zero.
+[2025.11.08-14.06.32:421][ 53]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.06.37:424][354]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.06.42:422][654]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.06.47:417][954]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.06.48:797][ 37]LogTemp: Warning: Resetting bot team squad layout: Squad_Insurgent_Bots_Coop
+[2025.11.08-14.06.48:797][ 37]LogSpawning: Spawnzone 'SZCheckpointC1_Team2' disabled for team 1
+[2025.11.08-14.06.48:797][ 37]LogSpawning: Spawnzone 'SZCheckpointC2_Team2' disabled for team 1
+[2025.11.08-14.06.48:797][ 37]LogSpawning: Spawnzone 'SZCheckpointC3_Team2' disabled for team 1
+[2025.11.08-14.06.48:797][ 37]LogSpawning: Spawnzone 'SZCheckpointD_Team1' enabled for team 0
+[2025.11.08-14.06.48:797][ 37]LogGameMode: Warning: Trying to enable spawn zone 'SZCheckpointD_RA' but it has no player starts!
+[2025.11.08-14.06.48:797][ 37]LogGameMode: Warning: Trying to enable spawn zone 'SZCheckpointD1_Team2' but it has no player starts!
+[2025.11.08-14.06.48:797][ 37]LogGameMode: Warning: Trying to enable spawn zone 'SZCheckpointD2_Team2' but it has no player starts!
+[2025.11.08-14.06.48:797][ 37]LogGameMode: Warning: Trying to enable spawn zone 'SZCheckpointD3_Team2' but it has no player starts!
+[2025.11.08-14.06.48:797][ 37]LogSpawning: Spawnzone 'SZCheckpointC_Team1' disabled for team 0
+[2025.11.08-14.06.48:797][ 37]LogGameMode: Display: Advancing spawns for faction 255 to obj 3: 1 zones enabled (16 player starts), 1 disabled
+[2025.11.08-14.06.49:810][ 98]LogAI: SpawnFakeClient: Spawned client on team '1' in class 'Marksman'
+[2025.11.08-14.06.49:812][ 98]LogSkinnedMeshComp: Warning: GetBoneTransform : BoneIndex(59) out of range of MasterBoneMap for CharacterMesh1P
+[2025.11.08-14.06.49:812][ 98]LogSkinnedMeshComp: Warning: GetBoneTransform : BoneIndex(59) out of range of MasterBoneMap for CharacterMesh1P
+[2025.11.08-14.06.49:812][ 98]LogSkinnedMeshComp: Warning: GetBoneTransform : BoneIndex(59) out of range of MasterBoneMap for CharacterMesh1P
+[2025.11.08-14.06.49:812][ 98]LogSkinnedMeshComp: Warning: GetBoneTransform : BoneIndex(59) out of range of MasterBoneMap for CharacterMesh1P
+[2025.11.08-14.06.49:812][ 98]LogSkinnedMeshComp: Warning: GetBoneTransform : BoneIndex(59) out of range of MasterBoneMap for CharacterMesh1P
+[2025.11.08-14.06.49:812][ 98]LogSkinnedMeshComp: Warning: GetBoneTransform : BoneIndex(59) out of range of MasterBoneMap for CharacterMesh1P
+[2025.11.08-14.06.49:812][ 98]LogSkinnedMeshComp: Warning: GetBoneTransform : BoneIndex(59) out of range of MasterBoneMap for CharacterMesh1P
+[2025.11.08-14.06.49:813][ 98]LogSkinnedMeshComp: Warning: GetBoneTransform : BoneIndex(59) out of range of MasterBoneMap for CharacterMesh1P
+[2025.11.08-14.06.49:814][ 98]LogCosmetics: Error: GetSelectedCosmeticFromItemId called with id: 0 was invalid!
+[2025.11.08-14.06.49:818][ 98]LogAI: SpawnFakeClient: Spawned client on team '1' in class 'Advisor'
+[2025.11.08-14.06.49:819][ 98]LogSkinnedMeshComp: Warning: GetBoneTransform : BoneIndex(59) out of range of MasterBoneMap for CharacterMesh1P
+[2025.11.08-14.06.49:820][ 98]LogSkinnedMeshComp: Warning: GetBoneTransform : BoneIndex(59) out of range of MasterBoneMap for CharacterMesh1P
+[2025.11.08-14.06.49:820][ 98]LogSkinnedMeshComp: Warning: GetBoneTransform : BoneIndex(59) out of range of MasterBoneMap for CharacterMesh1P
+[2025.11.08-14.06.49:820][ 98]LogSkinnedMeshComp: Warning: GetBoneTransform : BoneIndex(59) out of range of MasterBoneMap for CharacterMesh1P
+[2025.11.08-14.06.49:820][ 98]LogSkinnedMeshComp: Warning: GetBoneTransform : BoneIndex(59) out of range of MasterBoneMap for CharacterMesh1P
+[2025.11.08-14.06.49:820][ 98]LogSkinnedMeshComp: Warning: GetBoneTransform : BoneIndex(59) out of range of MasterBoneMap for CharacterMesh1P
+[2025.11.08-14.06.49:820][ 98]LogSkinnedMeshComp: Warning: GetBoneTransform : BoneIndex(59) out of range of MasterBoneMap for CharacterMesh1P
+[2025.11.08-14.06.49:820][ 98]LogSkinnedMeshComp: Warning: GetBoneTransform : BoneIndex(59) out of range of MasterBoneMap for CharacterMesh1P
+[2025.11.08-14.06.49:822][ 98]LogCosmetics: Error: GetSelectedCosmeticFromItemId called with id: 0 was invalid!
+[2025.11.08-14.06.49:825][ 98]LogAI: SpawnFakeClient: Spawned client on team '1' in class 'Demolitions'
+[2025.11.08-14.06.49:827][ 98]LogSkinnedMeshComp: Warning: GetBoneTransform : BoneIndex(59) out of range of MasterBoneMap for CharacterMesh1P
+[2025.11.08-14.06.49:827][ 98]LogSkinnedMeshComp: Warning: GetBoneTransform : BoneIndex(59) out of range of MasterBoneMap for CharacterMesh1P
+[2025.11.08-14.06.49:827][ 98]LogSkinnedMeshComp: Warning: GetBoneTransform : BoneIndex(59) out of range of MasterBoneMap for CharacterMesh1P
+[2025.11.08-14.06.49:827][ 98]LogSkinnedMeshComp: Warning: GetBoneTransform : BoneIndex(59) out of range of MasterBoneMap for CharacterMesh1P
+[2025.11.08-14.06.49:827][ 98]LogSkinnedMeshComp: Warning: GetBoneTransform : BoneIndex(59) out of range of MasterBoneMap for CharacterMesh1P
+[2025.11.08-14.06.49:827][ 98]LogSkinnedMeshComp: Warning: GetBoneTransform : BoneIndex(59) out of range of MasterBoneMap for CharacterMesh1P
+[2025.11.08-14.06.49:827][ 98]LogSkinnedMeshComp: Warning: GetBoneTransform : BoneIndex(59) out of range of MasterBoneMap for CharacterMesh1P
+[2025.11.08-14.06.49:827][ 98]LogSkinnedMeshComp: Warning: GetBoneTransform : BoneIndex(59) out of range of MasterBoneMap for CharacterMesh1P
+[2025.11.08-14.06.49:829][ 98]LogCosmetics: Error: GetSelectedCosmeticFromItemId called with id: 0 was invalid!
+[2025.11.08-14.06.49:832][ 98]LogSkinnedMeshComp: Warning: GetSocketByName(A_GL_Main): No SkeletalMesh for Component(WeaponMesh3P) Actor(BP_Firearm_AKM_C_2147479697)
+[2025.11.08-14.06.49:832][ 98]LogSkinnedMeshComp: Warning: GetSocketByName(A_GL_Main): No SkeletalMesh for Component(WeaponMesh3P) Actor(BP_Firearm_AKM_C_2147479697)
+[2025.11.08-14.06.49:832][ 98]LogSkinnedMeshComp: Warning: GetSocketByName(A_GL_Main): No SkeletalMesh for Component(WeaponMesh3P) Actor(BP_Firearm_AKM_C_2147479697)
+[2025.11.08-14.06.49:907][103]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.06.50:157][118]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.06.50:423][134]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.06.50:674][149]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.06.50:940][165]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.06.51:204][181]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.06.51:469][197]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.06.51:736][213]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.06.51:987][228]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.06.52:242][243]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.06.52:410][253]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.06.52:493][258]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.06.52:759][274]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.06.53:008][289]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.06.53:272][305]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.06.53:523][320]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.06.53:790][336]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.06.54:041][351]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.06.54:307][367]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.06.54:573][383]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.06.54:841][399]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.06.55:095][414]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.06.55:346][429]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.06.55:599][444]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.06.55:853][459]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.06.56:103][474]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.06.56:354][489]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.06.56:608][504]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.06.56:860][519]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.06.57:111][534]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.06.57:373][550]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.06.57:426][553]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.06.57:628][565]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.06.57:892][581]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.06.58:145][596]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.06.58:396][611]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.06.58:646][626]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.06.58:896][641]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.06.59:148][656]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.06.59:399][671]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.06.59:651][686]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.06.59:902][701]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.00:154][716]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.00:407][731]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.00:659][746]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.00:912][761]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.01:177][777]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.01:427][792]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.01:691][808]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.01:943][823]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.02:193][838]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.02:411][851]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.07.02:444][853]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.02:697][868]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.02:947][883]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.03:211][899]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.03:461][914]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.03:715][929]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.03:981][945]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.04:246][961]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.04:511][977]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.04:779][993]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.05:045][  9]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.05:312][ 25]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.05:578][ 41]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.05:831][ 56]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.06:098][ 72]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.06:349][ 87]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.06:600][102]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.06:855][117]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.07:120][133]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.07:371][148]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.07:422][151]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.07.07:624][163]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.07:874][178]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.08:125][193]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.08:377][208]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.08:644][224]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.08:910][240]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.09:175][256]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.09:427][271]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.09:695][287]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.09:959][303]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.10:211][318]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.10:462][333]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.10:729][349]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.10:993][365]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.11:257][381]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.11:510][396]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.11:778][412]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.12:042][428]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.12:307][444]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.12:406][450]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.07.12:571][460]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.12:823][475]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.13:086][491]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.13:353][507]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.13:602][522]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.13:866][538]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.14:131][554]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.14:397][570]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.14:663][586]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.14:913][601]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.15:165][616]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.15:414][631]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.15:682][647]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.15:948][663]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.16:202][678]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.16:455][693]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.16:706][708]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.16:958][723]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.17:209][738]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.17:411][750]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.07.17:461][753]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.17:713][768]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.17:966][783]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.18:233][799]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.18:497][815]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.18:748][830]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.18:998][845]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.19:265][861]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.19:516][876]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.19:765][891]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.20:019][906]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.20:270][921]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.20:522][936]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.20:789][952]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.21:055][968]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.21:320][984]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.21:586][  0]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.21:851][ 16]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.22:105][ 31]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.22:371][ 47]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.22:422][ 50]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.07.22:637][ 63]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.22:905][ 79]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.23:156][ 94]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.23:407][109]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.23:657][124]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.23:910][139]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.24:175][155]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.24:442][171]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.24:705][187]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.24:955][202]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.25:207][217]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.25:472][233]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.25:737][249]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.25:987][264]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.26:237][279]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.26:491][294]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.26:741][309]LogGameMode: Display: [DoubleKillProtection] Removing PlayerState=Observer at Time=489.896
+[2025.11.08-14.07.26:741][309]LogGameMode: Display: [DoubleKillProtection] Registered kill: PlayerState=Suicide Bomber at Time=489.896
+[2025.11.08-14.07.26:741][309]LogHttpReplay: Warning: FHttpNetworkReplayStreamer::AddOrUpdateEvent. Not streaming.
+[2025.11.08-14.07.26:741][309]LogGameplayEvents: Display: ArmoredBear[76561198995742987, team 0] killed Suicide Bomber[INVALID, team 1] with BP_Firearm_PF940_C_2147479568
+[2025.11.08-14.07.26:741][309]LogEOSAntiCheat: Warning: LogPlayerDespawn: Invalid Controller
+[2025.11.08-14.07.26:758][310]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.27:011][325]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.27:262][340]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.27:415][349]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.07.27:513][355]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.27:764][370]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.28:016][385]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.28:271][400]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.28:521][415]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.28:773][430]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.29:027][445]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.29:293][461]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.29:542][476]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.29:810][492]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.30:060][507]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.30:311][522]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.30:579][538]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.30:830][553]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.31:081][568]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.31:344][584]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.31:610][600]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.31:710][606]LogAI: AIDebug: HipFire Behavior finished
+[2025.11.08-14.07.31:861][615]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.32:129][631]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.32:380][646]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.32:414][648]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.07.32:645][662]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.32:896][677]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.32:911][678]LogAI: AIDebug: ADS with Primary finished
+[2025.11.08-14.07.33:045][686]LogGameMode: Display: [DoubleKillProtection] Removing entry with INVALID PlayerState
+[2025.11.08-14.07.33:045][686]LogGameMode: Display: [DoubleKillProtection] Registered kill: PlayerState=ArmoredBear at Time=496.218
+[2025.11.08-14.07.33:045][686]LogHttpReplay: Warning: FHttpNetworkReplayStreamer::AddOrUpdateEvent. Not streaming.
+[2025.11.08-14.07.33:046][686]LogGameplayEvents: Display: Demolitions[INVALID, team 1] killed ArmoredBear[76561198995742987, team 0] with BP_Firearm_AKM_C_2147479697
+[2025.11.08-14.07.33:070][686]LogUObjectHash: Compacting FUObjectHashTables data took   4.03ms
+[2025.11.08-14.07.33:139][691]LogGameMode: Display: Round Over: Team 1 won (win reason: Elimination)
+[2025.11.08-14.07.33:139][691]LogGameplayEvents: Display: Round 1 Over: Team 1 won (win reason: Elimination)
+[2025.11.08-14.07.33:139][691]LogGameMode: Display: State: RoundActive -> RoundWon
+[2025.11.08-14.07.33:139][691]LogGameState: Match State Changed from RoundActive to RoundWon
+[2025.11.08-14.07.33:139][691]LogGameMode: Display: High priority async loading ENABLED
+[2025.11.08-14.07.33:140][691]LogGameMode: Display: Recorded match results for new round: Winner:1, Pre-Swap:1
+[2025.11.08-14.07.33:154][692]LogGameMode: Display: Adjusted bot quota. Bot quota adjustment no longer pending
+[2025.11.08-14.07.37:425][945]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.07.37:841][970]LogNet: UChannel::ReceivedSequencedBunch: Bunch.bClose == true. ChIndex == 0. Calling ConditionalCleanUp.
+[2025.11.08-14.07.37:841][970]LogNet: UChannel::CleanUp: ChIndex == 0. Closing connection. [UChannel] ChIndex: 0, Closing: 0 [UNetConnection] RemoteAddr: 127.0.0.1:51528, Name: IpConnection_2147482108, Driver: GameNetDriver IpNetDriver_2147482541, IsServer: YES, PC: INSPlayerController_2147482104, Owner: INSPlayerController_2147482104, UniqueId: SteamNWI:76561198995742987
+[2025.11.08-14.07.37:841][970]LogNet: UNetConnection::Close: [UNetConnection] RemoteAddr: 127.0.0.1:51528, Name: IpConnection_2147482108, Driver: GameNetDriver IpNetDriver_2147482541, IsServer: YES, PC: INSPlayerController_2147482104, Owner: INSPlayerController_2147482104, UniqueId: SteamNWI:76561198995742987, Channels: 334, Time: 2025.11.08-21.07.37
+[2025.11.08-14.07.37:841][970]LogNet: UChannel::Close: Sending CloseBunch. ChIndex == 0. Name: [UChannel] ChIndex: 0, Closing: 0 [UNetConnection] RemoteAddr: 127.0.0.1:51528, Name: IpConnection_2147482108, Driver: GameNetDriver IpNetDriver_2147482541, IsServer: YES, PC: INSPlayerController_2147482104, Owner: INSPlayerController_2147482104, UniqueId: SteamNWI:76561198995742987
+[2025.11.08-14.07.37:841][970]LogNet: Warning: UNetDriver::ProcessRemoteFunction: Remote function MulticastHideCharacter called from actor BP_Character_Player_C_2147481778 while actor is being destroyed. Function will not be processed.
+[2025.11.08-14.07.37:842][970]LogGameMode: Display: Removing Player from challenges
+[2025.11.08-14.07.37:842][970]LogOnline: Warning: OSS: AINSPlayerState::UpdateProductUserId: AccountEnvironmentType is Unknown
+[2025.11.08-14.07.37:843][970]LogEOSAntiCheat: Verbose: Unregister: NetComponent: Unregistering component...
+[2025.11.08-14.07.37:843][970]LogEOSAntiCheat: Display: ServerUnregisterClient: UserId (76561198995742987), Result: (EOS_Success)
+[2025.11.08-14.07.37:843][970]LogOnlineSession: Warning: STEAM (NWI): Player 76561198995742987 is not part of session (GameSession)
+[2025.11.08-14.07.37:843][970]LogOnline: Warning: OSS: No game present to leave for session (GameSession)
+[2025.11.08-14.07.38:147][988]LogGameMode: Display: State: RoundWon -> PostRound
+[2025.11.08-14.07.38:147][988]LogGameState: Match State Changed from RoundWon to PostRound
+[2025.11.08-14.07.38:147][988]LogSession: Display: AINSGameSession::HandleMatchPostRound
+[2025.11.08-14.07.39:839][ 88]LogGameMode: Display: Removing 1 players from challenges
+[2025.11.08-14.07.42:426][240]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.07.42:477][243]LogRcon: 127.0.0.1:54339 << say See you later, ArmoredBear!
+[2025.11.08-14.07.44:851][383]LogINSChallangesEventProcessor: Display: Removing user '6ece8fb6-4680-41f4-8e3d-b0a4b9f268d0'
+[2025.11.08-14.07.47:416][535]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.07.52:412][829]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.07.53:161][873]LogGameMode: Display: State: PostRound -> WaitingToStart
+[2025.11.08-14.07.53:161][873]LogGameState: Match State Changed from PostRound to WaitingToStart
+[2025.11.08-14.07.53:161][873]LogSession: Display: AINSGameSession::HandleMatchIsWaitingToStart
+[2025.11.08-14.07.53:161][873]LogAI: Warning: AI difficulty set to 0.5
+[2025.11.08-14.07.53:161][873]LogActor: Warning: SetReplicates called on non-initialized actor INSSoldier_2147479522. Directly setting bReplicates is the correct procedure for pre-init actors.
+[2025.11.08-14.07.53:162][873]LogGameState: Round reset. Authority:3
+[2025.11.08-14.07.53:174][873]LogActor: Warning: SetReplicates called on non-initialized actor INSSoldier_2147479519. Directly setting bReplicates is the correct procedure for pre-init actors.
+[2025.11.08-14.07.53:175][873]LogObjectives: Ownership of objective 'ODCheckpoint_A' changed from 0 to 1
+[2025.11.08-14.07.53:175][873]LogObjectives: Ownership of objective 'ODCheckpoint_B' changed from 0 to 1
+[2025.11.08-14.07.53:175][873]LogObjectives: Ownership of objective 'OCCheckpoint_C' changed from 0 to 1
+[2025.11.08-14.07.53:175][873]LogObjectives: Ownership of objective 'OCCheckpoint_D' changed from 1 to 1
+[2025.11.08-14.07.53:175][873]LogObjectives: Ownership of objective 'ODCheckpoint_E' changed from 1 to 1
+[2025.11.08-14.07.53:175][873]LogObjectives: Ownership of objective 'OCCheckpoint_F' changed from 1 to 1
+[2025.11.08-14.07.53:175][873]LogSpawning: Spawnzone 'SZCheckpointA_Team1' enabled for team 0
+[2025.11.08-14.07.53:175][873]LogGameMode: Warning: Trying to enable spawn zone 'SZCheckpointA_RA' but it has no player starts!
+[2025.11.08-14.07.53:175][873]LogSpawning: Spawnzone 'SZCheckpointD_Team1' disabled for team 0
+[2025.11.08-14.07.53:175][873]LogGameMode: Display: Advancing spawns for faction 255 to obj 0: 1 zones enabled (16 player starts), 1 disabled
+[2025.11.08-14.07.53:175][873]LogCosmetics: Error: GetSelectedCosmeticFromItemId called with id: 0 was invalid!
+[2025.11.08-14.07.53:176][873]LogCosmetics: Error: GetSelectedCosmeticFromItemId called with id: 0 was invalid!
+[2025.11.08-14.07.53:178][873]LogGameMode: Display: Ending active replay recording.
+[2025.11.08-14.07.53:178][873]LogDemo: StopDemo: No demo is playing
+[2025.11.08-14.07.53:178][873]LogNet: DestroyNamedNetDriver INSDemoNetDriver_2147481669 [DemoNetDriver]
+[2025.11.08-14.07.53:197][875]LogCosmetics: Error: GetSelectedCosmeticFromItemId called with id: 0 was invalid!
+[2025.11.08-14.07.53:219][876]LogAI: AIDebug: HipFire Behavior finished
+[2025.11.08-14.07.53:220][876]LogCosmetics: Error: GetSelectedCosmeticFromItemId called with id: 0 was invalid!
+[2025.11.08-14.07.53:222][876]LogSkinnedMeshComp: Warning: GetBoneTransform : BoneIndex(89) out of range of MasterBoneMap for WeaponMesh3P
+[2025.11.08-14.07.57:423][125]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.08.02:421][419]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.08.07:413][713]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.08.12:419][  6]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.08.17:424][300]LogRcon: 127.0.0.1:54339 << listplayers
+[2025.11.08-14.08.22:416][594]LogRcon: 127.0.0.1:54339 << listplayers
