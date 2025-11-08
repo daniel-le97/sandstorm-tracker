@@ -446,8 +446,41 @@ func parseKillerSection(killerSection string) []killer {
 func cleanWeaponName(weapon string) string {
 	weapon = strings.TrimSpace(weapon)
 	weapon = strings.TrimPrefix(weapon, "BP_")
+
+	// Remove numeric ID suffix first (e.g., "_2147480339")
+	// Find the last underscore followed by only digits
+	lastUnderscore := strings.LastIndex(weapon, "_")
+	if lastUnderscore != -1 {
+		// Check if everything after the last underscore is digits
+		potentialID := weapon[lastUnderscore+1:]
+		isNumeric := true
+		for _, ch := range potentialID {
+			if ch < '0' || ch > '9' {
+				isNumeric = false
+				break
+			}
+		}
+		if isNumeric && len(potentialID) > 0 {
+			weapon = weapon[:lastUnderscore]
+		}
+	}
+
+	// Now remove _C suffix
 	weapon = strings.TrimSuffix(weapon, "_C")
+
+	// Remove common prefixes like "Firearm_", "Weapon_", "Melee_", "Projectile_"
+	weapon = strings.TrimPrefix(weapon, "Firearm_")
+	weapon = strings.TrimPrefix(weapon, "Weapon_")
+	weapon = strings.TrimPrefix(weapon, "Melee_")
+	weapon = strings.TrimPrefix(weapon, "Projectile_")
+
 	weapon = strings.ReplaceAll(weapon, "_", " ")
+
+	// Standardize ODCheckpoint variants (ODCheckpoint A, ODCheckpoint B -> ODCheckpoint)
+	if strings.HasPrefix(weapon, "ODCheckpoint ") {
+		weapon = "ODCheckpoint"
+	}
+
 	return weapon
 }
 
