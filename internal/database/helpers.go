@@ -18,6 +18,7 @@ type Match struct {
 	StartTime  *time.Time
 	EndTime    *time.Time
 	Mode       string
+	PlayerTeam *string
 	UpdatedAt  *time.Time
 }
 
@@ -80,7 +81,7 @@ func GetActiveMatch(ctx context.Context, pbApp core.App, serverID string) (*Matc
 }
 
 // CreateMatch creates a new match record
-func CreateMatch(ctx context.Context, pbApp core.App, serverID string, mapName, mode *string, startTime *time.Time) (*Match, error) {
+func CreateMatch(ctx context.Context, pbApp core.App, serverID string, mapName, mode *string, startTime *time.Time, playerTeam ...*string) (*Match, error) {
 	// Find server record
 	serverRecord, err := pbApp.FindFirstRecordByFilter(
 		"servers",
@@ -109,6 +110,9 @@ func CreateMatch(ctx context.Context, pbApp core.App, serverID string, mapName, 
 	if startTime != nil {
 		record.Set("start_time", startTime.Format(time.RFC3339))
 	}
+	if len(playerTeam) > 0 && playerTeam[0] != nil {
+		record.Set("player_team", *playerTeam[0])
+	}
 
 	if err := pbApp.Save(record); err != nil {
 		return nil, err
@@ -125,6 +129,9 @@ func CreateMatch(ctx context.Context, pbApp core.App, serverID string, mapName, 
 	}
 	if startTime != nil {
 		match.StartTime = startTime
+	}
+	if len(playerTeam) > 0 && playerTeam[0] != nil {
+		match.PlayerTeam = playerTeam[0]
 	}
 
 	return match, nil

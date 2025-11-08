@@ -103,6 +103,20 @@ func init() {
 					"type": "text"
 				},
 				{
+					"autogeneratePattern": "",
+					"hidden": false,
+					"id": "text1727723052",
+					"max": 0,
+					"min": 0,
+					"name": "player_team",
+					"pattern": "",
+					"presentable": false,
+					"primaryKey": false,
+					"required": false,
+					"system": false,
+					"type": "text"
+				},
+				{
 					"hidden": false,
 					"id": "autodate2990389176",
 					"name": "created",

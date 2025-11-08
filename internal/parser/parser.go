@@ -334,6 +334,16 @@ func (p *LogParser) tryProcessMapLoad(ctx context.Context, line string, timestam
 	// maxPlayers := strings.TrimSpace(matches[4])
 	// lighting := strings.TrimSpace(matches[5])
 
+	// Extract player team from scenario (e.g., "Scenario_Ministry_Checkpoint_Security" -> "Security")
+	var playerTeam *string
+	if strings.Contains(scenario, "_Security") {
+		team := "Security"
+		playerTeam = &team
+	} else if strings.Contains(scenario, "_Insurgents") {
+		team := "Insurgents"
+		playerTeam = &team
+	}
+
 	log.Printf("Map load detected: %s (scenario: %s) on server %s", mapName, scenario, serverID)
 
 	// Check if there's an active match that never ended (server crash or restart)
@@ -376,8 +386,11 @@ func (p *LogParser) tryProcessMapLoad(ctx context.Context, line string, timestam
 		}
 	}
 
-	// TODO: Create new match record here when match tracking is fully implemented
-	// For now, we're just cleaning up stale matches
+	// Create new match record
+	_, err = database.CreateMatch(ctx, p.pbApp, serverID, &mapName, &scenario, &timestamp, playerTeam)
+	if err != nil {
+		log.Printf("Failed to create match for map %s on server %s: %v", mapName, serverID, err)
+	}
 
 	return true
 }
