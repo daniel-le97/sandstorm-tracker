@@ -166,28 +166,61 @@ func (p *Plugin) registerCommands(rootCmd *cobra.Command) {
 				return fmt.Errorf("failed to check running processes: %w", err)
 			}
 
-			if len(procs) == 0 {
+			// Load SAW configs to check for stale PID files
+			configs, _ := p.LoadSAWConfigs(sawPath)
+
+			// Check for stale PID files
+			var stalePIDs []string
+			for sid := range configs {
+				if pid, err := p.loadPIDFile(sid); err == nil {
+					// PID file exists, check if process is running
+					isRunning := false
+					for _, proc := range procs {
+						if proc.Pid == pid {
+							isRunning = true
+							break
+						}
+					}
+					if !isRunning {
+						stalePIDs = append(stalePIDs, fmt.Sprintf("%s (PID: %d)", sid, pid))
+					}
+				}
+			}
+
+			if len(procs) == 0 && len(stalePIDs) == 0 {
 				fmt.Println("No Insurgency server processes are currently running")
 				return nil
 			}
 
-			fmt.Printf("Running Insurgency Server Processes (%d):\n", len(procs))
-			fmt.Println(strings.Repeat("-", 50))
+			if len(procs) > 0 {
+				fmt.Printf("Running Insurgency Server Processes (%d):\n", len(procs))
+				fmt.Println(strings.Repeat("-", 50))
 
-			// Load SAW configs to map PIDs to server IDs
-			configs, _ := p.LoadSAWConfigs(sawPath)
-
-			for _, proc := range procs {
-				serverID := ""
-				// Try to find which server this PID belongs to
-				for sid := range configs {
-					if pid, err := p.loadPIDFile(sid); err == nil && pid == proc.Pid {
-						serverID = fmt.Sprintf(" (Server: %s)", sid)
-						break
+				for _, proc := range procs {
+					serverID := ""
+					// Try to find which server this PID belongs to
+					for sid := range configs {
+						if pid, err := p.loadPIDFile(sid); err == nil && pid == proc.Pid {
+							serverID = fmt.Sprintf(" (Server: %s)", sid)
+							break
+						}
 					}
+					fmt.Printf("PID %-8d %s%s\n", proc.Pid, proc.Name, serverID)
 				}
-				fmt.Printf("PID %-8d %s%s\n", proc.Pid, proc.Name, serverID)
 			}
+
+			if len(stalePIDs) > 0 {
+				if len(procs) > 0 {
+					fmt.Println()
+				}
+				fmt.Printf("⚠️  Stale PID Files Detected (%d):\n", len(stalePIDs))
+				fmt.Println(strings.Repeat("-", 50))
+				for _, stale := range stalePIDs {
+					fmt.Printf("  %s\n", stale)
+				}
+				fmt.Println("\nRun 'server stop-all' to clean up stale PID files")
+			}
+
 			return nil
 		},
 	}
@@ -307,11 +340,24 @@ func (p *Plugin) registerCommands(rootCmd *cobra.Command) {
 			fmt.Printf("Stopping all servers...\n")
 			successCount := 0
 			failCount := 0
+			staleCount := 0
 
 			for serverID := range configs {
 				// Check if PID file exists (server might not be running)
-				if _, err := p.loadPIDFile(serverID); err != nil {
+				pid, err := p.loadPIDFile(serverID)
+				if err != nil {
 					// No PID file, skip
+					continue
+				}
+
+				// Check if the process is actually running
+				if !p.isProcessRunning(pid) {
+					// Clean up stale PID file
+					p.app.Logger().Info("Cleaning up stale PID file", "serverID", serverID, "pid", pid)
+					if err := p.removePIDFile(serverID); err != nil {
+						p.app.Logger().Warn("Failed to remove stale PID file", "error", err)
+					}
+					staleCount++
 					continue
 				}
 
@@ -325,6 +371,9 @@ func (p *Plugin) registerCommands(rootCmd *cobra.Command) {
 				}
 			}
 
+			if staleCount > 0 {
+				fmt.Printf("Cleaned up %d stale PID file(s)\n", staleCount)
+			}
 			fmt.Printf("\nStopped %d server(s) successfully\n", successCount)
 			if failCount > 0 {
 				return fmt.Errorf("%d server(s) failed to stop", failCount)
@@ -372,7 +421,21 @@ func (p *Plugin) registerCommands(rootCmd *cobra.Command) {
 				return fmt.Errorf("SAW path not provided. Use --saw-path flag or set sawPath in config")
 			}
 
+			force, _ := cmd.Flags().GetBool("force")
 			validate, _ := cmd.Flags().GetBool("validate")
+
+			// Check if any servers are running
+			procs, err := p.getRunningServerProcesses()
+			if err == nil && len(procs) > 0 && !force {
+				fmt.Printf("\n⚠️  WARNING: %d server process(es) are currently running!\n", len(procs))
+				fmt.Println("Updating game files while servers are running can cause:")
+				fmt.Println("  - Server crashes")
+				fmt.Println("  - Data corruption")
+				fmt.Println("  - Player disconnects")
+				fmt.Println("\nPlease stop all servers first using: server stop-all")
+				fmt.Println("Or use --force to update anyway (not recommended)")
+				return fmt.Errorf("servers are running - stop them first or use --force")
+			}
 
 			fmt.Println("Updating Insurgency: Sandstorm server...")
 			if validate {
@@ -389,6 +452,7 @@ func (p *Plugin) registerCommands(rootCmd *cobra.Command) {
 	}
 	updateGameCmd.Flags().String("saw-path", "", "Path to Sandstorm Admin Wrapper installation")
 	updateGameCmd.Flags().Bool("validate", false, "Validate all server files (slower but more thorough)")
+	updateGameCmd.Flags().Bool("force", false, "Force update even if servers are running (not recommended)")
 
 	serverCmd.AddCommand(startCmd, stopCmd, statusCmd, listCmd, startAllCmd, stopAllCmd, updateSteamCmdCmd, updateGameCmd)
 	rootCmd.AddCommand(serverCmd)
@@ -572,10 +636,37 @@ func (p *Plugin) removePIDFile(serverID string) error {
 	return nil
 }
 
+// isProcessRunning checks if a process with the given PID is currently running
+func (p *Plugin) isProcessRunning(pid int) bool {
+	// Use PowerShell to check if the process exists
+	psCmd := fmt.Sprintf("Get-Process -Id %d -ErrorAction SilentlyContinue | Select-Object Id", pid)
+	cmd := exec.Command("powershell", "-Command", psCmd)
+	output, err := cmd.Output()
+	if err != nil {
+		return false
+	}
+
+	// If output is not empty (besides whitespace), process exists
+	return len(strings.TrimSpace(string(output))) > 0
+}
+
 // StartServer starts an Insurgency server
 func (p *Plugin) StartServer(serverID string, config SAWServerConfig, sawPath string, showLogs bool) error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
+
+	// Check for stale PID file and clean it up
+	if pid, err := p.loadPIDFile(serverID); err == nil {
+		if !p.isProcessRunning(pid) {
+			p.app.Logger().Info("Cleaning up stale PID file before starting", "serverID", serverID, "pid", pid)
+			if err := p.removePIDFile(serverID); err != nil {
+				p.app.Logger().Warn("Failed to remove stale PID file", "error", err)
+			}
+		} else {
+			// Process is actually running
+			return fmt.Errorf("server %s is already running (PID: %d)", serverID, pid)
+		}
+	}
 
 	if server, exists := p.servers[serverID]; exists && server.IsRunning {
 		return fmt.Errorf("server %s is already running", serverID)
@@ -765,7 +856,17 @@ func (p *Plugin) StopServer(serverID string, sawPath string) error {
 	// First try to get PID from file
 	pid, err := p.loadPIDFile(serverID)
 	if err == nil {
-		// PID file exists, try to kill that process
+		// Check if the process is actually running
+		if !p.isProcessRunning(pid) {
+			p.app.Logger().Info("Process not running, cleaning up stale PID file", "serverID", serverID, "pid", pid)
+			// Remove stale PID file
+			if err := p.removePIDFile(serverID); err != nil {
+				p.app.Logger().Warn("Failed to remove stale PID file", "error", err)
+			}
+			return fmt.Errorf("server %s is not running (stale PID file cleaned up)", serverID)
+		}
+
+		// PID file exists and process is running, kill it
 		p.app.Logger().Info("Stopping server via PID file", "serverID", serverID, "pid", pid)
 
 		// Use PowerShell to kill the process
