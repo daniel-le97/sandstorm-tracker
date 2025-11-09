@@ -181,7 +181,7 @@ func (p *Plugin) registerCommands(rootCmd *cobra.Command) {
 				serverID := ""
 				// Try to find which server this PID belongs to
 				for sid := range configs {
-					if pid, err := p.loadPIDFile(sid, sawPath); err == nil && pid == proc.Pid {
+					if pid, err := p.loadPIDFile(sid); err == nil && pid == proc.Pid {
 						serverID = fmt.Sprintf(" (Server: %s)", sid)
 						break
 					}
@@ -234,7 +234,163 @@ func (p *Plugin) registerCommands(rootCmd *cobra.Command) {
 	}
 	listCmd.Flags().String("saw-path", "", "Path to Sandstorm Admin Wrapper installation")
 
-	serverCmd.AddCommand(startCmd, stopCmd, statusCmd, listCmd)
+	// server start-all command
+	startAllCmd := &cobra.Command{
+		Use:   "start-all",
+		Short: "Start all servers from SAW configuration",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			sawPath, _ := cmd.Flags().GetString("saw-path")
+			if sawPath == "" {
+				sawPath = p.config.DefaultSAWPath
+			}
+			if sawPath == "" {
+				return fmt.Errorf("SAW path not provided. Use --saw-path flag or set sawPath in config")
+			}
+
+			configs, err := p.LoadSAWConfigs(sawPath)
+			if err != nil {
+				return fmt.Errorf("failed to load SAW configs: %w", err)
+			}
+
+			if len(configs) == 0 {
+				fmt.Println("No servers found in SAW configuration")
+				return nil
+			}
+
+			fmt.Printf("Starting %d server(s)...\n", len(configs))
+			successCount := 0
+			failCount := 0
+
+			for serverID, serverConfig := range configs {
+				fmt.Printf("  Starting %s (%s)... ", serverID, serverConfig.ServerHostname)
+				if err := p.StartServer(serverID, serverConfig, sawPath, false); err != nil {
+					fmt.Printf("FAILED: %v\n", err)
+					failCount++
+				} else {
+					fmt.Println("OK")
+					successCount++
+				}
+			}
+
+			fmt.Printf("\nStarted %d/%d servers successfully\n", successCount, len(configs))
+			if failCount > 0 {
+				return fmt.Errorf("%d server(s) failed to start", failCount)
+			}
+			return nil
+		},
+	}
+	startAllCmd.Flags().String("saw-path", "", "Path to Sandstorm Admin Wrapper installation")
+
+	// server stop-all command
+	stopAllCmd := &cobra.Command{
+		Use:   "stop-all",
+		Short: "Stop all running Insurgency servers",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			sawPath, _ := cmd.Flags().GetString("saw-path")
+			if sawPath == "" {
+				sawPath = p.config.DefaultSAWPath
+			}
+			if sawPath == "" {
+				return fmt.Errorf("SAW path not provided. Use --saw-path flag or set sawPath in config")
+			}
+
+			configs, err := p.LoadSAWConfigs(sawPath)
+			if err != nil {
+				return fmt.Errorf("failed to load SAW configs: %w", err)
+			}
+
+			if len(configs) == 0 {
+				fmt.Println("No servers found in SAW configuration")
+				return nil
+			}
+
+			fmt.Printf("Stopping all servers...\n")
+			successCount := 0
+			failCount := 0
+
+			for serverID := range configs {
+				// Check if PID file exists (server might not be running)
+				if _, err := p.loadPIDFile(serverID); err != nil {
+					// No PID file, skip
+					continue
+				}
+
+				fmt.Printf("  Stopping %s... ", serverID)
+				if err := p.StopServer(serverID, sawPath); err != nil {
+					fmt.Printf("FAILED: %v\n", err)
+					failCount++
+				} else {
+					fmt.Println("OK")
+					successCount++
+				}
+			}
+
+			fmt.Printf("\nStopped %d server(s) successfully\n", successCount)
+			if failCount > 0 {
+				return fmt.Errorf("%d server(s) failed to stop", failCount)
+			}
+			return nil
+		},
+	}
+	stopAllCmd.Flags().String("saw-path", "", "Path to Sandstorm Admin Wrapper installation")
+
+	// server update-steamcmd command
+	updateSteamCmdCmd := &cobra.Command{
+		Use:   "update-steamcmd",
+		Short: "Update SteamCMD to the latest version",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			sawPath, _ := cmd.Flags().GetString("saw-path")
+			if sawPath == "" {
+				sawPath = p.config.DefaultSAWPath
+			}
+			if sawPath == "" {
+				return fmt.Errorf("SAW path not provided. Use --saw-path flag or set sawPath in config")
+			}
+
+			fmt.Println("Updating SteamCMD...")
+			if err := p.UpdateSteamCMD(sawPath); err != nil {
+				return fmt.Errorf("failed to update SteamCMD: %w", err)
+			}
+
+			fmt.Println("SteamCMD updated successfully!")
+			return nil
+		},
+	}
+	updateSteamCmdCmd.Flags().String("saw-path", "", "Path to Sandstorm Admin Wrapper installation")
+
+	// server update-game command
+	updateGameCmd := &cobra.Command{
+		Use:   "update-game",
+		Short: "Update Insurgency: Sandstorm server to the latest version",
+		Long:  "Update the Insurgency: Sandstorm dedicated server using SteamCMD. This will validate and update all server files.",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			sawPath, _ := cmd.Flags().GetString("saw-path")
+			if sawPath == "" {
+				sawPath = p.config.DefaultSAWPath
+			}
+			if sawPath == "" {
+				return fmt.Errorf("SAW path not provided. Use --saw-path flag or set sawPath in config")
+			}
+
+			validate, _ := cmd.Flags().GetBool("validate")
+
+			fmt.Println("Updating Insurgency: Sandstorm server...")
+			if validate {
+				fmt.Println("(This will validate all files - may take longer)")
+			}
+
+			if err := p.UpdateInsurgencyServer(sawPath, validate); err != nil {
+				return fmt.Errorf("failed to update server: %w", err)
+			}
+
+			fmt.Println("Insurgency: Sandstorm server updated successfully!")
+			return nil
+		},
+	}
+	updateGameCmd.Flags().String("saw-path", "", "Path to Sandstorm Admin Wrapper installation")
+	updateGameCmd.Flags().Bool("validate", false, "Validate all server files (slower but more thorough)")
+
+	serverCmd.AddCommand(startCmd, stopCmd, statusCmd, listCmd, startAllCmd, stopAllCmd, updateSteamCmdCmd, updateGameCmd)
 	rootCmd.AddCommand(serverCmd)
 }
 
@@ -377,20 +533,23 @@ func (p *Plugin) LoadSAWConfigs(sawPath string) (map[string]SAWServerConfig, err
 }
 
 // getPIDFilePath returns the path to the PID file for a server
-func (p *Plugin) getPIDFilePath(serverID, sawPath string) string {
-	return filepath.Join(sawPath, "log", fmt.Sprintf("%s.pid", serverID))
+// PID files are stored in ./data directory next to the executable
+func (p *Plugin) getPIDFilePath(serverID string) string {
+	dataDir := "data"
+	os.MkdirAll(dataDir, 0755)
+	return filepath.Join(dataDir, fmt.Sprintf("%s.pid", serverID))
 }
 
 // savePIDFile saves the server's PID to a file
-func (p *Plugin) savePIDFile(serverID string, pid int, sawPath string) error {
-	pidFile := p.getPIDFilePath(serverID, sawPath)
+func (p *Plugin) savePIDFile(serverID string, pid int) error {
+	pidFile := p.getPIDFilePath(serverID)
 	pidData := fmt.Sprintf("%d", pid)
 	return os.WriteFile(pidFile, []byte(pidData), 0644)
 }
 
 // loadPIDFile loads the server's PID from a file
-func (p *Plugin) loadPIDFile(serverID, sawPath string) (int, error) {
-	pidFile := p.getPIDFilePath(serverID, sawPath)
+func (p *Plugin) loadPIDFile(serverID string) (int, error) {
+	pidFile := p.getPIDFilePath(serverID)
 	data, err := os.ReadFile(pidFile)
 	if err != nil {
 		return 0, err
@@ -405,8 +564,8 @@ func (p *Plugin) loadPIDFile(serverID, sawPath string) (int, error) {
 }
 
 // removePIDFile removes the PID file for a server
-func (p *Plugin) removePIDFile(serverID, sawPath string) error {
-	pidFile := p.getPIDFilePath(serverID, sawPath)
+func (p *Plugin) removePIDFile(serverID string) error {
+	pidFile := p.getPIDFilePath(serverID)
 	if err := os.Remove(pidFile); err != nil && !os.IsNotExist(err) {
 		return err
 	}
@@ -552,7 +711,7 @@ func (p *Plugin) StartServer(serverID string, config SAWServerConfig, sawPath st
 			p.app.Logger().Warn("Failed to parse server PID", "output", pidStr)
 		} else {
 			// Save PID to file for tracking
-			if err := p.savePIDFile(serverID, pid, sawPath); err != nil {
+			if err := p.savePIDFile(serverID, pid); err != nil {
 				p.app.Logger().Warn("Failed to save PID file", "error", err)
 			}
 		}
@@ -604,7 +763,7 @@ func (p *Plugin) monitorServer(serverID string, cmd *exec.Cmd) {
 // StopServer stops a running server
 func (p *Plugin) StopServer(serverID string, sawPath string) error {
 	// First try to get PID from file
-	pid, err := p.loadPIDFile(serverID, sawPath)
+	pid, err := p.loadPIDFile(serverID)
 	if err == nil {
 		// PID file exists, try to kill that process
 		p.app.Logger().Info("Stopping server via PID file", "serverID", serverID, "pid", pid)
@@ -617,7 +776,7 @@ func (p *Plugin) StopServer(serverID string, sawPath string) error {
 		}
 
 		// Remove PID file
-		if err := p.removePIDFile(serverID, sawPath); err != nil {
+		if err := p.removePIDFile(serverID); err != nil {
 			p.app.Logger().Warn("Failed to remove PID file", "error", err)
 		}
 
@@ -828,4 +987,81 @@ func (p *Plugin) getRunningServerProcesses() ([]ProcessInfo, error) {
 	}
 
 	return procs, nil
+}
+
+// UpdateSteamCMD updates SteamCMD to the latest version
+func (p *Plugin) UpdateSteamCMD(sawPath string) error {
+	sawPath = strings.ReplaceAll(sawPath, "\\", "/")
+	steamCmdPath := filepath.Join(sawPath, "steamcmd", "installation", "steamcmd.exe")
+
+	if _, err := os.Stat(steamCmdPath); os.IsNotExist(err) {
+		return fmt.Errorf("steamcmd.exe not found at: %s", steamCmdPath)
+	}
+
+	p.app.Logger().Info("Updating SteamCMD", "path", steamCmdPath)
+
+	// Run steamcmd with +quit to update itself
+	cmd := exec.Command(steamCmdPath, "+quit")
+	cmd.Dir = filepath.Dir(steamCmdPath)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("steamcmd update failed: %w", err)
+	}
+
+	p.app.Logger().Info("SteamCMD updated successfully")
+	return nil
+}
+
+// UpdateInsurgencyServer updates the Insurgency: Sandstorm dedicated server
+func (p *Plugin) UpdateInsurgencyServer(sawPath string, validate bool) error {
+	sawPath = strings.ReplaceAll(sawPath, "\\", "/")
+	steamCmdPath := filepath.Join(sawPath, "steamcmd", "installation", "steamcmd.exe")
+	serverPath := filepath.Join(sawPath, "sandstorm-server")
+
+	if _, err := os.Stat(steamCmdPath); os.IsNotExist(err) {
+		return fmt.Errorf("steamcmd.exe not found at: %s", steamCmdPath)
+	}
+
+	// Ensure server directory exists
+	if err := os.MkdirAll(serverPath, 0755); err != nil {
+		return fmt.Errorf("failed to create server directory: %w", err)
+	}
+
+	p.app.Logger().Info("Updating Insurgency: Sandstorm server",
+		"steamcmd", steamCmdPath,
+		"serverPath", serverPath,
+		"validate", validate,
+	)
+
+	// SteamCMD command to update Insurgency: Sandstorm dedicated server
+	// App ID: 581330 (Insurgency: Sandstorm Dedicated Server)
+	args := []string{
+		"+force_install_dir", serverPath,
+		"+login", "anonymous",
+		"+app_update", "581330",
+	}
+
+	if validate {
+		args = append(args, "validate")
+	}
+
+	args = append(args, "+quit")
+
+	cmd := exec.Command(steamCmdPath, args...)
+	cmd.Dir = filepath.Dir(steamCmdPath)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	fmt.Println("\nDownloading/Updating server files...")
+	fmt.Println("This may take several minutes depending on your connection speed.")
+	fmt.Println(strings.Repeat("-", 80))
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("server update failed: %w", err)
+	}
+
+	p.app.Logger().Info("Insurgency: Sandstorm server updated successfully")
+	return nil
 }
