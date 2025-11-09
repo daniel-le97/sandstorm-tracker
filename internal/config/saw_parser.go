@@ -24,7 +24,7 @@ type SAWServerConfig struct {
 // sawPath should be the root directory of the SAW installation
 func LoadFromSAW(sawPath string) (*Config, error) {
 	// Read server-configs.json
-	configPath := filepath.Join(sawPath, "admin-interface", "config", "server-configs.json")
+	configPath := filepath.Join(sawPath, "admin-interface", "configs", "server-configs.json")
 	data, err := os.ReadFile(configPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read SAW config at %s: %w", configPath, err)

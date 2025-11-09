@@ -36,3 +36,7 @@ tasks:
     desc: Remove pb_data directory to reset database
     cmds:
       - powershell -Command "if (Test-Path pb_data) { Remove-Item -Recurse -Force pb_data; Write-Host 'pb_data removed' } else { Write-Host 'pb_data does not exist' }"
+  kill-server:
+    desc: Kill all running Insurgency server processes (not the game client)
+    cmds:
+      - powershell -Command "Get-Process -Name '*InsurgencyServer*' -ErrorAction SilentlyContinue | Stop-Process -Force; Write-Host 'Killed all Insurgency server processes'"

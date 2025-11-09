@@ -50,6 +50,9 @@ func New() (*App, error) {
 	// Initialize RCON pool (servers added in onServe)
 	app.RconPool = rcon.NewClientPool(app.PocketBase.Logger())
 
+	// Set up chat command handler (needs RCON pool)
+	app.Parser.SetChatHandler(app)
+
 	// Initialize A2S pool (servers added in onServe)
 	app.A2SPool = a2s.NewServerPool()
 

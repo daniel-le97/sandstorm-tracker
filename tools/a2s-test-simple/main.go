@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"net"
+	"os"
 	"time"
 )
 
@@ -18,20 +19,31 @@ const (
 func main() {
 	address := "127.0.0.1:27131"
 
+	// Allow address to be specified via command line
+	if len(os.Args) > 1 {
+		address = os.Args[1]
+	}
+
 	fmt.Println("Testing A2S Player Query Variations for Insurgency: Sandstorm")
-	fmt.Println("=============================================================\n")
+	fmt.Printf("Server: %s\n", address)
+	fmt.Println("=============================================================")
+	fmt.Println()
 
 	// Test 1: Standard A2S with challenge
 	fmt.Println("Test 1: Standard A2S protocol with challenge request")
 	testWithChallenge(address)
 
-	fmt.Println("\n" + string(make([]byte, 70)) + "\n")
+	fmt.Println()
+	fmt.Println(string(make([]byte, 70)))
+	fmt.Println()
 
 	// Test 2: Direct query without challenge (some games accept this)
 	fmt.Println("Test 2: Direct player query (no challenge)")
 	testWithoutChallenge(address)
 
-	fmt.Println("\n" + string(make([]byte, 70)) + "\n")
+	fmt.Println()
+	fmt.Println(string(make([]byte, 70)))
+	fmt.Println()
 
 	// Test 3: Query with -1 challenge directly
 	fmt.Println("Test 3: Player query with -1 challenge (no challenge request)")
@@ -201,6 +213,7 @@ func testWithMinusOne(address string) {
 
 	if responseType == S2A_PLAYER {
 		fmt.Println("✅ Success! Got player data with -1 challenge")
+		fmt.Printf("  Response size: %d bytes (6 bytes = header only, >6 = has players)\n", n)
 		parsePlayers(reader)
 	} else if responseType == S2A_CHALLENGE {
 		fmt.Println("⚠️  Server sent challenge (try Test 1 instead)")
@@ -216,11 +229,23 @@ func parsePlayers(reader *bytes.Reader) {
 		return
 	}
 
-	fmt.Printf("  Player count: %d\n", playerCount)
+	fmt.Printf("  Player count (reported): %d\n", playerCount)
+	fmt.Printf("  Remaining buffer: %d bytes\n", reader.Len())
 
-	for i := byte(0); i < playerCount && i < 10; i++ {
+	if reader.Len() == 0 {
+		fmt.Println("  ℹ️  No player data in response (server is empty)")
+		return
+	}
+
+	// NOTE: Insurgency may report 0 for player count even when data follows
+	// So we iterate until buffer is empty rather than trusting the count
+	fmt.Println("  📋 Players found:")
+	actualCount := 0
+	for reader.Len() > 0 && actualCount < 100 {
 		var index byte
-		binary.Read(reader, binary.LittleEndian, &index)
+		if err := binary.Read(reader, binary.LittleEndian, &index); err != nil {
+			break
+		}
 
 		// Read null-terminated string
 		nameBytes := []byte{}
@@ -234,16 +259,24 @@ func parsePlayers(reader *bytes.Reader) {
 		name := string(nameBytes)
 
 		var score int32
-		binary.Read(reader, binary.LittleEndian, &score)
+		if err := binary.Read(reader, binary.LittleEndian, &score); err != nil {
+			break
+		}
 
 		var duration float32
-		binary.Read(reader, binary.LittleEndian, &duration)
+		if err := binary.Read(reader, binary.LittleEndian, &duration); err != nil {
+			break
+		}
 
-		fmt.Printf("  [%d] %s - Score: %d, Time: %.1fs\n", index, name, score, duration)
+		fmt.Printf("     [%d] %s - Score: %d, Time: %.1fs\n", index, name, score, duration)
+		actualCount++
 	}
 
-	if playerCount > 10 {
-		fmt.Printf("  ... and %d more players\n", playerCount-10)
+	if actualCount > 0 {
+		fmt.Printf("  ✅ Successfully parsed %d players\n", actualCount)
+		if actualCount != int(playerCount) {
+			fmt.Printf("  ⚠️  INSURGENCY BUG: reported count=%d, actual=%d (this is why we iterate!)\n", playerCount, actualCount)
+		}
 	}
 }
 

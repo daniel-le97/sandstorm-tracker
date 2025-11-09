@@ -4,6 +4,7 @@
 [JOIN] [2025.10.04-21.27.56:889][490]LogEOSAntiCheat: Display: ServerRegisterClient: Client: (76561198007416544) Result: (EOS_Success)
 [JOIN] [2025.10.04-21.27.56:890][490]LogNet: Join succeeded: *OSS*0rigin
 [CHAT_CMD] [2025.10.04-21.28.22:312][561]LogChat: Display: *OSS*0rigin(76561198007416544) Global Chat: !maplist
+[CHAT_CMD] [2025.10.04-21.28.26:594][ 75]LogChat: Display: -=312th=- Rabbit(76561198262186571) Global Chat: !maplist
 [JOIN] [2025.10.04-21.28.57:676][662]LogEOSAntiCheat: Display: ServerRegisterClient: Client: (76561198047711504) Result: (EOS_Success)
 [JOIN] [2025.10.04-21.28.57:676][662]LogNet: Join succeeded: Blue
 [KILL] [2025.10.04-21.29.24:398][699]LogGameplayEvents: Display: *OSS*0rigin[76561198007416544, team 0] killed Rifleman[INVALID, team 1] with BP_Firearm_M4A1_C_2147480587

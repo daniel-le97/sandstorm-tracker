@@ -65,7 +65,7 @@ func Load() (*Config, error) {
 		return nil, err
 	}
 
-	// If SAW path is provided, load from SAW instead of manual config
+	// If SAW path is provided, load from SAW and merge with manual config
 	if config.SAWPath != "" {
 		sawConfig, err := LoadFromSAW(config.SAWPath)
 		if err != nil {
@@ -73,6 +73,13 @@ func Load() (*Config, error) {
 		}
 		// Preserve logging config from file
 		sawConfig.Logging = config.Logging
+		sawConfig.SAWPath = config.SAWPath
+
+		// Merge manual servers - they override SAW-discovered servers by name
+		if len(config.Servers) > 0 {
+			sawConfig.Servers = mergeServerConfigs(sawConfig.Servers, config.Servers)
+		}
+
 		return sawConfig, nil
 	}
 
@@ -181,6 +188,58 @@ func (c *Config) EnsureServersInDatabase(pbApp core.App, getServerID func(string
 	}
 
 	return nil
+}
+
+// mergeServerConfigs merges manual server configs into SAW-discovered configs
+// Manual configs override SAW configs by name, or can disable servers with enabled:false
+func mergeServerConfigs(sawServers []ServerConfig, manualServers []ServerConfig) []ServerConfig {
+	// Build map of manual configs by name
+	manualMap := make(map[string]ServerConfig)
+	for _, srv := range manualServers {
+		manualMap[srv.Name] = srv
+	}
+
+	// Merge: for each SAW server, check if there's a manual override
+	result := make([]ServerConfig, 0, len(sawServers))
+	for _, sawSrv := range sawServers {
+		if manualSrv, exists := manualMap[sawSrv.Name]; exists {
+			// Manual config exists - merge it (manual values override SAW values)
+			merged := sawSrv // Start with SAW config
+
+			// Override with manual values if they're set (non-zero)
+			if manualSrv.LogPath != "" {
+				merged.LogPath = manualSrv.LogPath
+			}
+			if manualSrv.RconAddress != "" {
+				merged.RconAddress = manualSrv.RconAddress
+			}
+			if manualSrv.RconPassword != "" {
+				merged.RconPassword = manualSrv.RconPassword
+			}
+			if manualSrv.RconTimeout > 0 {
+				merged.RconTimeout = manualSrv.RconTimeout
+			}
+			if manualSrv.QueryAddress != "" {
+				merged.QueryAddress = manualSrv.QueryAddress
+			}
+
+			// Enabled is always taken from manual config (allows disabling)
+			merged.Enabled = manualSrv.Enabled
+
+			result = append(result, merged)
+			delete(manualMap, sawSrv.Name) // Mark as processed
+		} else {
+			// No manual override - use SAW config as-is
+			result = append(result, sawSrv)
+		}
+	}
+
+	// Add any manual servers that weren't in SAW config
+	for _, manualSrv := range manualMap {
+		result = append(result, manualSrv)
+	}
+
+	return result
 }
 
 // GenerateExample writes an example config file to the specified path

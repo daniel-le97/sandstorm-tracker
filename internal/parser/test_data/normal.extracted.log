@@ -17,6 +17,7 @@
 [KILL] [2025.10.21-20.11.23:354][719]LogGameplayEvents: Display: ArmoredBear[76561198995742987, team 0] killed ArmoredBear[76561198995742987, team 0] with BP_Projectile_Molotov_C_2147480261
 [ROUND_END] [2025.10.21-20.11.23:560][731]LogGameMode: Display: Round Over: Team 1 won (win reason: Elimination)
 [ROUND_END] [2025.10.21-20.11.23:560][731]LogGameplayEvents: Display: Round 3 Over: Team 1 won (win reason: Elimination)
+[CHAT_CMD] [2025.10.21-20.11.28:617][ 34]LogChat: Display: ArmoredBear(76561198995742987) Global Chat: !stats
 [CHAT_CMD] [2025.10.21-20.11.38:472][625]LogChat: Display: ArmoredBear(76561198995742987) Global Chat: !stats
 [GAME_OVER] [2025.10.21-20.11.43:567][930]LogSession: Display: AINSGameSession::HandleMatchHasEnded
 [MAP_VOTE] [2025.10.21-20.12.03:589][132]LogMapVoteManager: Display: Existing Vote Options:

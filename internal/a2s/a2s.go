@@ -474,40 +474,55 @@ func parsePlayers(data []byte) ([]Player, error) {
 	}
 
 	// Read player count
+	// NOTE: Insurgency: Sandstorm has been observed to return 0 for player count
+	// even when player data follows. We read the count but iterate until buffer is empty.
 	playerCount, err := reader.ReadByte()
 	if err != nil {
 		return nil, fmt.Errorf("failed to read player count: %w", err)
 	}
 
-	players := make([]Player, 0, playerCount)
+	players := make([]Player, 0, max(int(playerCount), 32)) // Allocate for at least 32 if count is 0
 
-	for i := byte(0); i < playerCount; i++ {
+	// Iterate until buffer is exhausted (like SAW does)
+	// This handles the case where Insurgency reports 0 players but sends data anyway
+	for reader.Len() > 0 {
 		player := Player{}
 
 		// Read index
 		if player.Index, err = reader.ReadByte(); err != nil {
-			return players, fmt.Errorf("failed to read player index: %w", err)
+			// End of buffer or malformed data
+			break
 		}
 
 		// Read name
 		if player.Name, err = readString(reader); err != nil {
-			return players, fmt.Errorf("failed to read player name: %w", err)
+			// End of buffer or malformed data
+			break
 		}
 
 		// Read score
 		if err := binary.Read(reader, binary.LittleEndian, &player.Score); err != nil {
-			return players, fmt.Errorf("failed to read player score: %w", err)
+			// End of buffer or malformed data
+			break
 		}
 
 		// Read duration
 		if err := binary.Read(reader, binary.LittleEndian, &player.Duration); err != nil {
-			return players, fmt.Errorf("failed to read player duration: %w", err)
+			// End of buffer or malformed data
+			break
 		}
 
 		players = append(players, player)
 	}
 
 	return players, nil
+}
+
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
 }
 
 // parseRules parses the server rules response

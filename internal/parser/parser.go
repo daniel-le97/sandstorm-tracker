@@ -18,8 +18,9 @@ import (
 
 // LogParser handles parsing log lines and writing directly to database
 type LogParser struct {
-	patterns *logPatterns
-	pbApp    core.App
+	patterns    *logPatterns
+	pbApp       core.App
+	chatHandler *ChatCommandHandler
 }
 
 // logPatterns contains compiled regex patterns for log parsing
@@ -70,7 +71,7 @@ func newLogPatterns() *logPatterns {
 		MapVote: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\d+\]LogMapVoteManager: Display: .*Vote Options:`),
 
 		// Chat and RCON events
-		ChatCommand: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\d+\]LogChat: Display: ([^(]+)\((\d+)\) Global Chat: (!.+)`),
+		ChatCommand: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\s*\d+\]LogChat: Display: ([^(]+)\((\d+)\) Global Chat: (!.+)`),
 
 		RconCommand: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\s*\d+\]LogRcon: ([^<]+)<< (.+)`),
 
@@ -89,9 +90,15 @@ func newLogPatterns() *logPatterns {
 // NewLogParser creates a new log parser with PocketBase app
 func NewLogParser(pbApp core.App) *LogParser {
 	return &LogParser{
-		patterns: newLogPatterns(),
-		pbApp:    pbApp,
+		patterns:    newLogPatterns(),
+		pbApp:       pbApp,
+		chatHandler: nil, // Set later via SetChatHandler
 	}
+}
+
+// SetChatHandler sets the chat command handler (must be called after parser creation)
+func (p *LogParser) SetChatHandler(rconSender RconSender) {
+	p.chatHandler = NewChatCommandHandler(p, rconSender)
 }
 
 // ParseAndProcess parses a log line and writes to database if it's a recognized event
@@ -134,6 +141,10 @@ func (p *LogParser) ParseAndProcess(ctx context.Context, line string, serverID s
 	}
 
 	if p.tryProcessObjectiveCaptured(ctx, line, timestamp, serverID, logFilePath) {
+		return nil
+	}
+
+	if p.tryProcessChatCommand(ctx, line, timestamp, serverID, p.chatHandler) {
 		return nil
 	}
 
