@@ -248,7 +248,7 @@ func UpsertMatchPlayerStats(ctx context.Context, pbApp core.App, matchID, player
 	)
 
 	if err != nil {
-		// Create new record
+		// Create new record - player is joining the match for the first time
 		collection, err := pbApp.FindCollectionByNameOrId("match_player_stats")
 		if err != nil {
 			return err
@@ -271,9 +271,9 @@ func UpsertMatchPlayerStats(ctx context.Context, pbApp core.App, matchID, player
 		record.Set("objectives_destroyed", 0)
 		record.Set("objectives_captured", 0)
 	} else {
-		// Update existing - increment session_count
-		sessionCount := record.GetInt("session_count")
-		record.Set("session_count", sessionCount+1)
+		// Record already exists - player is already in the match
+		// Don't increment session_count - it should only count when player first joins
+		// Just ensure the record exists (no updates needed here)
 	}
 
 	return pbApp.Save(record)

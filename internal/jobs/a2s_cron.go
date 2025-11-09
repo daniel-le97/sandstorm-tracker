@@ -17,6 +17,7 @@ import (
 type AppInterface interface {
 	core.App
 	GetA2SPool() *a2s.ServerPool
+	SendRconCommand(serverID string, command string) (string, error)
 }
 
 // RegisterA2S sets up a cron job that queries all configured servers via A2S
@@ -68,6 +69,7 @@ func RegisterA2SForServer(app AppInterface, cfg *config.Config, serverID string)
 	jobName := fmt.Sprintf("a2s_player_scores_%s", serverID)
 
 	// Run A2S query every minute for this specific server
+	// Note: Cron only supports standard 5-field expressions (no @every syntax)
 	scheduler.MustAdd(jobName, "* * * * *", func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
@@ -84,8 +86,19 @@ func RegisterA2SForServer(app AppInterface, cfg *config.Config, serverID string)
 
 		// Query just this server
 		status, err := pool.QueryServer(ctx, queryAddr)
-		if err != nil || !status.Online {
+		if err != nil {
+			log.Printf("[A2S] Failed to query server %s at %s: %v", serverCfg.Name, queryAddr, err)
 			return
+		}
+		if !status.Online {
+			log.Printf("[A2S] Server %s at %s is offline", serverCfg.Name, queryAddr)
+			return
+		}
+
+		// Log server info for debugging
+		if status.Info != nil {
+			log.Printf("[A2S] Server %s info: Players=%d/%d, Map=%s",
+				serverCfg.Name, status.Info.Players, status.Info.MaxPlayers, status.Info.Map)
 		}
 
 		// Process this server's players using the existing logic
@@ -111,12 +124,23 @@ func processServerStatus(ctx context.Context, app AppInterface, serverCfg config
 		return
 	}
 
-	log.Printf("[A2S] Queried %d players from %s", len(status.Players), serverCfg.Name)
+	// Only log if there are actually players or if A2S returned player data
+	if status.Info != nil && (status.Info.Players > 0 || len(status.Players) > 0) {
+		log.Printf("[A2S] Queried %d players from %s (Info reports %d players)",
+			len(status.Players), serverCfg.Name, status.Info.Players)
+	}
 
 	// Find or create server record
 	serverRecord, err := getOrCreateServerFromConfig(app, serverCfg)
 	if err != nil {
 		log.Printf("[A2S] Failed to get server record for %s: %v", serverCfg.Name, err)
+		return
+	}
+
+	// Extract serverID from logPath for RCON commands
+	serverID, err := util.GetServerIdFromPath(serverCfg.LogPath)
+	if err != nil {
+		log.Printf("[A2S] Failed to get serverID from path %s: %v", serverCfg.LogPath, err)
 		return
 	}
 
@@ -132,7 +156,24 @@ func processServerStatus(ctx context.Context, app AppInterface, serverCfg config
 		return
 	}
 
-	// Update each player's score in the active match
+	// A2S player queries don't work for Insurgency: Sandstorm, use RCON instead
+	// Only use RCON if server info indicates there are actually players (to avoid log pollution)
+	if len(status.Players) == 0 && status.Info != nil && status.Info.Players > 0 {
+		players, err := queryPlayersViaRcon(app, serverID)
+		if err != nil {
+			log.Printf("[RCON] Failed to query players via RCON for %s: %v", serverCfg.Name, err)
+			return
+		}
+
+		// Only log when players are actually found
+		if len(players) > 0 {
+			log.Printf("[RCON] Found %d players via RCON for %s", len(players), serverCfg.Name)
+			updatePlayersFromRcon(app, activeMatch.Id, players)
+		}
+		return
+	}
+
+	// Fallback: Update from A2S data (though this rarely works for Insurgency)
 	for _, player := range status.Players {
 		if player.Name == "" {
 			continue // Skip unnamed players
@@ -222,8 +263,8 @@ func updatePlayerScoresFromA2S(ctx context.Context, app AppInterface, cfg *confi
 				continue
 			}
 
-			// Update match_weapon_stats with current score
-			// Note: A2S provides total score, not kills, so we use it as-is
+			// Update match_player_stats with current score
+			// Note: A2S provides total score from the game server
 			err = updatePlayerMatchScore(app, activeMatch.Id, playerRecord.Id, int32(player.Score))
 			if err != nil {
 				log.Printf("[A2S] Failed to update score for player %s: %v", player.Name, err)
@@ -253,6 +294,7 @@ func getOrCreateServerFromConfig(pbApp core.App, cfg config.ServerConfig) (*core
 	// Create new server record
 	record = core.NewRecord(collection)
 	record.Set("external_id", cfg.Name)
+	record.Set("name", cfg.Name)
 	record.Set("path", cfg.LogPath)
 
 	if err := pbApp.Save(record); err != nil {
@@ -307,16 +349,16 @@ func findOrCreatePlayerByName(pbApp core.App, name string) (*core.Record, error)
 	return record, nil
 }
 
-// updatePlayerMatchScore updates a player's score in the match_weapon_stats table
+// updatePlayerMatchScore updates a player's score in the match_player_stats table
 func updatePlayerMatchScore(pbApp core.App, matchID, playerID string, score int32) error {
-	collection, err := pbApp.FindCollectionByNameOrId("match_weapon_stats")
+	collection, err := pbApp.FindCollectionByNameOrId("match_player_stats")
 	if err != nil {
 		return err
 	}
 
 	// Try to find existing stat record for this player in this match
 	record, err := pbApp.FindFirstRecordByFilter(
-		"match_weapon_stats",
+		"match_player_stats",
 		"match = {:matchId} && player = {:playerId}",
 		dbx.Params{
 			"matchId":  matchID,
@@ -329,12 +371,173 @@ func updatePlayerMatchScore(pbApp core.App, matchID, playerID string, score int3
 		record = core.NewRecord(collection)
 		record.Set("match", matchID)
 		record.Set("player", playerID)
-		record.Set("weapon", "a2s_score") // Use special weapon name to indicate A2S data
-		record.Set("kills", int(score))
+		record.Set("score", int(score))
 	} else {
 		// Update existing record
-		record.Set("kills", int(score))
+		record.Set("score", int(score))
 	}
 
 	return pbApp.Save(record)
+}
+
+// RconPlayer represents a player from RCON listplayers response
+type RconPlayer struct {
+	Name  string
+	Score int32
+	NetID string
+}
+
+// queryPlayersViaRcon queries players using RCON listplayers command
+func queryPlayersViaRcon(app AppInterface, serverID string) ([]RconPlayer, error) {
+	response, err := app.SendRconCommand(serverID, "listplayers")
+	if err != nil {
+		return nil, err
+	}
+
+	return parseRconListPlayers(response), nil
+}
+
+// parseRconListPlayers parses the RCON listplayers response
+// Format: ID | Name | NetID | IP | Score | ...
+func parseRconListPlayers(response string) []RconPlayer {
+	players := []RconPlayer{}
+
+	lines := splitLines(response)
+	for _, line := range lines {
+		// Skip header and separator lines
+		if len(line) < 10 || line[0] == '=' || containsString(line, "ID") && containsString(line, "Name") {
+			continue
+		}
+
+		// Parse line by splitting on |
+		parts := splitOnPipe(line)
+		if len(parts) < 5 {
+			continue
+		}
+
+		name := trimSpace(parts[1])
+		scoreStr := trimSpace(parts[4])
+		netID := trimSpace(parts[2])
+
+		// Skip if name is empty, matches default classes, or is a number
+		if name == "" || name == "Observer" || name == "Commander" || name == "Marksman" || name == "0" || name == "1" || name == "2" {
+			continue
+		}
+
+		// Skip if NetID doesn't contain "SteamNWI" (only real players have Steam IDs)
+		if !containsString(netID, "SteamNWI") {
+			continue
+		}
+
+		// Parse score
+		score := int32(0)
+		fmt.Sscanf(scoreStr, "%d", &score)
+
+		players = append(players, RconPlayer{
+			Name:  name,
+			Score: score,
+			NetID: netID,
+		})
+	}
+
+	return players
+}
+
+// updatePlayersFromRcon updates player scores from RCON data
+func updatePlayersFromRcon(app AppInterface, matchID string, players []RconPlayer) {
+	successCount := 0
+	for _, player := range players {
+		// Find or create player record by name
+		playerRecord, err := findOrCreatePlayerByName(app, player.Name)
+		if err != nil {
+			log.Printf("[RCON] Failed to find/create player %s: %v", player.Name, err)
+			continue
+		}
+
+		// Update match score
+		err = updatePlayerMatchScore(app, matchID, playerRecord.Id, player.Score)
+		if err != nil {
+			log.Printf("[RCON] Failed to update score for player %s: %v", player.Name, err)
+		} else {
+			successCount++
+		}
+	}
+
+	if successCount > 0 {
+		log.Printf("[RCON] Updated scores for %d players", successCount)
+	}
+}
+
+// Helper string functions
+func splitLines(s string) []string {
+	lines := []string{}
+	current := ""
+	for _, c := range s {
+		if c == '\n' || c == '\r' {
+			if len(current) > 0 {
+				lines = append(lines, current)
+				current = ""
+			}
+		} else {
+			current += string(c)
+		}
+	}
+	if len(current) > 0 {
+		lines = append(lines, current)
+	}
+	return lines
+}
+
+func splitOnPipe(s string) []string {
+	parts := []string{}
+	current := ""
+	for _, c := range s {
+		if c == '|' {
+			parts = append(parts, current)
+			current = ""
+		} else {
+			current += string(c)
+		}
+	}
+	parts = append(parts, current)
+	return parts
+}
+
+func trimSpace(s string) string {
+	// Trim leading/trailing whitespace
+	start := 0
+	end := len(s)
+
+	for start < len(s) && (s[start] == ' ' || s[start] == '\t') {
+		start++
+	}
+
+	for end > start && (s[end-1] == ' ' || s[end-1] == '\t') {
+		end--
+	}
+
+	if start >= end {
+		return ""
+	}
+	return s[start:end]
+}
+
+func containsString(s, substr string) bool {
+	return len(s) >= len(substr) && indexOf(s, substr) >= 0
+}
+
+func indexOf(s, substr string) int {
+	for i := 0; i <= len(s)-len(substr); i++ {
+		match := true
+		for j := 0; j < len(substr); j++ {
+			if s[i+j] != substr[j] {
+				match = false
+				break
+			}
+		}
+		if match {
+			return i
+		}
+	}
+	return -1
 }

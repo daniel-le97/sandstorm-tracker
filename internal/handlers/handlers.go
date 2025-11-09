@@ -205,6 +205,7 @@ func Register(app AppInterface, e *core.ServeEvent) {
 			ExternalID  string
 			TotalKills  int
 			TotalDeaths int
+			TotalScore  int
 			KDRatio     string
 			Created     string
 		}
@@ -227,8 +228,9 @@ func Register(app AppInterface, e *core.ServeEvent) {
 				}
 			}
 
-			// Get total deaths from match_player_stats
+			// Get total deaths and score from match_player_stats
 			deaths := 0
+			totalScore := 0
 			playerMatchStats, err := re.App.FindRecordsByFilter(
 				"match_player_stats",
 				"player = {:playerId}",
@@ -240,6 +242,7 @@ func Register(app AppInterface, e *core.ServeEvent) {
 			if err == nil {
 				for _, stat := range playerMatchStats {
 					deaths += stat.GetInt("deaths")
+					totalScore += stat.GetInt("score")
 				}
 			}
 
@@ -256,6 +259,7 @@ func Register(app AppInterface, e *core.ServeEvent) {
 				ExternalID:  player.GetString("external_id"),
 				TotalKills:  kills,
 				TotalDeaths: deaths,
+				TotalScore:  totalScore,
 				KDRatio:     kdRatio,
 				Created:     player.GetDateTime("created").Time().Format("2006-01-02 15:04"),
 			}

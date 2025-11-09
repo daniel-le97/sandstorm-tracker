@@ -161,31 +161,70 @@ func (c *Client) QueryPlayersContext(ctx context.Context, address string) ([]Pla
 		return nil, fmt.Errorf("failed to set deadline: %w", err)
 	}
 
-	// First, get challenge number
-	challenge, err := c.getChallengeContext(ctx, conn, A2S_PLAYER)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get challenge: %w", err)
-	}
-
-	// Build A2S_PLAYER request with challenge
+	// Try direct query with challenge -1 first
+	// Some games (like Insurgency: Sandstorm) skip the challenge-response and return player data directly
 	request := &bytes.Buffer{}
 	binary.Write(request, binary.LittleEndian, uint32(PACKET_HEADER))
 	request.WriteByte(A2S_PLAYER)
-	binary.Write(request, binary.LittleEndian, challenge)
+	binary.Write(request, binary.LittleEndian, int32(-1))
 
-	// Send request
 	if _, err := conn.Write(request.Bytes()); err != nil {
-		return nil, fmt.Errorf("failed to send request: %w", err)
+		return nil, fmt.Errorf("failed to send initial request: %w", err)
 	}
 
 	// Read response
 	response := make([]byte, 1400)
 	n, err := conn.Read(response)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read response: %w", err)
+		return nil, fmt.Errorf("failed to read initial response: %w", err)
 	}
 
-	return parsePlayers(response[:n])
+	// Check response type
+	if n < 6 {
+		return nil, fmt.Errorf("response too short: %d bytes", n)
+	}
+
+	// Skip header (4 bytes) and read response type
+	responseType := response[4]
+
+	// If we got player data directly (Insurgency: Sandstorm behavior), parse it
+	if responseType == S2A_PLAYER {
+		return parsePlayers(response[:n])
+	}
+
+	// If we got a challenge, use it for a second request (standard behavior)
+	if responseType == S2A_CHALLENGE {
+		// Parse the challenge number
+		reader := bytes.NewReader(response[:n])
+		var header uint32
+		binary.Read(reader, binary.LittleEndian, &header)
+		reader.ReadByte() // skip response type
+		var challenge int32
+		if err := binary.Read(reader, binary.LittleEndian, &challenge); err != nil {
+			return nil, fmt.Errorf("failed to read challenge: %w", err)
+		}
+
+		// Build second request with the challenge
+		request2 := &bytes.Buffer{}
+		binary.Write(request2, binary.LittleEndian, uint32(PACKET_HEADER))
+		request2.WriteByte(A2S_PLAYER)
+		binary.Write(request2, binary.LittleEndian, challenge)
+
+		if _, err := conn.Write(request2.Bytes()); err != nil {
+			return nil, fmt.Errorf("failed to send challenge request: %w", err)
+		}
+
+		// Read player data response
+		response2 := make([]byte, 1400)
+		n2, err := conn.Read(response2)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read player response: %w", err)
+		}
+
+		return parsePlayers(response2[:n2])
+	}
+
+	return nil, fmt.Errorf("unexpected response type: 0x%02x", responseType)
 }
 
 // QueryRules retrieves server rules/cvars

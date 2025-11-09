@@ -1,0 +1,44 @@
+[MAP_LOAD] [2025.11.08-17.35.41:912][  0]LogLoad: LoadMap: /Game/Maps/Ministry/Ministry?Name=Player?Scenario=Scenario_Ministry_Checkpoint_Security?MaxPlayers=8?Lighting=Day
+[JOIN] [2025.11.08-17.35.55:673][742]LogEOSAntiCheat: Display: ServerRegisterClient: Client: (76561198995742987) Result: (EOS_Success)
+[JOIN] [2025.11.08-17.35.55:673][742]LogNet: Join succeeded: ArmoredBear
+[ROUND_START] [2025.11.08-17.36.11:549][687]LogGameplayEvents: Display: Pre-round 1 started
+[KILL] [2025.11.08-17.36.33:548][989]LogGameplayEvents: Display: ArmoredBear[76561198995742987, team 0] killed Marksman[INVALID, team 1] with BP_Firearm_PF940_C_2147481685
+[KILL] [2025.11.08-17.36.50:174][983]LogGameplayEvents: Display: ArmoredBear[76561198995742987, team 0] killed Observer[INVALID, team 1] with BP_Firearm_L96A1_C_2147481438
+[KILL] [2025.11.08-17.37.10:256][186]LogGameplayEvents: Display: ArmoredBear[76561198995742987, team 0] killed Commander[INVALID, team 1] with BP_Firearm_L96A1_C_2147481438
+[OBJ_DESTROYED] [2025.11.08-17.37.36:227][740]LogGameplayEvents: Display: Objective 0 owned by team 1 was destroyed for team 0 by ArmoredBear[76561198995742987].
+[KILL] [2025.11.08-17.37.43:134][156]LogGameplayEvents: Display: ArmoredBear[76561198995742987, team 0] killed Observer[INVALID, team 1] with BP_Firearm_L96A1_C_2147481438
+[KILL] [2025.11.08-17.39.13:559][596]LogGameplayEvents: Display: ArmoredBear[76561198995742987, team 0] killed Commander[INVALID, team 1] with ODCheckpoint_B
+[KILL] [2025.11.08-17.39.13:560][596]LogGameplayEvents: Display: ArmoredBear[76561198995742987, team 0] killed Observer[INVALID, team 1] with ODCheckpoint_B
+[OBJ_DESTROYED] [2025.11.08-17.39.13:560][596]LogGameplayEvents: Display: Objective 1 owned by team 1 was destroyed for team 0 by ArmoredBear[76561198995742987].
+[KILL] [2025.11.08-17.40.07:828][860]LogGameplayEvents: Display: ArmoredBear[76561198995742987, team 0] killed Marksman[INVALID, team 1] with BP_Firearm_PF940_C_2147480440
+[KILL] [2025.11.08-17.40.25:018][896]LogGameplayEvents: Display: ArmoredBear[76561198995742987, team 0] killed Commander[INVALID, team 1] with BP_Firearm_SVD_C_2147481021
+[KILL] [2025.11.08-17.40.47:783][267]LogGameplayEvents: Display: ArmoredBear[76561198995742987, team 0] killed Marksman[INVALID, team 1] with BP_Firearm_SVD_C_2147481021
+[KILL] [2025.11.08-17.40.56:670][801]LogGameplayEvents: Display: ArmoredBear[76561198995742987, team 0] killed Observer[INVALID, team 1] with BP_Firearm_SVD_C_2147481021
+[OBJ_CAPTURED] [2025.11.08-17.41.23:485][412]LogGameplayEvents: Display: Objective 2 was captured for team 0 from team 1 by ArmoredBear[76561198995742987].
+[KILL] [2025.11.08-17.41.37:474][253]LogGameplayEvents: Display: ArmoredBear[76561198995742987, team 0] killed Commander[INVALID, team 1] with BP_Firearm_SVD_C_2147481021
+[KILL] [2025.11.08-17.42.16:792][612]LogGameplayEvents: Display: ArmoredBear[76561198995742987, team 0] killed Commander[INVALID, team 1] with BP_Firearm_SVD_C_2147481021
+[KILL] [2025.11.08-17.42.52:595][769]LogGameplayEvents: Display: ArmoredBear[76561198995742987, team 0] killed Marksman[INVALID, team 1] with BP_Firearm_PF940_C_2147480440
+[KILL] [2025.11.08-17.43.01:845][327]LogGameplayEvents: Display: ArmoredBear[76561198995742987, team 0] killed Observer[INVALID, team 1] with BP_Firearm_PF940_C_2147480440
+[KILL] [2025.11.08-17.43.20:043][421]LogGameplayEvents: Display: ArmoredBear[76561198995742987, team 0] killed Commander[INVALID, team 1] with BP_Firearm_SVD_C_2147481021
+[OBJ_CAPTURED] [2025.11.08-17.43.37:472][462]LogGameplayEvents: Display: Objective 3 was captured for team 0 from team 1 by ArmoredBear[76561198995742987].
+[KILL] [2025.11.08-17.45.09:834][ 20]LogGameplayEvents: Display: ArmoredBear[76561198995742987, team 0] killed Observer[INVALID, team 1] with BP_Firearm_SVD_C_2147481021
+[KILL] [2025.11.08-17.45.23:753][856]LogGameplayEvents: Display: ArmoredBear[76561198995742987, team 0] killed Marksman[INVALID, team 1] with BP_Firearm_SVD_C_2147481021
+[KILL] [2025.11.08-17.45.30:142][241]LogGameplayEvents: Display: ArmoredBear[76561198995742987, team 0] killed Commander[INVALID, team 1] with BP_Firearm_SVD_C_2147481021
+[KILL] [2025.11.08-17.45.53:749][662]LogGameplayEvents: Display: ArmoredBear[76561198995742987, team 0] killed Marksman[INVALID, team 1] with BP_Firearm_SVD_C_2147481021
+[KILL] [2025.11.08-17.45.59:627][ 16]LogGameplayEvents: Display: ArmoredBear[76561198995742987, team 0] killed Observer[INVALID, team 1] with BP_Firearm_SVD_C_2147481021
+[OBJ_CAPTURED] [2025.11.08-17.46.57:674][509]LogGameplayEvents: Display: Objective 5 was captured for team 0 from team 1 by ArmoredBear[76561198995742987].
+[KILL] [2025.11.08-17.47.18:288][748]LogGameplayEvents: Display: ArmoredBear[76561198995742987, team 0] killed Commander[INVALID, team 1] with BP_Firearm_SVD_C_2147481021
+[KILL] [2025.11.08-17.47.20:893][904]LogGameplayEvents: Display: Suicide Bomber[INVALID, team 1] killed Suicide Bomber[INVALID, team 1] with BP_Projectile_IED_SuicideBomber_C_2147478877
+[KILL] [2025.11.08-17.48.03:345][455]LogGameplayEvents: Display: ArmoredBear[76561198995742987, team 0] killed Marksman[INVALID, team 1] with BP_Firearm_SVD_C_2147481021
+[KILL] [2025.11.08-17.48.20:737][502]LogGameplayEvents: Display: ArmoredBear[76561198995742987, team 0] killed Suicide Bomber[INVALID, team 1] with BP_Firearm_SVD_C_2147481021
+[KILL] [2025.11.08-17.48.41:957][776]LogGameplayEvents: Display: ArmoredBear[76561198995742987, team 0] killed Suicide Bomber[INVALID, team 1] with BP_Firearm_SVD_C_2147481021
+[KILL] [2025.11.08-17.49.13:219][660]LogGameplayEvents: Display: ArmoredBear[76561198995742987, team 0] killed Suicide Bomber[INVALID, team 1] with BP_Firearm_SVD_C_2147481021
+[KILL] [2025.11.08-17.49.31:141][737]LogGameplayEvents: Display: ArmoredBear[76561198995742987, team 0] killed Marksman[INVALID, team 1] with BP_Firearm_SVD_C_2147481021
+[ROUND_END] [2025.11.08-17.49.57:685][336]LogGameMode: Display: Round Over: Team 0 won (win reason: Objective)
+[ROUND_END] [2025.11.08-17.49.57:685][336]LogGameplayEvents: Display: Round 1 Over: Team 0 won (win reason: Objective)
+[GAME_OVER] [2025.11.08-17.50.17:696][528]LogSession: Display: AINSGameSession::HandleMatchHasEnded
+[MAP_VOTE] [2025.11.08-17.50.37:721][714]LogMapVoteManager: Display: Existing Vote Options:
+[MAP_VOTE] [2025.11.08-17.50.37:721][714]LogMapVoteManager: Display: New Vote Options:
+[DISCONNECT] [2025.11.08-17.50.51:374][524]LogEOSAntiCheat: Display: ServerUnregisterClient: UserId (76561198995742987), Result: (EOS_Success)
+[JOIN] [2025.11.08-17.50.55:394][668]LogEOSAntiCheat: Display: ServerRegisterClient: Client: (76561198995742987) Result: (EOS_Success)
+[DISCONNECT] [2025.11.08-17.51.10:879][593]LogEOSAntiCheat: Display: ServerUnregisterClient: UserId (76561198995742987), Result: (EOS_Success)

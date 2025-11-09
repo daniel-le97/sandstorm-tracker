@@ -212,6 +212,11 @@ func TestExtractAllEvents(t *testing.T) {
 			inputFile:  "test_data/1d6407b7-f51b-4b1d-ad9e-faabbfbb7dde.log",
 			outputFile: "test_data/1d6407b7-f51b-4b1d-ad9e-faabbfbb7dde.extracted.log",
 		},
+		{
+			name:       "Full Log",
+			inputFile:  "test_data/full.log",
+			outputFile: "test_data/full.extracted.log",
+		},
 	}
 
 	for _, tc := range testCases {
