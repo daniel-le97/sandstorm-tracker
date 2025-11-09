@@ -11,7 +11,7 @@ import (
 )
 
 // Helper to create pointers for test values
-func stringPtr(s string) *string     { return &s }
+
 func int64Ptr(i int64) *int64        { return &i }
 func timePtr(t time.Time) *time.Time { return &t }
 
