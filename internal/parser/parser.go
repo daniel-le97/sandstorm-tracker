@@ -392,8 +392,14 @@ func (p *LogParser) tryProcessMapLoad(ctx context.Context, line string, timestam
 		err = database.DisconnectAllPlayersInMatch(ctx, p.pbApp, activeMatch.ID, endTime)
 		if err != nil {
 			log.Printf("Failed to disconnect players from match %s: %v", activeMatch.ID, err)
-		} else {
-			log.Printf("Successfully closed stale match %s", activeMatch.ID)
+		}
+
+		log.Printf("Successfully closed stale match %s", activeMatch.ID)
+
+		// Delete the match if it has no stats (was likely never used)
+		err = database.DeleteMatchIfEmpty(ctx, p.pbApp, activeMatch.ID)
+		if err != nil {
+			log.Printf("Failed to check/delete empty match %s: %v", activeMatch.ID, err)
 		}
 	}
 

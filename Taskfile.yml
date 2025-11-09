@@ -43,4 +43,6 @@ tasks:
   start:
     desc: Start Insurgency server with default config
     cmds:
-      - go run ./tools/run-server/main.go "C:\Users\danie\code\forks\sandstorm-admin-wrapper"
+      - go build .
+      - ./sandstorm-tracker.exe server stop --all
+      - ./sandstorm-tracker.exe server start --all

@@ -533,3 +533,55 @@ func DisconnectAllPlayersInMatch(ctx context.Context, pbApp core.App, matchID st
 
 	return nil
 }
+
+// DeleteMatchIfEmpty deletes a match only if it has no player stats or weapon stats
+func DeleteMatchIfEmpty(ctx context.Context, pbApp core.App, matchID string) error {
+	// Check for match_player_stats
+	playerStats, err := pbApp.FindRecordsByFilter(
+		"match_player_stats",
+		"match = {:match}",
+		"",
+		1,
+		0,
+		map[string]any{"match": matchID},
+	)
+	if err != nil {
+		return fmt.Errorf("failed to check player stats: %w", err)
+	}
+
+	if len(playerStats) > 0 {
+		log.Printf("Match %s has player stats, keeping it", matchID)
+		return nil
+	}
+
+	// Check for match_weapon_stats
+	weaponStats, err := pbApp.FindRecordsByFilter(
+		"match_weapon_stats",
+		"match = {:match}",
+		"",
+		1,
+		0,
+		map[string]any{"match": matchID},
+	)
+	if err != nil {
+		return fmt.Errorf("failed to check weapon stats: %w", err)
+	}
+
+	if len(weaponStats) > 0 {
+		log.Printf("Match %s has weapon stats, keeping it", matchID)
+		return nil
+	}
+
+	// No stats found, safe to delete the match
+	matchRecord, err := pbApp.FindRecordById("matches", matchID)
+	if err != nil {
+		return fmt.Errorf("failed to find match: %w", err)
+	}
+
+	if err := pbApp.Delete(matchRecord); err != nil {
+		return fmt.Errorf("failed to delete match: %w", err)
+	}
+
+	log.Printf("Deleted empty match %s (no player or weapon stats)", matchID)
+	return nil
+}

@@ -65,7 +65,7 @@ badger*
 sandstorm-tracker.json
 
 dist
-
+data/
 pb_data
 
 sandstorm-admin-wrapper/
