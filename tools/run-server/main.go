@@ -47,7 +47,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	sawPath := os.Args[1]
+	sawPath := strings.ReplaceAll(os.Args[1], "\\", "/")
 	var serverID string
 	if len(os.Args) > 2 {
 		serverID = os.Args[2]

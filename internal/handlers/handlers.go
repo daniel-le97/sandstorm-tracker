@@ -421,6 +421,13 @@ func Register(app AppInterface, e *core.ServeEvent) {
 
 		return re.JSON(http.StatusOK, health)
 	})
+
+	// Note: Server management API endpoints are registered by the servermgr plugin
+	// See internal/servermgr/plugin.go for:
+	// - POST /api/server/start
+	// - POST /api/server/stop
+	// - GET /api/server/status
+	// - GET /api/server/list
 }
 
 // contains performs a case-insensitive substring search

@@ -9,6 +9,7 @@ import (
 	"sandstorm-tracker/internal/jobs"
 	"sandstorm-tracker/internal/parser"
 	"sandstorm-tracker/internal/rcon"
+	"sandstorm-tracker/internal/servermgr"
 	"sandstorm-tracker/internal/util"
 	"sandstorm-tracker/internal/watcher"
 	"time"
@@ -24,11 +25,12 @@ type App struct {
 	*pocketbase.PocketBase // Embed PocketBase - all its methods are available
 
 	// Custom application components
-	Config   *config.Config
-	Parser   *parser.LogParser
-	RconPool *rcon.ClientPool
-	A2SPool  *a2s.ServerPool
-	Watcher  *watcher.Watcher
+	Config        *config.Config
+	Parser        *parser.LogParser
+	RconPool      *rcon.ClientPool
+	A2SPool       *a2s.ServerPool
+	Watcher       *watcher.Watcher
+	ServerManager *servermgr.Plugin // Server manager plugin
 }
 
 // New creates and initializes the sandstorm-tracker application
@@ -61,7 +63,7 @@ func New() (*App, error) {
 		log.Printf("Warning: Failed to initialize A2S debug log: %v", err)
 	}
 
-	// Setup default plugins
+	// Setup default plugins (includes server manager)
 	app.setupPlugins()
 
 	return app, nil
@@ -78,6 +80,11 @@ func (app *App) setupPlugins() {
 	ghupdate.MustRegister(app.PocketBase, app.RootCmd, ghupdate.Config{
 		Owner: "daniel-le97",
 		Repo:  "sandstorm-trackerv2",
+	})
+
+	// Register server manager plugin
+	app.ServerManager = servermgr.MustRegister(app.PocketBase, app.RootCmd, servermgr.Config{
+		DefaultSAWPath: app.Config.SAWPath,
 	})
 
 	// Add other plugins here (jsvm, etc.)
@@ -201,6 +208,8 @@ func (app *App) onTerminate(e *core.TerminateEvent) error {
 		app.RconPool.CloseAll()
 	}
 
+	// Note: ServerManager plugin handles its own cleanup via OnTerminate hook
+
 	// Close A2S debug log
 	a2s.CloseDebugLog()
 
@@ -266,4 +275,9 @@ func (app *App) GetRconPoolStatus() map[string]any {
 // GetA2SPool returns the A2S server pool
 func (app *App) GetA2SPool() *a2s.ServerPool {
 	return app.A2SPool
+}
+
+// GetServerManager returns the server manager plugin
+func (app *App) GetServerManager() *servermgr.Plugin {
+	return app.ServerManager
 }

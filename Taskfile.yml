@@ -40,3 +40,7 @@ tasks:
     desc: Kill all running Insurgency server processes (not the game client)
     cmds:
       - powershell -Command "Get-Process -Name '*InsurgencyServer*' -ErrorAction SilentlyContinue | Stop-Process -Force; Write-Host 'Killed all Insurgency server processes'"
+  start:
+    desc: Start Insurgency server with default config
+    cmds:
+      - go run ./tools/run-server/main.go "C:\Users\danie\code\forks\sandstorm-admin-wrapper"
