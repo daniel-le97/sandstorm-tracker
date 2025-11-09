@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"os/exec"
@@ -181,6 +182,22 @@ func main() {
 
 	fmt.Printf("Working Directory: %s\n", absSAWPath)
 	fmt.Printf("Command: %s %s\n\n", serverExe, strings.Join(args, " "))
+
+	// Setup config management
+	serverInstancePath := filepath.Join(absSAWPath, "servers", serverID)
+	localConfigDir := filepath.Join(absSAWPath, "server-config", serverID)
+
+	// Ensure local config directory exists
+	if err := os.MkdirAll(localConfigDir, 0755); err != nil {
+		log.Fatalf("Failed to create local config directory: %v", err)
+	}
+
+	// Copy config files from local storage to server instance before launch
+	fmt.Println("Applying server configuration...")
+	if err := applyServerConfig(serverInstancePath, localConfigDir); err != nil {
+		log.Fatalf("Failed to apply server config: %v", err)
+	}
+
 	fmt.Println("Starting server... (Press Ctrl+C to stop)")
 	fmt.Println()
 
@@ -191,8 +208,128 @@ func main() {
 	cmd.Stderr = os.Stderr
 
 	if err := cmd.Run(); err != nil {
-		log.Fatalf("Server exited with error: %v", err)
+		log.Printf("Server exited with error: %v", err)
 	}
 
-	fmt.Println("\nServer stopped.")
+	fmt.Println("\nServer stopped. Syncing bans...")
+
+	// After server closes, sync ban list back to local storage
+	if err := syncBansFromServer(serverInstancePath, localConfigDir); err != nil {
+		log.Printf("Warning: Failed to sync bans: %v", err)
+	}
+
+	fmt.Println("Server shutdown complete.")
+}
+
+// applyServerConfig copies config files from local storage to server instance
+// This prevents the server from overwriting our manual changes
+func applyServerConfig(serverInstancePath, localConfigDir string) error {
+	// Config files to manage (relative to Saved/Config/LinuxServer or Saved/Config/WindowsServer)
+	configFiles := []string{
+		"Game.ini",
+		"Engine.ini",
+		"Admins.txt",
+		"Bans.txt",
+		"MapCycle.txt",
+		"Motd.txt",
+	}
+
+	// Determine if this is Windows or Linux
+	savedPath := filepath.Join(serverInstancePath, "Saved")
+	configBasePath := ""
+
+	// Check for WindowsServer first, then LinuxServer
+	windowsConfig := filepath.Join(savedPath, "Config", "WindowsServer")
+	linuxConfig := filepath.Join(savedPath, "Config", "LinuxServer")
+
+	if _, err := os.Stat(windowsConfig); err == nil {
+		configBasePath = windowsConfig
+	} else if _, err := os.Stat(linuxConfig); err == nil {
+		configBasePath = linuxConfig
+	} else {
+		// Create WindowsServer directory if neither exists
+		configBasePath = windowsConfig
+		if err := os.MkdirAll(configBasePath, 0755); err != nil {
+			return fmt.Errorf("failed to create config directory: %w", err)
+		}
+	}
+
+	// Copy each config file from local storage to server instance
+	for _, filename := range configFiles {
+		localFile := filepath.Join(localConfigDir, filename)
+		serverFile := filepath.Join(configBasePath, filename)
+
+		// If local file doesn't exist, create an empty one
+		if _, err := os.Stat(localFile); os.IsNotExist(err) {
+			// Create empty file
+			if err := os.WriteFile(localFile, []byte{}, 0644); err != nil {
+				log.Printf("Warning: Failed to create %s: %v", filename, err)
+				continue
+			}
+		}
+
+		// Copy from local to server
+		if err := copyFile(localFile, serverFile); err != nil {
+			log.Printf("Warning: Failed to copy %s: %v", filename, err)
+		} else {
+			fmt.Printf("  ✓ Applied %s\n", filename)
+		}
+	}
+
+	return nil
+}
+
+// syncBansFromServer copies updated ban list from server instance back to local storage
+func syncBansFromServer(serverInstancePath, localConfigDir string) error {
+	savedPath := filepath.Join(serverInstancePath, "Saved")
+
+	// Determine config path
+	windowsConfig := filepath.Join(savedPath, "Config", "WindowsServer")
+	linuxConfig := filepath.Join(savedPath, "Config", "LinuxServer")
+
+	var configBasePath string
+	if _, err := os.Stat(windowsConfig); err == nil {
+		configBasePath = windowsConfig
+	} else if _, err := os.Stat(linuxConfig); err == nil {
+		configBasePath = linuxConfig
+	} else {
+		return fmt.Errorf("config directory not found")
+	}
+
+	serverBansFile := filepath.Join(configBasePath, "Bans.txt")
+	localBansFile := filepath.Join(localConfigDir, "Bans.txt")
+
+	// Copy bans from server back to local storage
+	if _, err := os.Stat(serverBansFile); err == nil {
+		if err := copyFile(serverBansFile, localBansFile); err != nil {
+			return fmt.Errorf("failed to sync bans: %w", err)
+		}
+		fmt.Println("  ✓ Synced ban list")
+	}
+
+	return nil
+}
+
+// copyFile copies a file from src to dst
+func copyFile(src, dst string) error {
+	srcFile, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer srcFile.Close()
+
+	// Create destination directory if needed
+	dstDir := filepath.Dir(dst)
+	if err := os.MkdirAll(dstDir, 0755); err != nil {
+		return err
+	}
+
+	dstFile, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer dstFile.Close()
+
+	_, err = io.Copy(dstFile, srcFile)
+	return err
 }
