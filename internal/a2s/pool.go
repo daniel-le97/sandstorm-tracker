@@ -217,23 +217,13 @@ func (p *ServerPool) queryServer(ctx context.Context, server *Server) (*ServerSt
 	status.Online = true
 	status.Info = info
 
-	logDebug("Server info query succeeded for %s: Players=%d/%d, Map=%s, Game=%s",
-		server.Address, info.Players, info.MaxPlayers, info.Map, info.Game)
-
 	// Always query players - Insurgency: Sandstorm may not report player count correctly in info
 	// We'll get an empty list if there are no players, which is fine
-	logDebug("Attempting to query players for %s", server.Address)
 	players, err := p.client.QueryPlayersContext(ctx, server.Address)
 	if err == nil {
-		logDebug("Successfully queried %d players from %s", len(players), server.Address)
-		for i, player := range players {
-			logDebug("  Player %d: Name=%s, Score=%d, Duration=%.1fs",
-				i+1, player.Name, player.Score, player.Duration)
-		}
 		status.Players = players
 	} else {
 		// Log player query failures for debugging
-		logDebug("Failed to query players for %s: %v", server.Address, err)
 		fmt.Printf("[A2S] Failed to query players for %s: %v\n", server.Address, err)
 	}
 

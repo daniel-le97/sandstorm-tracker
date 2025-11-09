@@ -116,12 +116,14 @@ func (p *Plugin) registerCommands(rootCmd *cobra.Command) {
 			fmt.Printf("Starting server: %s\n", serverID)
 			if showLogs {
 				fmt.Println("Server logs will be displayed in console (Press Ctrl+C to stop)")
+			} else {
+				fmt.Printf("Server logs will be written to: %s.log\n", serverID)
 			}
 
 			return p.StartServer(serverID, serverConfig, sawPath, showLogs)
 		},
 	}
-	startCmd.Flags().Bool("logs", false, "Show server logs in console")
+	startCmd.Flags().Bool("logs", false, "Show server logs in console (default: log to file)")
 	startCmd.Flags().String("saw-path", "", "Path to Sandstorm Admin Wrapper installation")
 
 	// server stop command
@@ -131,9 +133,14 @@ func (p *Plugin) registerCommands(rootCmd *cobra.Command) {
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			serverID := args[0]
+			sawPath, _ := cmd.Flags().GetString("saw-path")
+			if sawPath == "" {
+				sawPath = p.config.DefaultSAWPath
+			}
+
 			fmt.Printf("Stopping server: %s\n", serverID)
 
-			if err := p.StopServer(serverID); err != nil {
+			if err := p.StopServer(serverID, sawPath); err != nil {
 				return fmt.Errorf("failed to stop server: %w", err)
 			}
 
@@ -141,44 +148,50 @@ func (p *Plugin) registerCommands(rootCmd *cobra.Command) {
 			return nil
 		},
 	}
+	stopCmd.Flags().String("saw-path", "", "Path to Sandstorm Admin Wrapper installation")
 
 	// server status command
 	statusCmd := &cobra.Command{
 		Use:   "status [server-id]",
 		Short: "Check server status",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if len(args) > 0 {
-				serverID := args[0]
-				running, err := p.GetServerStatus(serverID)
-				if err != nil {
-					return err
-				}
+			sawPath, _ := cmd.Flags().GetString("saw-path")
+			if sawPath == "" {
+				sawPath = p.config.DefaultSAWPath
+			}
 
-				status := "stopped"
-				if running {
-					status = "running"
-				}
-				fmt.Printf("Server %s: %s\n", serverID, status)
-			} else {
-				servers := p.ListServers()
-				if len(servers) == 0 {
-					fmt.Println("No managed servers found")
-					return nil
-				}
+			// Check actual running processes instead of in-memory state
+			procs, err := p.getRunningServerProcesses()
+			if err != nil {
+				return fmt.Errorf("failed to check running processes: %w", err)
+			}
 
-				fmt.Println("Managed Servers:")
-				fmt.Println(strings.Repeat("-", 50))
-				for id, running := range servers {
-					status := "stopped"
-					if running {
-						status = "running"
+			if len(procs) == 0 {
+				fmt.Println("No Insurgency server processes are currently running")
+				return nil
+			}
+
+			fmt.Printf("Running Insurgency Server Processes (%d):\n", len(procs))
+			fmt.Println(strings.Repeat("-", 50))
+
+			// Load SAW configs to map PIDs to server IDs
+			configs, _ := p.LoadSAWConfigs(sawPath)
+
+			for _, proc := range procs {
+				serverID := ""
+				// Try to find which server this PID belongs to
+				for sid := range configs {
+					if pid, err := p.loadPIDFile(sid, sawPath); err == nil && pid == proc.Pid {
+						serverID = fmt.Sprintf(" (Server: %s)", sid)
+						break
 					}
-					fmt.Printf("%-40s %s\n", id, status)
 				}
+				fmt.Printf("PID %-8d %s%s\n", proc.Pid, proc.Name, serverID)
 			}
 			return nil
 		},
 	}
+	statusCmd.Flags().String("saw-path", "", "Path to Sandstorm Admin Wrapper installation")
 
 	// server list command
 	listCmd := &cobra.Command{
@@ -275,6 +288,7 @@ func (p *Plugin) registerRoutes(e *core.ServeEvent) error {
 	e.Router.POST("/api/server/stop", func(re *core.RequestEvent) error {
 		data := struct {
 			ServerID string `json:"server_id"`
+			SAWPath  string `json:"saw_path"`
 		}{}
 
 		if err := re.BindBody(&data); err != nil {
@@ -285,7 +299,12 @@ func (p *Plugin) registerRoutes(e *core.ServeEvent) error {
 			return re.BadRequestError("server_id is required", nil)
 		}
 
-		if err := p.StopServer(data.ServerID); err != nil {
+		sawPath := data.SAWPath
+		if sawPath == "" {
+			sawPath = p.config.DefaultSAWPath
+		}
+
+		if err := p.StopServer(data.ServerID, sawPath); err != nil {
 			return re.InternalServerError("Failed to stop server", err)
 		}
 
@@ -355,6 +374,43 @@ func (p *Plugin) LoadSAWConfigs(sawPath string) (map[string]SAWServerConfig, err
 	}
 
 	return configs, nil
+}
+
+// getPIDFilePath returns the path to the PID file for a server
+func (p *Plugin) getPIDFilePath(serverID, sawPath string) string {
+	return filepath.Join(sawPath, "log", fmt.Sprintf("%s.pid", serverID))
+}
+
+// savePIDFile saves the server's PID to a file
+func (p *Plugin) savePIDFile(serverID string, pid int, sawPath string) error {
+	pidFile := p.getPIDFilePath(serverID, sawPath)
+	pidData := fmt.Sprintf("%d", pid)
+	return os.WriteFile(pidFile, []byte(pidData), 0644)
+}
+
+// loadPIDFile loads the server's PID from a file
+func (p *Plugin) loadPIDFile(serverID, sawPath string) (int, error) {
+	pidFile := p.getPIDFilePath(serverID, sawPath)
+	data, err := os.ReadFile(pidFile)
+	if err != nil {
+		return 0, err
+	}
+
+	var pid int
+	if _, err := fmt.Sscanf(string(data), "%d", &pid); err != nil {
+		return 0, fmt.Errorf("invalid PID file format: %w", err)
+	}
+
+	return pid, nil
+}
+
+// removePIDFile removes the PID file for a server
+func (p *Plugin) removePIDFile(serverID, sawPath string) error {
+	pidFile := p.getPIDFilePath(serverID, sawPath)
+	if err := os.Remove(pidFile); err != nil && !os.IsNotExist(err) {
+		return err
+	}
+	return nil
 }
 
 // StartServer starts an Insurgency server
@@ -444,6 +500,15 @@ func (p *Plugin) StartServer(serverID string, config SAWServerConfig, sawPath st
 		return fmt.Errorf("failed to get absolute path for SAW: %w", err)
 	}
 
+	// Apply server configuration before starting
+	serverInstancePath := filepath.Join(absSAWPath, "servers", serverID)
+	localConfigDir := filepath.Join(absSAWPath, "server-config", serverID)
+
+	if err := p.applyServerConfig(serverInstancePath, localConfigDir); err != nil {
+		p.app.Logger().Warn("Failed to apply server config", "error", err)
+		// Continue anyway - server might work with defaults
+	}
+
 	p.app.Logger().Info("Starting Insurgency server",
 		"serverID", serverID,
 		"name", config.ServerHostname,
@@ -451,13 +516,45 @@ func (p *Plugin) StartServer(serverID string, config SAWServerConfig, sawPath st
 		"workDir", absSAWPath,
 	)
 
+	// For servers without console logs, use PowerShell Start-Process to detach
+	// This ensures the server keeps running after our process exits
+	if !showLogs {
+		// Build the argument string for PowerShell
+		argString := strings.Join(args, " ")
+
+		// Start process and capture PID
+		psCmd := fmt.Sprintf(`
+			$proc = Start-Process -FilePath '%s' -ArgumentList '%s' -WorkingDirectory '%s' -WindowStyle Hidden -PassThru
+			Write-Output $proc.Id
+		`, serverExe, argString, absSAWPath)
+
+		cmd := exec.Command("powershell", "-Command", psCmd)
+		output, err := cmd.Output()
+		if err != nil {
+			return fmt.Errorf("failed to start server: %w", err)
+		}
+
+		// Parse PID from output
+		pidStr := strings.TrimSpace(string(output))
+		var pid int
+		if _, err := fmt.Sscanf(pidStr, "%d", &pid); err != nil {
+			p.app.Logger().Warn("Failed to parse server PID", "output", pidStr)
+		} else {
+			// Save PID to file for tracking
+			if err := p.savePIDFile(serverID, pid, sawPath); err != nil {
+				p.app.Logger().Warn("Failed to save PID file", "error", err)
+			}
+		}
+
+		p.app.Logger().Info("Server started in detached mode", "pid", pid)
+		return nil
+	}
+
+	// For console logs, use regular exec (server will stop when command exits)
 	cmd := exec.Command(serverExe, args...)
 	cmd.Dir = absSAWPath
-
-	if showLogs {
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-	}
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
 
 	if err := cmd.Start(); err != nil {
 		return fmt.Errorf("failed to start server: %w", err)
@@ -494,7 +591,36 @@ func (p *Plugin) monitorServer(serverID string, cmd *exec.Cmd) {
 }
 
 // StopServer stops a running server
-func (p *Plugin) StopServer(serverID string) error {
+func (p *Plugin) StopServer(serverID string, sawPath string) error {
+	// First try to get PID from file
+	pid, err := p.loadPIDFile(serverID, sawPath)
+	if err == nil {
+		// PID file exists, try to kill that process
+		p.app.Logger().Info("Stopping server via PID file", "serverID", serverID, "pid", pid)
+
+		// Use PowerShell to kill the process
+		psCmd := fmt.Sprintf("Stop-Process -Id %d -Force -ErrorAction SilentlyContinue", pid)
+		cmd := exec.Command("powershell", "-Command", psCmd)
+		if err := cmd.Run(); err != nil {
+			p.app.Logger().Warn("Failed to kill process via PID", "pid", pid, "error", err)
+		}
+
+		// Remove PID file
+		if err := p.removePIDFile(serverID, sawPath); err != nil {
+			p.app.Logger().Warn("Failed to remove PID file", "error", err)
+		}
+
+		// Update in-memory state
+		p.mu.Lock()
+		if server, exists := p.servers[serverID]; exists {
+			server.IsRunning = false
+		}
+		p.mu.Unlock()
+
+		return nil
+	}
+
+	// Fallback to in-memory tracking (for console-attached servers)
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
@@ -565,4 +691,130 @@ func GetPlugin(app *pocketbase.PocketBase) *Plugin {
 	// This would require storing the plugin instance in app context
 	// For now, we'll implement it when needed
 	return nil
+}
+
+// applyServerConfig copies configuration files to the server instance directory
+func (p *Plugin) applyServerConfig(serverInstancePath, localConfigDir string) error {
+	configFiles := []string{
+		"Game.ini",
+		"Engine.ini",
+		"Admins.txt",
+		"Bans.txt",
+		"MapCycle.txt",
+		"Motd.txt",
+	}
+
+	// Ensure local config directory exists
+	if err := os.MkdirAll(localConfigDir, 0755); err != nil {
+		return fmt.Errorf("failed to create local config directory: %w", err)
+	}
+
+	savedPath := filepath.Join(serverInstancePath, "Saved")
+	configBasePath := ""
+
+	// Check for WindowsServer first, then LinuxServer
+	windowsConfig := filepath.Join(savedPath, "Config", "WindowsServer")
+	linuxConfig := filepath.Join(savedPath, "Config", "LinuxServer")
+
+	if _, err := os.Stat(windowsConfig); err == nil {
+		configBasePath = windowsConfig
+	} else if _, err := os.Stat(linuxConfig); err == nil {
+		configBasePath = linuxConfig
+	} else {
+		// Create WindowsServer directory if neither exists
+		configBasePath = windowsConfig
+		if err := os.MkdirAll(configBasePath, 0755); err != nil {
+			return fmt.Errorf("failed to create config directory: %w", err)
+		}
+	}
+
+	// Copy each config file from local storage to server instance
+	for _, filename := range configFiles {
+		localFile := filepath.Join(localConfigDir, filename)
+		serverFile := filepath.Join(configBasePath, filename)
+
+		// If local file doesn't exist, create an empty one
+		if _, err := os.Stat(localFile); os.IsNotExist(err) {
+			if err := os.WriteFile(localFile, []byte{}, 0644); err != nil {
+				p.app.Logger().Warn("Failed to create config file", "file", filename, "error", err)
+				continue
+			}
+		}
+
+		// Copy from local to server
+		if err := copyFile(localFile, serverFile); err != nil {
+			p.app.Logger().Warn("Failed to copy config file", "file", filename, "error", err)
+		} else {
+			p.app.Logger().Debug("Applied config file", "file", filename)
+		}
+	}
+
+	return nil
+}
+
+// copyFile copies a file from src to dst
+func copyFile(src, dst string) error {
+	// Create destination directory if needed
+	dstDir := filepath.Dir(dst)
+	if err := os.MkdirAll(dstDir, 0755); err != nil {
+		return err
+	}
+
+	// Read source file
+	content, err := os.ReadFile(src)
+	if err != nil {
+		return err
+	}
+
+	// Write to destination
+	return os.WriteFile(dst, content, 0644)
+}
+
+// ProcessInfo holds information about a running process
+type ProcessInfo struct {
+	Pid  int
+	Name string
+}
+
+// getRunningServerProcesses returns all running Insurgency server processes
+func (p *Plugin) getRunningServerProcesses() ([]ProcessInfo, error) {
+	var procs []ProcessInfo
+
+	// Use PowerShell to get process information
+	cmd := exec.Command("powershell", "-Command",
+		"Get-Process -Name '*InsurgencyServer*' -ErrorAction SilentlyContinue | Select-Object Id, ProcessName | ConvertTo-Json")
+
+	output, err := cmd.Output()
+	if err != nil {
+		// If command fails, just return empty list
+		return procs, nil
+	}
+
+	// Parse JSON output
+	var result interface{}
+	if err := json.Unmarshal(output, &result); err != nil {
+		return procs, nil
+	}
+
+	// Handle single object or array
+	switch v := result.(type) {
+	case map[string]interface{}:
+		if id, ok := v["Id"].(float64); ok {
+			if name, ok := v["ProcessName"].(string); ok {
+				procs = append(procs, ProcessInfo{Pid: int(id), Name: name})
+			}
+		}
+	case []interface{}:
+		for _, item := range v {
+			if m, ok := item.(map[string]interface{}); ok {
+				if id, ok := m["Id"].(float64); ok {
+					if name, ok := m["ProcessName"].(string); ok {
+						procs = append(procs, ProcessInfo{Pid: int(id), Name: name})
+					}
+				}
+			}
+		}
+	}
+
+	return procs, nil
 }

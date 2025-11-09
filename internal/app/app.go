@@ -2,7 +2,6 @@ package app
 
 import (
 	"fmt"
-	"log"
 	"sandstorm-tracker/internal/a2s"
 	"sandstorm-tracker/internal/config"
 	"sandstorm-tracker/internal/handlers"
@@ -57,11 +56,6 @@ func New() (*App, error) {
 
 	// Initialize A2S pool (servers added in onServe)
 	app.A2SPool = a2s.NewServerPool()
-
-	// Initialize A2S debug logging
-	if err := a2s.InitDebugLog(); err != nil {
-		log.Printf("Warning: Failed to initialize A2S debug log: %v", err)
-	}
 
 	// Setup default plugins (includes server manager)
 	app.setupPlugins()
@@ -209,9 +203,6 @@ func (app *App) onTerminate(e *core.TerminateEvent) error {
 	}
 
 	// Note: ServerManager plugin handles its own cleanup via OnTerminate hook
-
-	// Close A2S debug log
-	a2s.CloseDebugLog()
 
 	return e.Next()
 }
