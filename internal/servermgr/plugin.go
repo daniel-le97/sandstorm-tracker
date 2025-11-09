@@ -439,11 +439,25 @@ func (p *Plugin) StartServer(serverID string, config SAWServerConfig, sawPath st
 		return fmt.Errorf("server executable not found at: %s", serverExe)
 	}
 
+	// Build scenario name - for Checkpoint and Push modes, include the side
 	scenarioName := fmt.Sprintf("Scenario_%s_%s", config.ServerDefaultMap, config.ServerScenarioMode)
+	if config.ServerScenarioMode == "Checkpoint" || config.ServerScenarioMode == "Push" {
+		scenarioName += "_" + config.ServerDefaultSide
+	}
 	travelArgs := config.ServerDefaultMap + "?Scenario=" + scenarioName
 
 	if config.ServerMaxPlayers != "" {
 		travelArgs += "?MaxPlayers=" + config.ServerMaxPlayers
+	}
+
+	// Add Game mode if specified
+	if config.ServerGameMode != "" && config.ServerGameMode != "None" {
+		travelArgs += "?Game=" + config.ServerGameMode
+	}
+
+	// Add password if specified
+	if config.ServerPassword != "" {
+		travelArgs += "?Password=" + config.ServerPassword
 	}
 
 	if config.ServerLightingDay == "true" {
@@ -474,10 +488,6 @@ func (p *Plugin) StartServer(serverID string, config SAWServerConfig, sawPath st
 		args = append(args, "-log="+serverID+".log")
 	}
 
-	if config.ServerPassword != "" {
-		args = append(args, "-Password="+config.ServerPassword)
-	}
-
 	if len(config.ServerMutators) > 0 {
 		mutators := strings.Join(config.ServerMutators, ",")
 		args = append(args, "-Mutators="+mutators)
@@ -501,7 +511,8 @@ func (p *Plugin) StartServer(serverID string, config SAWServerConfig, sawPath st
 	}
 
 	// Apply server configuration before starting
-	serverInstancePath := filepath.Join(absSAWPath, "servers", serverID)
+	// SAW uses sandstorm-server/Insurgency/Saved for all server instances
+	serverInstancePath := filepath.Join(absSAWPath, "sandstorm-server", "Insurgency")
 	localConfigDir := filepath.Join(absSAWPath, "server-config", serverID)
 
 	if err := p.applyServerConfig(serverInstancePath, localConfigDir); err != nil {
