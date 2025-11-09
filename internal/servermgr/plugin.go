@@ -74,10 +74,11 @@ func (p *Plugin) registerCommands(rootCmd *cobra.Command) {
 	startCmd := &cobra.Command{
 		Use:   "start [server-id]",
 		Short: "Start an Insurgency server",
-		Long:  "Start an Insurgency server from SAW configuration. If no server ID is provided, the first available server will be started.",
+		Long:  "Start an Insurgency server from SAW configuration. Use --all to start all servers, or provide a server ID to start a specific server.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			showLogs, _ := cmd.Flags().GetBool("logs")
 			sawPath, _ := cmd.Flags().GetString("saw-path")
+			startAll, _ := cmd.Flags().GetBool("all")
 
 			if sawPath == "" {
 				sawPath = p.config.DefaultSAWPath
@@ -91,6 +92,36 @@ func (p *Plugin) registerCommands(rootCmd *cobra.Command) {
 				return fmt.Errorf("failed to load SAW configs: %w", err)
 			}
 
+			if len(configs) == 0 {
+				fmt.Println("No servers found in SAW configuration")
+				return nil
+			}
+
+			// Start all servers if --all flag is set
+			if startAll {
+				fmt.Printf("Starting %d server(s)...\n", len(configs))
+				successCount := 0
+				failCount := 0
+
+				for serverID, serverConfig := range configs {
+					fmt.Printf("  Starting %s (%s)... ", serverID, serverConfig.ServerHostname)
+					if err := p.StartServer(serverID, serverConfig, sawPath, false); err != nil {
+						fmt.Printf("FAILED: %v\n", err)
+						failCount++
+					} else {
+						fmt.Println("OK")
+						successCount++
+					}
+				}
+
+				fmt.Printf("\nStarted %d/%d servers successfully\n", successCount, len(configs))
+				if failCount > 0 {
+					return fmt.Errorf("%d server(s) failed to start", failCount)
+				}
+				return nil
+			}
+
+			// Start single server
 			var serverID string
 			var serverConfig SAWServerConfig
 
@@ -124,20 +155,87 @@ func (p *Plugin) registerCommands(rootCmd *cobra.Command) {
 		},
 	}
 	startCmd.Flags().Bool("logs", false, "Show server logs in console (default: log to file)")
+	startCmd.Flags().Bool("all", false, "Start all servers from SAW configuration")
 	startCmd.Flags().String("saw-path", "", "Path to Sandstorm Admin Wrapper installation")
 
 	// server stop command
 	stopCmd := &cobra.Command{
 		Use:   "stop [server-id]",
 		Short: "Stop a running Insurgency server",
-		Args:  cobra.ExactArgs(1),
+		Long:  "Stop a running Insurgency server. Use --all to stop all servers, or provide a server ID to stop a specific server.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			serverID := args[0]
 			sawPath, _ := cmd.Flags().GetString("saw-path")
+			stopAll, _ := cmd.Flags().GetBool("all")
+
 			if sawPath == "" {
 				sawPath = p.config.DefaultSAWPath
 			}
+			if sawPath == "" {
+				return fmt.Errorf("SAW path not provided. Use --saw-path flag or set sawPath in config")
+			}
 
+			// Stop all servers if --all flag is set
+			if stopAll {
+				configs, err := p.LoadSAWConfigs(sawPath)
+				if err != nil {
+					return fmt.Errorf("failed to load SAW configs: %w", err)
+				}
+
+				if len(configs) == 0 {
+					fmt.Println("No servers found in SAW configuration")
+					return nil
+				}
+
+				fmt.Printf("Stopping all servers...\n")
+				successCount := 0
+				failCount := 0
+				staleCount := 0
+
+				for serverID := range configs {
+					// Check if PID file exists (server might not be running)
+					pid, err := p.loadPIDFile(serverID)
+					if err != nil {
+						// No PID file, skip
+						continue
+					}
+
+					// Check if the process is actually running
+					if !p.isProcessRunning(pid) {
+						// Clean up stale PID file
+						p.app.Logger().Info("Cleaning up stale PID file", "serverID", serverID, "pid", pid)
+						if err := p.removePIDFile(serverID); err != nil {
+							p.app.Logger().Warn("Failed to remove stale PID file", "error", err)
+						}
+						staleCount++
+						continue
+					}
+
+					fmt.Printf("  Stopping %s... ", serverID)
+					if err := p.StopServer(serverID, sawPath); err != nil {
+						fmt.Printf("FAILED: %v\n", err)
+						failCount++
+					} else {
+						fmt.Println("OK")
+						successCount++
+					}
+				}
+
+				if staleCount > 0 {
+					fmt.Printf("Cleaned up %d stale PID file(s)\n", staleCount)
+				}
+				fmt.Printf("\nStopped %d server(s) successfully\n", successCount)
+				if failCount > 0 {
+					return fmt.Errorf("%d server(s) failed to stop", failCount)
+				}
+				return nil
+			}
+
+			// Stop single server
+			if len(args) == 0 {
+				return fmt.Errorf("server ID is required (or use --all to stop all servers)")
+			}
+
+			serverID := args[0]
 			fmt.Printf("Stopping server: %s\n", serverID)
 
 			if err := p.StopServer(serverID, sawPath); err != nil {
@@ -148,6 +246,7 @@ func (p *Plugin) registerCommands(rootCmd *cobra.Command) {
 			return nil
 		},
 	}
+	stopCmd.Flags().Bool("all", false, "Stop all running servers")
 	stopCmd.Flags().String("saw-path", "", "Path to Sandstorm Admin Wrapper installation")
 
 	// server status command
@@ -218,7 +317,7 @@ func (p *Plugin) registerCommands(rootCmd *cobra.Command) {
 				for _, stale := range stalePIDs {
 					fmt.Printf("  %s\n", stale)
 				}
-				fmt.Println("\nRun 'server stop-all' to clean up stale PID files")
+				fmt.Println("\nRun 'server stop --all' to clean up stale PID files")
 			}
 
 			return nil
@@ -266,122 +365,6 @@ func (p *Plugin) registerCommands(rootCmd *cobra.Command) {
 		},
 	}
 	listCmd.Flags().String("saw-path", "", "Path to Sandstorm Admin Wrapper installation")
-
-	// server start-all command
-	startAllCmd := &cobra.Command{
-		Use:   "start-all",
-		Short: "Start all servers from SAW configuration",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			sawPath, _ := cmd.Flags().GetString("saw-path")
-			if sawPath == "" {
-				sawPath = p.config.DefaultSAWPath
-			}
-			if sawPath == "" {
-				return fmt.Errorf("SAW path not provided. Use --saw-path flag or set sawPath in config")
-			}
-
-			configs, err := p.LoadSAWConfigs(sawPath)
-			if err != nil {
-				return fmt.Errorf("failed to load SAW configs: %w", err)
-			}
-
-			if len(configs) == 0 {
-				fmt.Println("No servers found in SAW configuration")
-				return nil
-			}
-
-			fmt.Printf("Starting %d server(s)...\n", len(configs))
-			successCount := 0
-			failCount := 0
-
-			for serverID, serverConfig := range configs {
-				fmt.Printf("  Starting %s (%s)... ", serverID, serverConfig.ServerHostname)
-				if err := p.StartServer(serverID, serverConfig, sawPath, false); err != nil {
-					fmt.Printf("FAILED: %v\n", err)
-					failCount++
-				} else {
-					fmt.Println("OK")
-					successCount++
-				}
-			}
-
-			fmt.Printf("\nStarted %d/%d servers successfully\n", successCount, len(configs))
-			if failCount > 0 {
-				return fmt.Errorf("%d server(s) failed to start", failCount)
-			}
-			return nil
-		},
-	}
-	startAllCmd.Flags().String("saw-path", "", "Path to Sandstorm Admin Wrapper installation")
-
-	// server stop-all command
-	stopAllCmd := &cobra.Command{
-		Use:   "stop-all",
-		Short: "Stop all running Insurgency servers",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			sawPath, _ := cmd.Flags().GetString("saw-path")
-			if sawPath == "" {
-				sawPath = p.config.DefaultSAWPath
-			}
-			if sawPath == "" {
-				return fmt.Errorf("SAW path not provided. Use --saw-path flag or set sawPath in config")
-			}
-
-			configs, err := p.LoadSAWConfigs(sawPath)
-			if err != nil {
-				return fmt.Errorf("failed to load SAW configs: %w", err)
-			}
-
-			if len(configs) == 0 {
-				fmt.Println("No servers found in SAW configuration")
-				return nil
-			}
-
-			fmt.Printf("Stopping all servers...\n")
-			successCount := 0
-			failCount := 0
-			staleCount := 0
-
-			for serverID := range configs {
-				// Check if PID file exists (server might not be running)
-				pid, err := p.loadPIDFile(serverID)
-				if err != nil {
-					// No PID file, skip
-					continue
-				}
-
-				// Check if the process is actually running
-				if !p.isProcessRunning(pid) {
-					// Clean up stale PID file
-					p.app.Logger().Info("Cleaning up stale PID file", "serverID", serverID, "pid", pid)
-					if err := p.removePIDFile(serverID); err != nil {
-						p.app.Logger().Warn("Failed to remove stale PID file", "error", err)
-					}
-					staleCount++
-					continue
-				}
-
-				fmt.Printf("  Stopping %s... ", serverID)
-				if err := p.StopServer(serverID, sawPath); err != nil {
-					fmt.Printf("FAILED: %v\n", err)
-					failCount++
-				} else {
-					fmt.Println("OK")
-					successCount++
-				}
-			}
-
-			if staleCount > 0 {
-				fmt.Printf("Cleaned up %d stale PID file(s)\n", staleCount)
-			}
-			fmt.Printf("\nStopped %d server(s) successfully\n", successCount)
-			if failCount > 0 {
-				return fmt.Errorf("%d server(s) failed to stop", failCount)
-			}
-			return nil
-		},
-	}
-	stopAllCmd.Flags().String("saw-path", "", "Path to Sandstorm Admin Wrapper installation")
 
 	// server update-steamcmd command
 	updateSteamCmdCmd := &cobra.Command{
@@ -432,7 +415,7 @@ func (p *Plugin) registerCommands(rootCmd *cobra.Command) {
 				fmt.Println("  - Server crashes")
 				fmt.Println("  - Data corruption")
 				fmt.Println("  - Player disconnects")
-				fmt.Println("\nPlease stop all servers first using: server stop-all")
+				fmt.Println("\nPlease stop all servers first using: server stop --all")
 				fmt.Println("Or use --force to update anyway (not recommended)")
 				return fmt.Errorf("servers are running - stop them first or use --force")
 			}
@@ -454,7 +437,7 @@ func (p *Plugin) registerCommands(rootCmd *cobra.Command) {
 	updateGameCmd.Flags().Bool("validate", false, "Validate all server files (slower but more thorough)")
 	updateGameCmd.Flags().Bool("force", false, "Force update even if servers are running (not recommended)")
 
-	serverCmd.AddCommand(startCmd, stopCmd, statusCmd, listCmd, startAllCmd, stopAllCmd, updateSteamCmdCmd, updateGameCmd)
+	serverCmd.AddCommand(startCmd, stopCmd, statusCmd, listCmd, updateSteamCmdCmd, updateGameCmd)
 	rootCmd.AddCommand(serverCmd)
 }
 
