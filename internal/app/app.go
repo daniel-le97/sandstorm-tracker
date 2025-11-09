@@ -144,7 +144,7 @@ func (app *App) onServe(e *core.ServeEvent) error {
 	}
 
 	// Register web routes
-	handlers.Register(app)
+	handlers.Register(app, e)
 
 	// Don't register A2S cron immediately - wait for servers to become active
 	// Set callback to register A2S job when server becomes active
