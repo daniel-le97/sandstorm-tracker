@@ -254,10 +254,10 @@ func init() {
 			],
 			"id": "pbc_friendly_fire_incidents",
 			"indexes": [
-				"CREATE INDEX idx_ff_match ON friendly_fire_incidents (match)",
-				"CREATE INDEX idx_ff_killer ON friendly_fire_incidents (killer)",
-				"CREATE INDEX idx_ff_timestamp ON friendly_fire_incidents (timestamp)",
-				"CREATE INDEX idx_ff_classification ON friendly_fire_incidents (accident_classification)"
+				"CREATE INDEX IF NOT EXISTS ` + "`" + `idx_ff_match` + "`" + ` ON ` + "`" + `friendly_fire_incidents` + "`" + ` (` + "`" + `match` + "`" + `)",
+				"CREATE INDEX IF NOT EXISTS ` + "`" + `idx_ff_killer` + "`" + ` ON ` + "`" + `friendly_fire_incidents` + "`" + ` (` + "`" + `killer` + "`" + `)",
+				"CREATE INDEX IF NOT EXISTS ` + "`" + `idx_ff_timestamp` + "`" + ` ON ` + "`" + `friendly_fire_incidents` + "`" + ` (` + "`" + `timestamp` + "`" + `)",
+				"CREATE INDEX IF NOT EXISTS ` + "`" + `idx_ff_classification` + "`" + ` ON ` + "`" + `friendly_fire_incidents` + "`" + ` (` + "`" + `accident_classification` + "`" + `)"
 			],
 			"listRule": null,
 			"name": "friendly_fire_incidents",

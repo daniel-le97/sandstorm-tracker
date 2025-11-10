@@ -127,17 +127,15 @@ func TestGetPlayerTotalKD(t *testing.T) {
 func TestGetPlayerStats(t *testing.T) {
 	testApp, ctx, _, match := testSetup(t)
 
-	// Create player stats with score and time
+	// Create player stats with score and playtime (30 minutes = 1800 seconds)
 	joinTime := time.Now().Add(-30 * time.Minute)
-	leftTime := time.Now()
 
 	player := createTestPlayer(t, ctx, testApp, "76561198000000001", "TestPlayer", match, &joinTime)
 
-	// Set score and times
+	// Set score and playtime
 	updatePlayerStats(t, testApp, match.ID, player.ID, map[string]any{
 		"score":           1500,
-		"first_joined_at": joinTime.Format("2006-01-02 15:04:05.000Z"),
-		"last_left_at":    leftTime.Format("2006-01-02 15:04:05.000Z"),
+		"total_play_time": 1800, // 30 minutes in seconds
 	})
 
 	// Test GetPlayerStats
@@ -174,15 +172,12 @@ func TestGetTopPlayersByScorePerMin(t *testing.T) {
 
 	for _, p := range players {
 		joinTime := time.Now().Add(-time.Duration(p.mins) * time.Minute)
-		leftTime := time.Now()
-
 		player := createTestPlayer(t, ctx, testApp, "steam_"+p.name, p.name, match, &joinTime)
 
-		// Set score and times
+		// Set score and playtime (convert minutes to seconds)
 		updatePlayerStats(t, testApp, match.ID, player.ID, map[string]any{
 			"score":           p.score,
-			"first_joined_at": joinTime.Format("2006-01-02 15:04:05.000Z"),
-			"last_left_at":    leftTime.Format("2006-01-02 15:04:05.000Z"),
+			"total_play_time": p.mins * 60,
 		})
 	}
 
@@ -220,7 +215,6 @@ func TestGetPlayerRank(t *testing.T) {
 	// Create 5 players with different scores
 	playerIDs := make([]string, 5)
 	joinTime := time.Now().Add(-10 * time.Minute)
-	leftTime := time.Now()
 
 	for i := 0; i < 5; i++ {
 		steamID := fmt.Sprintf("steam_%d", i)
@@ -233,8 +227,7 @@ func TestGetPlayerRank(t *testing.T) {
 
 		updatePlayerStats(t, testApp, match.ID, player.ID, map[string]any{
 			"score":           score,
-			"first_joined_at": joinTime.Format("2006-01-02 15:04:05.000Z"),
-			"last_left_at":    leftTime.Format("2006-01-02 15:04:05.000Z"),
+			"total_play_time": 1800, // 30 minutes in seconds
 		})
 	}
 

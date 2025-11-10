@@ -272,10 +272,11 @@ func UpsertMatchPlayerStats(ctx context.Context, pbApp core.App, matchID, player
 
 	var record *core.Record
 	if err == nil && len(records) > 0 {
+		// Record already exists - player is already in the match
 		record = records[0]
-	}
-
-	if err != nil {
+		// Don't increment session_count - it should only count when player first joins
+		// Just ensure the record exists (no updates needed here)
+	} else {
 		// Create new record - player is joining the match for the first time
 		collection, err := pbApp.FindCollectionByNameOrId("match_player_stats")
 		if err != nil {
@@ -288,9 +289,6 @@ func UpsertMatchPlayerStats(ctx context.Context, pbApp core.App, matchID, player
 		if team != nil {
 			record.Set("team", *team)
 		}
-		if firstJoinedAt != nil {
-			record.Set("first_joined_at", firstJoinedAt.Format(time.RFC3339))
-		}
 		record.Set("kills", 0)
 		record.Set("deaths", 0)
 		record.Set("assists", 0)
@@ -299,10 +297,6 @@ func UpsertMatchPlayerStats(ctx context.Context, pbApp core.App, matchID, player
 		record.Set("objectives_destroyed", 0)
 		record.Set("objectives_captured", 0)
 		record.Set("status", "ongoing")
-	} else {
-		// Record already exists - player is already in the match
-		// Don't increment session_count - it should only count when player first joins
-		// Just ensure the record exists (no updates needed here)
 	}
 
 	return pbApp.Save(record)
@@ -582,7 +576,7 @@ func DisconnectAllPlayersInMatch(ctx context.Context, pbApp core.App, matchID st
 
 	for _, record := range records {
 		if lastLeftAt != nil {
-			record.Set("last_left_at", lastLeftAt.Format("2006-01-02 15:04:05.000Z"))
+			record.Set("left_at", lastLeftAt.Format("2006-01-02 15:04:05.000Z"))
 		}
 		record.Set("status", "disconnected")
 		if err := pbApp.Save(record); err != nil {
@@ -602,7 +596,7 @@ func DisconnectPlayerFromMatch(ctx context.Context, pbApp core.App, matchID, pla
 	}
 
 	if lastLeftAt != nil {
-		record.Set("last_left_at", lastLeftAt.Format("2006-01-02 15:04:05.000Z"))
+		record.Set("left_at", lastLeftAt.Format("2006-01-02 15:04:05.000Z"))
 	}
 	record.Set("is_currently_connected", false)
 	record.Set("status", "disconnected")

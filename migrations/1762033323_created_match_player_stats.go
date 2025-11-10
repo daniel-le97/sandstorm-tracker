@@ -172,6 +172,32 @@ func init() {
 				},
 				{
 					"hidden": false,
+					"id": "select2063623452",
+					"maxSelect": 1,
+					"name": "status",
+					"presentable": false,
+					"required": false,
+					"system": false,
+					"type": "select",
+					"values": [
+						"ongoing",
+						"disconnected",
+						"finished"
+					]
+				},
+				{
+					"hidden": false,
+					"id": "date922899566",
+					"max": "",
+					"min": "",
+					"name": "left_at",
+					"presentable": false,
+					"required": false,
+					"system": false,
+					"type": "date"
+				},
+				{
+					"hidden": false,
 					"id": "autodate2990389176",
 					"name": "created",
 					"onCreate": true,
