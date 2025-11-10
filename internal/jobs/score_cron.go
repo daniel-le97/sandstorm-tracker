@@ -473,8 +473,9 @@ func parseRconListPlayers(response string) []RconPlayer {
 			continue
 		}
 
-		// Skip if NetID doesn't contain "SteamNWI" (only real players have Steam IDs)
-		if !containsString(netID, "SteamNWI") {
+		// Skip if NetID is empty or invalid (accept Steam, Epic, and other platforms)
+		// Valid NetIDs contain platform identifiers like "SteamNWI:", "EOS:", etc.
+		if netID == "" || netID == "0" {
 			continue
 		}
 

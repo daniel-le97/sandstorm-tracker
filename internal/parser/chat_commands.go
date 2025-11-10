@@ -95,39 +95,30 @@ func (h *ChatCommandHandler) handleKDR(ctx context.Context, serverID, steamID, p
 
 // handleStats shows player's total stats and ranking
 func (h *ChatCommandHandler) handleStats(ctx context.Context, serverID, steamID, playerName string) {
-	// Get player stats
-	player, err := database.GetOrCreatePlayerBySteamID(ctx, h.parser.pbApp, steamID, playerName)
+	// Get or create player and fetch aggregated stats + rank in one helper call
+	player, stats, rank, totalPlayers, err := database.GetOrCreatePlayerWithStatsAndRank(ctx, h.parser.pbApp, steamID, playerName)
 	if err != nil {
-		log.Printf("[CHAT] Failed to get player for stats: %v", err)
+		log.Printf("[CHAT] Failed to get player stats/rank: %v", err)
 		return
 	}
 
-	// Get total score and play time
-	stats, err := database.GetPlayerStats(ctx, h.parser.pbApp, player.ID)
-	if err != nil {
-		log.Printf("[CHAT] Failed to get player stats: %v", err)
-		return
-	}
-
-	// Calculate score/min
+	// Calculate score/min (stats may already contain zero values)
 	scorePerMin := 0.0
-	if stats.TotalDurationSeconds > 0 {
+	if stats != nil && stats.TotalDurationSeconds > 0 {
 		scorePerMin = float64(stats.TotalScore) / (float64(stats.TotalDurationSeconds) / 60.0)
-	}
-
-	// Get player's rank
-	rank, totalPlayers, err := database.GetPlayerRank(ctx, h.parser.pbApp, player.ID)
-	if err != nil {
-		log.Printf("[CHAT] Failed to get player rank: %v", err)
-		rank = 0
-		totalPlayers = 0
 	}
 
 	durationHours := stats.TotalDurationSeconds / 3600
 	durationMins := (stats.TotalDurationSeconds % 3600) / 60
 
+	// Use the canonical name from the DB record when available
+	displayName := playerName
+	if player != nil && player.Name != "" {
+		displayName = player.Name
+	}
+
 	message := fmt.Sprintf("%s: Score: %d, Time: %dh%dm, Score/Min: %.1f, Rank: #%d/%d",
-		playerName, stats.TotalScore, durationHours, durationMins, scorePerMin, rank, totalPlayers)
+		displayName, stats.TotalScore, durationHours, durationMins, scorePerMin, rank, totalPlayers)
 	h.sendRconSay(serverID, message)
 }
 

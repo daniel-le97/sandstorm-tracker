@@ -214,3 +214,64 @@ func GetTopWeapons(ctx context.Context, pbApp core.App, playerID string, limit i
 
 	return result, nil
 }
+
+// GetPlayerStatsAndRank returns aggregated stats for a player and their rank (single query)
+func GetPlayerStatsAndRank(ctx context.Context, pbApp core.App, playerID string) (*PlayerStats, int, int, error) {
+	type outRow struct {
+		TotalScore           int `db:"total_score"`
+		TotalDurationSeconds int `db:"total_duration_seconds"`
+		Rank                 int `db:"rank"`
+		TotalPlayers         int `db:"total_players"`
+	}
+
+	var row outRow
+
+	err := pbApp.DB().
+		NewQuery(`
+		WITH agg AS (
+			SELECT player, SUM(score) as total_score, SUM(total_play_time) as total_duration_seconds
+			FROM match_player_stats
+			GROUP BY player
+		),
+		player_row AS (
+			SELECT COALESCE(total_score, 0) as total_score, COALESCE(total_duration_seconds, 0) as total_duration_seconds
+			FROM agg WHERE player = {:player}
+		),
+		scores AS (
+			SELECT player,
+			CASE WHEN total_duration_seconds > 0 THEN CAST(total_score AS REAL) / (CAST(total_duration_seconds AS REAL) / 60.0) ELSE 0 END as score_per_min
+			FROM agg
+		)
+		SELECT 
+			COALESCE((SELECT total_score FROM player_row), 0) as total_score,
+			COALESCE((SELECT total_duration_seconds FROM player_row), 0) as total_duration_seconds,
+			(COALESCE((SELECT COUNT(*) + 1 FROM scores WHERE score_per_min > (SELECT score_per_min FROM scores WHERE player = {:player})), 1)) as rank,
+			(COALESCE((SELECT COUNT(*) FROM scores), 0)) as total_players
+		`).
+		Bind(map[string]any{"player": playerID}).
+		One(&row)
+
+	if err != nil {
+		return nil, 0, 0, err
+	}
+
+	return &PlayerStats{
+		TotalScore:           row.TotalScore,
+		TotalDurationSeconds: row.TotalDurationSeconds,
+	}, row.Rank, row.TotalPlayers, nil
+}
+
+// GetOrCreatePlayerWithStatsAndRank finds or creates a player by SteamID, then returns aggregated stats and rank
+func GetOrCreatePlayerWithStatsAndRank(ctx context.Context, pbApp core.App, steamID, name string) (*Player, *PlayerStats, int, int, error) {
+	player, err := GetOrCreatePlayerBySteamID(ctx, pbApp, steamID, name)
+	if err != nil {
+		return nil, nil, 0, 0, err
+	}
+
+	stats, rank, total, err := GetPlayerStatsAndRank(ctx, pbApp, player.ID)
+	if err != nil {
+		return player, &PlayerStats{TotalScore: 0, TotalDurationSeconds: 0}, 0, 0, err
+	}
+
+	return player, stats, rank, total, nil
+}

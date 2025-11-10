@@ -34,6 +34,7 @@ type logPatterns struct {
 	RoundEnd         *regexp.Regexp
 	GameOver         *regexp.Regexp
 	MapLoad          *regexp.Regexp
+	MapTravel        *regexp.Regexp
 	// DifficultyChange   *regexp.Regexp // Not currently used
 	MapVote            *regexp.Regexp
 	ChatCommand        *regexp.Regexp
@@ -66,6 +67,9 @@ func newLogPatterns() *logPatterns {
 
 		// Map and server events
 		MapLoad: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\s*\d+\]LogLoad: LoadMap: /Game/Maps/([^/]+)/[^?]+\?.*Scenario=([^?&]+).*MaxPlayers=(\d+).*Lighting=([^?&]+)`),
+		// ProcessServerTravel events when the map changes during runtime
+		// Example: [2025.10.21-20.12.42:785][454]LogGameMode: ProcessServerTravel: Town?Scenario=Scenario_Hideout_Skirmish?Game=?
+		MapTravel: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\d+\]LogGameMode: ProcessServerTravel: ([^?]+)\?Scenario=([^?]+)\?Game=([^\s]*)`),
 
 		// DifficultyChange: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\s*\d+\]LogAI: Warning: AI difficulty set to ([0-9.]+)`), // Not currently used
 
@@ -86,6 +90,65 @@ func newLogPatterns() *logPatterns {
 		// Utility pattern for timestamp extraction
 		Timestamp: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]`),
 	}
+}
+
+// tryProcessMapTravel handles in-game map transitions (ProcessServerTravel)
+// It force-ends any active match on the server and creates a new match with the provided map/scenario
+func (p *LogParser) tryProcessMapTravel(ctx context.Context, line string, timestamp time.Time, serverID string) bool {
+	matches := p.patterns.MapTravel.FindStringSubmatch(line)
+	if len(matches) < 4 {
+		return false
+	}
+
+	mapName := strings.TrimSpace(matches[2])
+	scenario := strings.TrimSpace(matches[3])
+	// gameParam := strings.TrimSpace(matches[4]) // currently unused
+
+	log.Printf("Map travel detected: %s (scenario: %s) on server %s", mapName, scenario, serverID)
+
+	// If there's an active match, force-end it first
+	activeMatch, err := database.GetActiveMatch(ctx, p.pbApp, serverID)
+	if err == nil && activeMatch != nil {
+		log.Printf("Found active match %s on server %s, force-ending it before travel",
+			activeMatch.ID, serverID)
+
+		// Determine end time (use last player activity if available)
+		endTime := activeMatch.StartTime
+		if activeMatch.UpdatedAt != nil {
+			endTime = activeMatch.UpdatedAt
+		}
+
+		playersInMatch, err := database.GetAllPlayersInMatch(ctx, p.pbApp, activeMatch.ID)
+		if err == nil && len(playersInMatch) > 0 {
+			for _, pl := range playersInMatch {
+				if pl.UpdatedAt != nil && pl.UpdatedAt.After(*endTime) {
+					endTime = pl.UpdatedAt
+				}
+			}
+		}
+
+		if err := database.EndMatch(ctx, p.pbApp, activeMatch.ID, endTime, nil); err != nil {
+			log.Printf("Failed to force-end match %s: %v", activeMatch.ID, err)
+		}
+
+		if err := database.DisconnectAllPlayersInMatch(ctx, p.pbApp, activeMatch.ID, endTime); err != nil {
+			log.Printf("Failed to disconnect players from match %s: %v", activeMatch.ID, err)
+		}
+
+		if err := database.DeleteMatchIfEmpty(ctx, p.pbApp, activeMatch.ID); err != nil {
+			log.Printf("Failed to check/delete empty match %s: %v", activeMatch.ID, err)
+		}
+	}
+
+	// Create the new match for the traveled map
+	_, err = database.CreateMatch(ctx, p.pbApp, serverID, &mapName, &scenario, &timestamp)
+	if err != nil {
+		log.Printf("Failed to create match for map travel %s on server %s: %v", mapName, serverID, err)
+	} else {
+		log.Printf("Created new match for traveled map %s on server %s", mapName, serverID)
+	}
+
+	return true
 }
 
 // NewLogParser creates a new log parser with PocketBase app
@@ -122,6 +185,11 @@ func (p *LogParser) ParseAndProcess(ctx context.Context, line string, serverID s
 
 	// Try each event type and process immediately
 	// NOTE: Check objectives BEFORE kills to prevent objectives from being counted as kills
+
+	if p.tryProcessMapTravel(ctx, line, timestamp, serverID) {
+		return nil
+	}
+
 	if p.tryProcessMapLoad(ctx, line, timestamp, serverID) {
 		return nil
 	}
