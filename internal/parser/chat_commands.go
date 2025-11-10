@@ -172,11 +172,16 @@ func (h *ChatCommandHandler) handleGuns(ctx context.Context, serverID, steamID, 
 		return
 	}
 
-	h.sendRconSay(serverID, fmt.Sprintf("%s's Top 3 Weapons by Kills:", playerName))
+	// Build a single message with all weapons
+	weaponList := ""
 	for i, weapon := range topWeapons {
-		message := fmt.Sprintf("#%d: %s - %d kills", i+1, weapon.Name, weapon.Kills)
-		h.sendRconSay(serverID, message)
+		if i > 0 {
+			weaponList += ", "
+		}
+		weaponList += fmt.Sprintf("#%d: %s (%d)", i+1, weapon.Name, weapon.Kills)
 	}
+	message := fmt.Sprintf("%s's Top Weapons: %s", playerName, weaponList)
+	h.sendRconSay(serverID, message)
 }
 
 // sendRconSay sends a message via RCON say command

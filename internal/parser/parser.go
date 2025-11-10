@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"sandstorm-tracker/internal/database"
+	"sandstorm-tracker/internal/ml"
 
 	"github.com/pocketbase/pocketbase/core"
 )
@@ -120,7 +121,16 @@ func (p *LogParser) ParseAndProcess(ctx context.Context, line string, serverID s
 	}
 
 	// Try each event type and process immediately
+	// NOTE: Check objectives BEFORE kills to prevent objectives from being counted as kills
 	if p.tryProcessMapLoad(ctx, line, timestamp, serverID) {
+		return nil
+	}
+
+	if p.tryProcessObjectiveDestroyed(ctx, line, timestamp, serverID, logFilePath) {
+		return nil
+	}
+
+	if p.tryProcessObjectiveCaptured(ctx, line, timestamp, serverID, logFilePath) {
 		return nil
 	}
 
@@ -133,14 +143,6 @@ func (p *LogParser) ParseAndProcess(ctx context.Context, line string, serverID s
 	}
 
 	if p.tryProcessPlayerDisconnect(ctx, line, timestamp, serverID) {
-		return nil
-	}
-
-	if p.tryProcessObjectiveDestroyed(ctx, line, timestamp, serverID, logFilePath) {
-		return nil
-	}
-
-	if p.tryProcessObjectiveCaptured(ctx, line, timestamp, serverID, logFilePath) {
 		return nil
 	}
 
@@ -162,9 +164,15 @@ func (p *LogParser) tryProcessKillEvent(ctx context.Context, line string, timest
 	}
 
 	killerSection := strings.TrimSpace(matches[2])
-	_ = strings.TrimSpace(matches[3]) // victimName - not currently used
+	victimName := strings.TrimSpace(matches[3])
 	victimSteamID := strings.TrimSpace(matches[4])
+	victimTeamStr := strings.TrimSpace(matches[5])
 	weapon := cleanWeaponName(matches[6])
+
+	victimTeam := -1
+	if t, err := strconv.Atoi(victimTeamStr); err == nil {
+		victimTeam = t
+	}
 
 	// Parse killer section
 	killers := parseKillerSection(killerSection)
@@ -172,10 +180,8 @@ func (p *LogParser) tryProcessKillEvent(ctx context.Context, line string, timest
 		return true // Parsed but no valid killers (AI suicide)
 	}
 
-	// Skip if victim is not a bot (we only track bot kills for PvE)
-	if victimSteamID != "INVALID" {
-		return true // Parsed but ignored (PvP)
-	}
+	// Determine if this is PvP (player victim) or PvE (bot victim)
+	isPvP := victimSteamID != "INVALID"
 
 	// Get or create the current active match for this server
 	activeMatch, err := database.GetActiveMatch(ctx, p.pbApp, serverID)
@@ -243,13 +249,50 @@ func (p *LogParser) tryProcessKillEvent(ctx context.Context, line string, timest
 			continue
 		}
 
-		// Determine if this is a kill or assist
+		// Only process for primary killer (index 0)
 		if i == 0 {
-			// Primary killer - increment kills
-			err = database.IncrementMatchPlayerKills(ctx, p.pbApp, activeMatch.ID, player.ID)
-			if err != nil {
-				log.Printf("Failed to increment kills for %s: %v", killer.Name, err)
+			// Check if this is friendly fire (same team) or suicide
+			isSuicide := killer.SteamID == victimSteamID
+			isFriendlyFire := !isSuicide && isPvP && killer.Team == victimTeam
+
+			if isFriendlyFire {
+				// Friendly fire - increment friendly_fire_kills for killer
+				err = database.IncrementMatchPlayerFriendlyFire(ctx, p.pbApp, activeMatch.ID, player.ID)
+				if err != nil {
+					log.Printf("Failed to increment friendly fire for %s: %v", killer.Name, err)
+				}
+
+				// Classify player behavior after recording friendly fire incident
+				classifier := ml.NewDefaultClassifier()
+				prediction, err := classifier.ClassifyPlayer(ctx, p.pbApp, player.ID)
+				if err != nil {
+					log.Printf("Failed to classify player %s: %v", killer.Name, err)
+				} else {
+					// Log the classification result
+					log.Printf("[FF ANALYSIS] Player: %s | Classification: %s | Confidence: %.0f%%",
+						killer.Name, prediction.Classification, prediction.Confidence*100)
+					log.Printf("[FF ANALYSIS] Reasoning:")
+					for _, reason := range prediction.Reasoning {
+						log.Printf("[FF ANALYSIS]   - %s", reason)
+					}
+
+					// Flag high-risk players (but don't take action)
+					if prediction.Classification == "likely_intentional" && prediction.Confidence > 0.80 {
+						log.Printf("⚠️  [HIGH RISK] Player %s flagged as likely intentional team killer (%.0f%% confidence)",
+							killer.Name, prediction.Confidence*100)
+					} else if prediction.Classification == "possibly_intentional" {
+						log.Printf("⚠️  [MONITOR] Player %s may be intentionally team killing (%.0f%% confidence)",
+							killer.Name, prediction.Confidence*100)
+					}
+				}
+			} else if !isSuicide {
+				// Normal kill (PvP enemy or PvE bot) - increment kills
+				err = database.IncrementMatchPlayerKills(ctx, p.pbApp, activeMatch.ID, player.ID)
+				if err != nil {
+					log.Printf("Failed to increment kills for %s: %v", killer.Name, err)
+				}
 			}
+			// Note: Suicides don't increment kills or friendly fire for the killer
 		} else {
 			// Assisting player - increment assists
 			err = database.IncrementMatchPlayerAssists(ctx, p.pbApp, activeMatch.ID, player.ID)
@@ -258,18 +301,70 @@ func (p *LogParser) tryProcessKillEvent(ctx context.Context, line string, timest
 			}
 		}
 
-		// Update weapon stats for this match
-		killCount := int64(0)
-		assistCount := int64(0)
+		// Update weapon stats for this match (only for non-friendly-fire, non-suicide)
 		if i == 0 {
-			killCount = 1
+			isSuicide := killer.SteamID == victimSteamID
+			isFriendlyFire := !isSuicide && isPvP && killer.Team == victimTeam
+
+			if !isFriendlyFire && !isSuicide {
+				killCount := int64(1)
+				assistCount := int64(0)
+				err = database.UpsertMatchWeaponStats(ctx, p.pbApp, activeMatch.ID, player.ID, weapon, &killCount, &assistCount)
+				if err != nil {
+					log.Printf("Failed to update weapon stats for %s: %v", weapon, err)
+				}
+			}
 		} else {
-			assistCount = 1
+			killCount := int64(0)
+			assistCount := int64(1)
+			err = database.UpsertMatchWeaponStats(ctx, p.pbApp, activeMatch.ID, player.ID, weapon, &killCount, &assistCount)
+			if err != nil {
+				log.Printf("Failed to update weapon stats for %s: %v", weapon, err)
+			}
+		}
+	}
+
+	// Process victim deaths (if player, not bot)
+	if isPvP {
+		// Try to find victim player by Steam ID first, then by name
+		victimPlayer, err := database.GetPlayerByExternalID(ctx, p.pbApp, victimSteamID)
+		if err != nil {
+			// Not found by Steam ID, try by name
+			victimPlayer, err = database.GetPlayerByName(ctx, p.pbApp, victimName)
+			if err != nil {
+				// Player doesn't exist at all - create with both name and Steam ID
+				victimPlayer, err = database.CreatePlayer(ctx, p.pbApp, victimSteamID, victimName)
+				if err != nil {
+					log.Printf("Failed to create victim player %s: %v", victimName, err)
+					return true
+				}
+			} else {
+				// Found by name but missing Steam ID - update it
+				err = database.UpdatePlayerExternalID(ctx, p.pbApp, victimPlayer, victimSteamID)
+				if err != nil {
+					log.Printf("Failed to update victim player external_id for %s: %v", victimName, err)
+				}
+			}
+		} else {
+			// Found by Steam ID - update name if it has changed
+			err = database.UpdatePlayerName(ctx, p.pbApp, victimPlayer, victimName)
+			if err != nil {
+				log.Printf("Failed to update victim player name for %s: %v", victimName, err)
+			}
 		}
 
-		err = database.UpsertMatchWeaponStats(ctx, p.pbApp, activeMatch.ID, player.ID, weapon, &killCount, &assistCount)
+		// Ensure victim is in the match
+		victimTeam64 := int64(victimTeam)
+		err = database.UpsertMatchPlayerStats(ctx, p.pbApp, activeMatch.ID, victimPlayer.ID, &victimTeam64, &timestamp)
 		if err != nil {
-			log.Printf("Failed to update weapon stats for %s: %v", weapon, err)
+			log.Printf("Failed to upsert victim player %s into match: %v", victimName, err)
+			return true
+		}
+
+		// Increment victim's deaths
+		err = database.IncrementMatchPlayerDeaths(ctx, p.pbApp, activeMatch.ID, victimPlayer.ID)
+		if err != nil {
+			log.Printf("Failed to increment deaths for victim %s: %v", victimName, err)
 		}
 	}
 
@@ -328,7 +423,28 @@ func (p *LogParser) tryProcessPlayerDisconnect(ctx context.Context, line string,
 		return true // Parsed but invalid
 	}
 
-	// Note: Player disconnect tracking could be added here if needed
+	// Find the active match for this server
+	activeMatch, err := database.GetActiveMatch(ctx, p.pbApp, serverID)
+	if err != nil || activeMatch == nil {
+		// No active match, nothing to do
+		return true
+	}
+
+	// Find the player by Steam ID
+	player, err := database.GetPlayerByExternalID(ctx, p.pbApp, steamID)
+	if err != nil || player == nil {
+		// Player not found in database
+		return true
+	}
+
+	// Mark player as disconnected from the match
+	err = database.DisconnectPlayerFromMatch(ctx, p.pbApp, activeMatch.ID, player.ID, &timestamp)
+	if err != nil {
+		log.Printf("Failed to disconnect player %s from match %s: %v", player.Name, activeMatch.ID, err)
+	} else {
+		log.Printf("Player %s disconnected from match %s", player.Name, activeMatch.ID)
+	}
+
 	return true
 }
 

@@ -11,10 +11,12 @@ tasks:
   build:
     desc: Build all Go binaries
     cmds:
-      - go build ./...\
+      - go build .
   dev:
     desc: run app with defaults
     cmds:
+      - task reset
+      - task superuser
       - go run main.go serve
   test:
     desc: Run all Go tests
@@ -43,6 +45,11 @@ tasks:
   start:
     desc: Start Insurgency server with default config
     cmds:
-      - go build .
-      - ./sandstorm-tracker.exe server stop --all
+      - task build
+      - task stop
       - ./sandstorm-tracker.exe server start --all
+  stop:
+    desc: Stop Insurgency servers
+    cmds:
+      - ./sandstorm-tracker.exe server stop --all
+

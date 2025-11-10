@@ -52,15 +52,20 @@ func GetActiveMatch(ctx context.Context, pbApp core.App, serverID string) (*Matc
 	}
 
 	// Find active match (no end_time)
+	// In PocketBase, empty date fields are stored as empty strings, not NULL
+	log.Printf("[DB] Looking for active match: server ID = %s, filter = 'server = %s && end_time = \"\"'", serverID, serverRecord.Id)
 	matchRecord, err := pbApp.FindFirstRecordByFilter(
 		"matches",
-		"server = {:server} && end_time = ''",
+		"server = {:server} && end_time = \"\"",
 		map[string]any{"server": serverRecord.Id},
 	)
 	if err != nil {
 		// No active match found
+		log.Printf("[DB] No active match found for server %s: %v", serverID, err)
 		return nil, fmt.Errorf("no active match found for server %s", serverID)
 	}
+
+	log.Printf("[DB] Found active match %s for server %s", matchRecord.Id, serverID)
 
 	match := &Match{
 		ID:       matchRecord.Id,
@@ -99,6 +104,7 @@ func CreateMatch(ctx context.Context, pbApp core.App, serverID string, mapName, 
 
 	record := core.NewRecord(collection)
 	record.Set("server", serverRecord.Id)
+	log.Printf("[DB] Creating match for server %s (record ID: %s)", serverID, serverRecord.Id)
 	if mapName != nil {
 		record.Set("map", *mapName)
 	}
@@ -117,6 +123,8 @@ func CreateMatch(ctx context.Context, pbApp core.App, serverID string, mapName, 
 	if err := pbApp.Save(record); err != nil {
 		return nil, err
 	}
+
+	log.Printf("[DB] Successfully created match %s for server %s", record.Id, serverID)
 
 	match := &Match{
 		ID:       record.Id,
@@ -249,15 +257,23 @@ func UpdatePlayerExternalID(ctx context.Context, pbApp core.App, player *Player,
 
 // UpsertMatchPlayerStats creates or updates match player stats
 func UpsertMatchPlayerStats(ctx context.Context, pbApp core.App, matchID, playerID string, team *int64, firstJoinedAt *time.Time) error {
-	// Try to find existing record
-	record, err := pbApp.FindFirstRecordByFilter(
+	// Try to find existing record (always get the most recent one if duplicates exist)
+	records, err := pbApp.FindRecordsByFilter(
 		"match_player_stats",
 		"match = {:match} && player = {:player}",
+		"-created", // Order by created DESC to get the latest record first
+		1,          // Limit to 1 record
+		0,          // No offset
 		map[string]any{
 			"match":  matchID,
 			"player": playerID,
 		},
 	)
+
+	var record *core.Record
+	if err == nil && len(records) > 0 {
+		record = records[0]
+	}
 
 	if err != nil {
 		// Create new record - player is joining the match for the first time
@@ -282,6 +298,7 @@ func UpsertMatchPlayerStats(ctx context.Context, pbApp core.App, matchID, player
 		record.Set("is_currently_connected", true)
 		record.Set("objectives_destroyed", 0)
 		record.Set("objectives_captured", 0)
+		record.Set("status", "ongoing")
 	} else {
 		// Record already exists - player is already in the match
 		// Don't increment session_count - it should only count when player first joins
@@ -291,16 +308,29 @@ func UpsertMatchPlayerStats(ctx context.Context, pbApp core.App, matchID, player
 	return pbApp.Save(record)
 }
 
-// IncrementMatchPlayerKills increments kill count for a player in a match
-func IncrementMatchPlayerKills(ctx context.Context, pbApp core.App, matchID, playerID string) error {
-	record, err := pbApp.FindFirstRecordByFilter(
+// getLatestMatchPlayerStats retrieves the most recent match_player_stats record for a player in a match
+// This handles cases where duplicate records may exist
+func getLatestMatchPlayerStats(pbApp core.App, matchID, playerID string) (*core.Record, error) {
+	records, err := pbApp.FindRecordsByFilter(
 		"match_player_stats",
 		"match = {:match} && player = {:player}",
+		"-created", // Order by created DESC to get the latest record first
+		1,          // Limit to 1 record
+		0,          // No offset
 		map[string]any{
 			"match":  matchID,
 			"player": playerID,
 		},
 	)
+	if err != nil || len(records) == 0 {
+		return nil, err
+	}
+	return records[0], nil
+}
+
+// IncrementMatchPlayerKills increments kill count for a player in a match
+func IncrementMatchPlayerKills(ctx context.Context, pbApp core.App, matchID, playerID string) error {
+	record, err := getLatestMatchPlayerStats(pbApp, matchID, playerID)
 	if err != nil {
 		return err
 	}
@@ -313,14 +343,7 @@ func IncrementMatchPlayerKills(ctx context.Context, pbApp core.App, matchID, pla
 
 // IncrementMatchPlayerAssists increments assist count for a player in a match
 func IncrementMatchPlayerAssists(ctx context.Context, pbApp core.App, matchID, playerID string) error {
-	record, err := pbApp.FindFirstRecordByFilter(
-		"match_player_stats",
-		"match = {:match} && player = {:player}",
-		map[string]any{
-			"match":  matchID,
-			"player": playerID,
-		},
-	)
+	record, err := getLatestMatchPlayerStats(pbApp, matchID, playerID)
 	if err != nil {
 		return err
 	}
@@ -331,16 +354,35 @@ func IncrementMatchPlayerAssists(ctx context.Context, pbApp core.App, matchID, p
 	return pbApp.Save(record)
 }
 
+// IncrementMatchPlayerDeaths increments death count for a player in a match
+func IncrementMatchPlayerDeaths(ctx context.Context, pbApp core.App, matchID, playerID string) error {
+	record, err := getLatestMatchPlayerStats(pbApp, matchID, playerID)
+	if err != nil {
+		return err
+	}
+
+	deaths := record.GetInt("deaths")
+	record.Set("deaths", deaths+1)
+
+	return pbApp.Save(record)
+}
+
+// IncrementMatchPlayerFriendlyFire increments friendly fire kills count for a player in a match
+func IncrementMatchPlayerFriendlyFire(ctx context.Context, pbApp core.App, matchID, playerID string) error {
+	record, err := getLatestMatchPlayerStats(pbApp, matchID, playerID)
+	if err != nil {
+		return err
+	}
+
+	friendlyFireKills := record.GetInt("friendly_fire_kills")
+	record.Set("friendly_fire_kills", friendlyFireKills+1)
+
+	return pbApp.Save(record)
+}
+
 // IncrementMatchPlayerObjectivesDestroyed increments objectives destroyed count for a player in a match
 func IncrementMatchPlayerObjectivesDestroyed(ctx context.Context, pbApp core.App, matchID, playerID string) error {
-	record, err := pbApp.FindFirstRecordByFilter(
-		"match_player_stats",
-		"match = {:match} && player = {:player}",
-		map[string]any{
-			"match":  matchID,
-			"player": playerID,
-		},
-	)
+	record, err := getLatestMatchPlayerStats(pbApp, matchID, playerID)
 	if err != nil {
 		return err
 	}
@@ -353,14 +395,7 @@ func IncrementMatchPlayerObjectivesDestroyed(ctx context.Context, pbApp core.App
 
 // IncrementMatchPlayerObjectivesCaptured increments objectives captured count for a player in a match
 func IncrementMatchPlayerObjectivesCaptured(ctx context.Context, pbApp core.App, matchID, playerID string) error {
-	record, err := pbApp.FindFirstRecordByFilter(
-		"match_player_stats",
-		"match = {:match} && player = {:player}",
-		map[string]any{
-			"match":  matchID,
-			"player": playerID,
-		},
-	)
+	record, err := getLatestMatchPlayerStats(pbApp, matchID, playerID)
 	if err != nil {
 		return err
 	}
@@ -504,7 +539,30 @@ func EndMatch(ctx context.Context, pbApp core.App, matchID string, endTime *time
 		record.Set("winner_team", *winnerTeam)
 	}
 
-	return pbApp.Save(record)
+	if err := pbApp.Save(record); err != nil {
+		return err
+	}
+
+	// Update all player stats for this match to "finished" status
+	playerRecords, err := pbApp.FindRecordsByFilter(
+		"match_player_stats",
+		"match = {:match}",
+		"",
+		-1,
+		0,
+		map[string]any{"match": matchID},
+	)
+
+	if err == nil {
+		for _, playerRecord := range playerRecords {
+			playerRecord.Set("status", "finished")
+			if err := pbApp.Save(playerRecord); err != nil {
+				log.Printf("Failed to update player status to finished: %v", err)
+			}
+		}
+	}
+
+	return nil
 }
 
 // DisconnectAllPlayersInMatch marks all players in a match as disconnected
@@ -526,12 +584,30 @@ func DisconnectAllPlayersInMatch(ctx context.Context, pbApp core.App, matchID st
 		if lastLeftAt != nil {
 			record.Set("last_left_at", lastLeftAt.Format("2006-01-02 15:04:05.000Z"))
 		}
+		record.Set("status", "disconnected")
 		if err := pbApp.Save(record); err != nil {
 			log.Printf("Failed to disconnect player %s: %v", record.Id, err)
 		}
 	}
 
 	return nil
+}
+
+// DisconnectPlayerFromMatch marks a specific player as disconnected from a match
+func DisconnectPlayerFromMatch(ctx context.Context, pbApp core.App, matchID, playerID string, lastLeftAt *time.Time) error {
+	// Get the latest match_player_stats record for this player
+	record, err := getLatestMatchPlayerStats(pbApp, matchID, playerID)
+	if err != nil {
+		return err
+	}
+
+	if lastLeftAt != nil {
+		record.Set("last_left_at", lastLeftAt.Format("2006-01-02 15:04:05.000Z"))
+	}
+	record.Set("is_currently_connected", false)
+	record.Set("status", "disconnected")
+
+	return pbApp.Save(record)
 }
 
 // DeleteMatchIfEmpty deletes a match only if it has no player stats or weapon stats

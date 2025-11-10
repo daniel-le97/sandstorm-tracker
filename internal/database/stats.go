@@ -64,13 +64,7 @@ func GetPlayerStats(ctx context.Context, pbApp core.App, playerID string) (*Play
 		NewQuery(`
 			SELECT 
 				COALESCE(SUM(score), 0) as total_score,
-				COALESCE(SUM(
-					CASE 
-						WHEN first_joined_at IS NOT NULL THEN
-							CAST((julianday(COALESCE(last_left_at, datetime('now'))) - julianday(first_joined_at)) * 86400 AS INTEGER)
-						ELSE 0
-					END
-				), 0) as total_duration_seconds
+				COALESCE(SUM(total_play_time), 0) as total_duration_seconds
 			FROM match_player_stats
 			WHERE player = {:player}
 		`).
@@ -110,13 +104,7 @@ func GetPlayerRank(ctx context.Context, pbApp core.App, playerID string) (rank i
 					SELECT 
 						player,
 						SUM(score) as total_score,
-						SUM(
-							CASE 
-								WHEN first_joined_at IS NOT NULL THEN
-									CAST((julianday(COALESCE(last_left_at, datetime('now'))) - julianday(first_joined_at)) * 86400 AS INTEGER)
-								ELSE 0
-							END
-						) as total_duration_seconds
+						SUM(total_play_time) as total_duration_seconds
 					FROM match_player_stats
 					GROUP BY player
 					HAVING total_duration_seconds > 0
@@ -162,13 +150,7 @@ func GetTopPlayersByScorePerMin(ctx context.Context, pbApp core.App, limit int) 
 				SELECT 
 					player,
 					SUM(score) as total_score,
-					SUM(
-						CASE 
-							WHEN first_joined_at IS NOT NULL THEN
-								CAST((julianday(COALESCE(last_left_at, datetime('now'))) - julianday(first_joined_at)) * 86400 AS INTEGER)
-							ELSE 0
-						END
-					) as total_duration_seconds
+					SUM(total_play_time) as total_duration_seconds
 				FROM match_player_stats
 				GROUP BY player
 				HAVING total_duration_seconds >= 60

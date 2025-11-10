@@ -163,28 +163,6 @@ func init() {
 				},
 				{
 					"hidden": false,
-					"id": "date1604994294",
-					"max": "",
-					"min": "",
-					"name": "first_joined_at",
-					"presentable": false,
-					"required": false,
-					"system": false,
-					"type": "date"
-				},
-				{
-					"hidden": false,
-					"id": "date1368287270",
-					"max": "",
-					"min": "",
-					"name": "last_left_at",
-					"presentable": false,
-					"required": false,
-					"system": false,
-					"type": "date"
-				},
-				{
-					"hidden": false,
 					"id": "bool3821226774",
 					"name": "is_currently_connected",
 					"presentable": false,
