@@ -193,8 +193,8 @@ logging:
 
 - Edit `sandstorm-tracker.yaml` to add your servers, log paths, and database options.
 - Example config:
-  - [YAML file](./sandstorm-tracker.example.yml)
-  - [TOML file](./sandstorm-tracker.example.toml)
+  - [YAML file](.\assets\configs\sandstorm-tracker.example.yml)
+  - [TOML file](.\assets\configs\sandstorm-tracker.example.toml)
 
 ## Usage
 
