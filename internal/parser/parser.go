@@ -184,28 +184,10 @@ func (p *LogParser) tryProcessKillEvent(ctx context.Context, line string, timest
 	isPvP := victimSteamID != "INVALID"
 
 	// Get or create the current active match for this server
-	activeMatch, err := database.GetActiveMatch(ctx, p.pbApp, serverID)
+	activeMatch, err := p.getOrCreateMatchForEvent(ctx, serverID, logFilePath, timestamp, "kill")
 	if err != nil {
-		// No active match found - search backwards in log for last map load event
-		log.Printf("No active match found for kill event on server %s, searching for last map load...", serverID)
-
-		mapName, scenario, mapLoadTime, err := p.findLastMapLoadEvent(logFilePath, timestamp)
-		if err != nil {
-			log.Printf("Failed to find last map load event: %v, creating match with unknown map", err)
-			// Create match with unknown map info
-			mode := "Unknown"
-			activeMatch, err = database.CreateMatch(ctx, p.pbApp, serverID, nil, &mode, &timestamp)
-		} else {
-			log.Printf("Found last map load: %s (%s) at %v", mapName, scenario, mapLoadTime)
-			// Create match with proper map info
-			activeMatch, err = database.CreateMatch(ctx, p.pbApp, serverID, &mapName, &scenario, &mapLoadTime)
-		}
-
-		if err != nil {
-			log.Printf("Failed to create match for kill event: %v", err)
-			return true // Can't track without a match
-		}
-		log.Printf("Created new match %s for server %s", activeMatch.ID, serverID)
+		log.Printf("Failed to get/create match for kill event: %v", err)
+		return true // Can't track without a match
 	}
 
 	// Process each killer (first gets kill, rest get assists)
@@ -214,31 +196,11 @@ func (p *LogParser) tryProcessKillEvent(ctx context.Context, line string, timest
 			continue
 		}
 
-		// Try to find player by Steam ID first, then by name
-		player, err := database.GetPlayerByExternalID(ctx, p.pbApp, killer.SteamID)
+		// Get or create player with up-to-date Steam ID and name
+		player, err := p.getOrCreatePlayerForEvent(ctx, killer.SteamID, killer.Name)
 		if err != nil {
-			// Not found by Steam ID, try by name
-			player, err = database.GetPlayerByName(ctx, p.pbApp, killer.Name)
-			if err != nil {
-				// Player doesn't exist at all - create with both name and Steam ID
-				player, err = database.CreatePlayer(ctx, p.pbApp, killer.SteamID, killer.Name)
-				if err != nil {
-					log.Printf("Failed to create player %s: %v", killer.Name, err)
-					continue
-				}
-			} else {
-				// Found by name but missing Steam ID - update it
-				err = database.UpdatePlayerExternalID(ctx, p.pbApp, player, killer.SteamID)
-				if err != nil {
-					log.Printf("Failed to update player external_id for %s: %v", killer.Name, err)
-				}
-			}
-		} else {
-			// Found by Steam ID - update name if it has changed
-			err = database.UpdatePlayerName(ctx, p.pbApp, player, killer.Name)
-			if err != nil {
-				log.Printf("Failed to update player name for %s: %v", killer.Name, err)
-			}
+			log.Printf("Failed to get/create player %s: %v", killer.Name, err)
+			continue
 		}
 
 		// Ensure player is in the match (upsert creates row if needed)
@@ -257,7 +219,7 @@ func (p *LogParser) tryProcessKillEvent(ctx context.Context, line string, timest
 
 			if isFriendlyFire {
 				// Friendly fire - increment friendly_fire_kills for killer
-				err = database.IncrementMatchPlayerFriendlyFire(ctx, p.pbApp, activeMatch.ID, player.ID)
+				err = database.IncrementMatchPlayerStat(ctx, p.pbApp, activeMatch.ID, player.ID, "friendly_fire_kills")
 				if err != nil {
 					log.Printf("Failed to increment friendly fire for %s: %v", killer.Name, err)
 				}
@@ -287,7 +249,7 @@ func (p *LogParser) tryProcessKillEvent(ctx context.Context, line string, timest
 				}
 			} else if !isSuicide {
 				// Normal kill (PvP enemy or PvE bot) - increment kills
-				err = database.IncrementMatchPlayerKills(ctx, p.pbApp, activeMatch.ID, player.ID)
+				err = database.IncrementMatchPlayerStat(ctx, p.pbApp, activeMatch.ID, player.ID, "kills")
 				if err != nil {
 					log.Printf("Failed to increment kills for %s: %v", killer.Name, err)
 				}
@@ -295,7 +257,7 @@ func (p *LogParser) tryProcessKillEvent(ctx context.Context, line string, timest
 			// Note: Suicides don't increment kills or friendly fire for the killer
 		} else {
 			// Assisting player - increment assists
-			err = database.IncrementMatchPlayerAssists(ctx, p.pbApp, activeMatch.ID, player.ID)
+			err = database.IncrementMatchPlayerStat(ctx, p.pbApp, activeMatch.ID, player.ID, "assists")
 			if err != nil {
 				log.Printf("Failed to increment assists for %s: %v", killer.Name, err)
 			}
@@ -362,7 +324,7 @@ func (p *LogParser) tryProcessKillEvent(ctx context.Context, line string, timest
 		}
 
 		// Increment victim's deaths
-		err = database.IncrementMatchPlayerDeaths(ctx, p.pbApp, activeMatch.ID, victimPlayer.ID)
+		err = database.IncrementMatchPlayerStat(ctx, p.pbApp, activeMatch.ID, victimPlayer.ID, "deaths")
 		if err != nil {
 			log.Printf("Failed to increment deaths for victim %s: %v", victimName, err)
 		}
@@ -719,26 +681,10 @@ func (p *LogParser) tryProcessObjectiveDestroyed(ctx context.Context, line strin
 	}
 
 	// Get or create the current active match for this server
-	activeMatch, err := database.GetActiveMatch(ctx, p.pbApp, serverID)
+	activeMatch, err := p.getOrCreateMatchForEvent(ctx, serverID, logFilePath, timestamp, "objective destroyed")
 	if err != nil {
-		// No active match found - search backwards in log for last map load event
-		log.Printf("No active match found for objective destroyed event on server %s, searching for last map load...", serverID)
-
-		mapName, scenario, mapLoadTime, err := p.findLastMapLoadEvent(logFilePath, timestamp)
-		if err != nil {
-			log.Printf("Failed to find last map load event: %v, creating match with unknown map", err)
-			mode := "Unknown"
-			activeMatch, err = database.CreateMatch(ctx, p.pbApp, serverID, nil, &mode, &timestamp)
-		} else {
-			log.Printf("Found last map load: %s (%s) at %v", mapName, scenario, mapLoadTime)
-			activeMatch, err = database.CreateMatch(ctx, p.pbApp, serverID, &mapName, &scenario, &mapLoadTime)
-		}
-
-		if err != nil {
-			log.Printf("Failed to create match for objective destroyed event: %v", err)
-			return true // Can't track without a match
-		}
-		log.Printf("Created new match %s for server %s", activeMatch.ID, serverID)
+		log.Printf("Failed to get/create match for objective destroyed event: %v", err)
+		return true // Can't track without a match
 	}
 
 	// Process each player (first gets credit, rest get assists)
@@ -747,23 +693,11 @@ func (p *LogParser) tryProcessObjectiveDestroyed(ctx context.Context, line strin
 			continue
 		}
 
-		// Try to find player by Steam ID first, then by name
-		playerRecord, err := database.GetPlayerByExternalID(ctx, p.pbApp, player.SteamID)
+		// Get or create player with up-to-date Steam ID and name
+		playerRecord, err := p.getOrCreatePlayerForEvent(ctx, player.SteamID, player.Name)
 		if err != nil {
-			playerRecord, err = database.GetPlayerByName(ctx, p.pbApp, player.Name)
-			if err != nil {
-				playerRecord, err = database.CreatePlayer(ctx, p.pbApp, player.SteamID, player.Name)
-				if err != nil {
-					log.Printf("Failed to create player %s: %v", player.Name, err)
-					continue
-				}
-			} else {
-				// Update external ID if missing
-				err = database.UpdatePlayerExternalID(ctx, p.pbApp, playerRecord, player.SteamID)
-				if err != nil {
-					log.Printf("Failed to update player external_id for %s: %v", player.Name, err)
-				}
-			}
+			log.Printf("Failed to get/create player %s: %v", player.Name, err)
+			continue
 		}
 
 		// Ensure player is in the match (upsert creates row if needed)
@@ -777,7 +711,7 @@ func (p *LogParser) tryProcessObjectiveDestroyed(ctx context.Context, line strin
 		// First player gets the objective destroy credit, others get assists
 		if i == 0 {
 			// Track as objective destroyed in match_player_stats
-			err = database.IncrementMatchPlayerObjectivesDestroyed(ctx, p.pbApp, activeMatch.ID, playerRecord.ID)
+			err = database.IncrementMatchPlayerStat(ctx, p.pbApp, activeMatch.ID, playerRecord.ID, "objectives_destroyed")
 			if err != nil {
 				log.Printf("Failed to increment objective destroyed for player %s: %v", player.Name, err)
 			}
@@ -812,26 +746,10 @@ func (p *LogParser) tryProcessObjectiveCaptured(ctx context.Context, line string
 	}
 
 	// Get or create the current active match for this server
-	activeMatch, err := database.GetActiveMatch(ctx, p.pbApp, serverID)
+	activeMatch, err := p.getOrCreateMatchForEvent(ctx, serverID, logFilePath, timestamp, "objective captured")
 	if err != nil {
-		// No active match found - search backwards in log for last map load event
-		log.Printf("No active match found for objective captured event on server %s, searching for last map load...", serverID)
-
-		mapName, scenario, mapLoadTime, err := p.findLastMapLoadEvent(logFilePath, timestamp)
-		if err != nil {
-			log.Printf("Failed to find last map load event: %v, creating match with unknown map", err)
-			mode := "Unknown"
-			activeMatch, err = database.CreateMatch(ctx, p.pbApp, serverID, nil, &mode, &timestamp)
-		} else {
-			log.Printf("Found last map load: %s (%s) at %v", mapName, scenario, mapLoadTime)
-			activeMatch, err = database.CreateMatch(ctx, p.pbApp, serverID, &mapName, &scenario, &mapLoadTime)
-		}
-
-		if err != nil {
-			log.Printf("Failed to create match for objective captured event: %v", err)
-			return true // Can't track without a match
-		}
-		log.Printf("Created new match %s for server %s", activeMatch.ID, serverID)
+		log.Printf("Failed to get/create match for objective captured event: %v", err)
+		return true // Can't track without a match
 	}
 
 	// Process each player (first gets credit, rest get assists)
@@ -840,23 +758,11 @@ func (p *LogParser) tryProcessObjectiveCaptured(ctx context.Context, line string
 			continue
 		}
 
-		// Try to find player by Steam ID first, then by name
-		playerRecord, err := database.GetPlayerByExternalID(ctx, p.pbApp, player.SteamID)
+		// Get or create player with up-to-date Steam ID and name
+		playerRecord, err := p.getOrCreatePlayerForEvent(ctx, player.SteamID, player.Name)
 		if err != nil {
-			playerRecord, err = database.GetPlayerByName(ctx, p.pbApp, player.Name)
-			if err != nil {
-				playerRecord, err = database.CreatePlayer(ctx, p.pbApp, player.SteamID, player.Name)
-				if err != nil {
-					log.Printf("Failed to create player %s: %v", player.Name, err)
-					continue
-				}
-			} else {
-				// Update external ID if missing
-				err = database.UpdatePlayerExternalID(ctx, p.pbApp, playerRecord, player.SteamID)
-				if err != nil {
-					log.Printf("Failed to update player external_id for %s: %v", player.Name, err)
-				}
-			}
+			log.Printf("Failed to get/create player %s: %v", player.Name, err)
+			continue
 		}
 
 		// Ensure player is in the match (upsert creates row if needed)
@@ -870,7 +776,7 @@ func (p *LogParser) tryProcessObjectiveCaptured(ctx context.Context, line string
 		// First player gets the objective capture credit, others get assists
 		if i == 0 {
 			// Track as objective captured in match_player_stats
-			err = database.IncrementMatchPlayerObjectivesCaptured(ctx, p.pbApp, activeMatch.ID, playerRecord.ID)
+			err = database.IncrementMatchPlayerStat(ctx, p.pbApp, activeMatch.ID, playerRecord.ID, "objectives_captured")
 			if err != nil {
 				log.Printf("Failed to increment objective captured for player %s: %v", player.Name, err)
 			}
@@ -881,4 +787,70 @@ func (p *LogParser) tryProcessObjectiveCaptured(ctx context.Context, line string
 	}
 
 	return true
+}
+
+// getOrCreateMatchForEvent retrieves the active match for a server, or creates one if none exists
+// by searching backwards in the log file for the last map load event.
+func (p *LogParser) getOrCreateMatchForEvent(ctx context.Context, serverID, logFilePath string, timestamp time.Time, eventName string) (*database.Match, error) {
+	// Try to get active match first
+	activeMatch, err := database.GetActiveMatch(ctx, p.pbApp, serverID)
+	if err == nil && activeMatch != nil {
+		return activeMatch, nil
+	}
+
+	// No active match found - search backwards in log for last map load event
+	log.Printf("No active match found for %s event on server %s, searching for last map load...", eventName, serverID)
+
+	mapName, scenario, mapLoadTime, err := p.findLastMapLoadEvent(logFilePath, timestamp)
+	if err != nil {
+		log.Printf("Failed to find last map load event: %v, creating match with unknown map", err)
+		// Create match with unknown map info
+		mode := "Unknown"
+		activeMatch, err = database.CreateMatch(ctx, p.pbApp, serverID, nil, &mode, &timestamp)
+	} else {
+		log.Printf("Found last map load: %s (%s) at %v", mapName, scenario, mapLoadTime)
+		// Create match with proper map info
+		activeMatch, err = database.CreateMatch(ctx, p.pbApp, serverID, &mapName, &scenario, &mapLoadTime)
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to create match for %s event: %w", eventName, err)
+	}
+
+	log.Printf("Created new match %s for server %s", activeMatch.ID, serverID)
+	return activeMatch, nil
+}
+
+// getOrCreatePlayerForEvent retrieves a player by Steam ID or name, creating or updating as needed.
+// Returns the player record, ensuring both Steam ID and name are set correctly.
+func (p *LogParser) getOrCreatePlayerForEvent(ctx context.Context, steamID, name string) (*database.Player, error) {
+	// Try to find player by Steam ID first
+	player, err := database.GetPlayerByExternalID(ctx, p.pbApp, steamID)
+	if err != nil {
+		// Not found by Steam ID, try by name
+		player, err = database.GetPlayerByName(ctx, p.pbApp, name)
+		if err != nil {
+			// Player doesn't exist at all - create with both name and Steam ID
+			player, err = database.CreatePlayer(ctx, p.pbApp, steamID, name)
+			if err != nil {
+				return nil, fmt.Errorf("failed to create player %s: %w", name, err)
+			}
+			return player, nil
+		}
+
+		// Found by name but missing Steam ID - update it
+		err = database.UpdatePlayerExternalID(ctx, p.pbApp, player, steamID)
+		if err != nil {
+			log.Printf("Failed to update player external_id for %s: %v", name, err)
+		}
+		return player, nil
+	}
+
+	// Found by Steam ID - update name if it has changed
+	err = database.UpdatePlayerName(ctx, p.pbApp, player, name)
+	if err != nil {
+		log.Printf("Failed to update player name for %s: %v", name, err)
+	}
+
+	return player, nil
 }

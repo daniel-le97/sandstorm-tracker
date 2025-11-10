@@ -322,80 +322,16 @@ func getLatestMatchPlayerStats(pbApp core.App, matchID, playerID string) (*core.
 	return records[0], nil
 }
 
-// IncrementMatchPlayerKills increments kill count for a player in a match
-func IncrementMatchPlayerKills(ctx context.Context, pbApp core.App, matchID, playerID string) error {
+// IncrementMatchPlayerStat increments a numeric field for a player in a match by 1.
+// Common field names: "kills", "assists", "deaths", "friendly_fire_kills", "objectives_destroyed", "objectives_captured"
+func IncrementMatchPlayerStat(ctx context.Context, pbApp core.App, matchID, playerID, fieldName string) error {
 	record, err := getLatestMatchPlayerStats(pbApp, matchID, playerID)
 	if err != nil {
 		return err
 	}
 
-	kills := record.GetInt("kills")
-	record.Set("kills", kills+1)
-
-	return pbApp.Save(record)
-}
-
-// IncrementMatchPlayerAssists increments assist count for a player in a match
-func IncrementMatchPlayerAssists(ctx context.Context, pbApp core.App, matchID, playerID string) error {
-	record, err := getLatestMatchPlayerStats(pbApp, matchID, playerID)
-	if err != nil {
-		return err
-	}
-
-	assists := record.GetInt("assists")
-	record.Set("assists", assists+1)
-
-	return pbApp.Save(record)
-}
-
-// IncrementMatchPlayerDeaths increments death count for a player in a match
-func IncrementMatchPlayerDeaths(ctx context.Context, pbApp core.App, matchID, playerID string) error {
-	record, err := getLatestMatchPlayerStats(pbApp, matchID, playerID)
-	if err != nil {
-		return err
-	}
-
-	deaths := record.GetInt("deaths")
-	record.Set("deaths", deaths+1)
-
-	return pbApp.Save(record)
-}
-
-// IncrementMatchPlayerFriendlyFire increments friendly fire kills count for a player in a match
-func IncrementMatchPlayerFriendlyFire(ctx context.Context, pbApp core.App, matchID, playerID string) error {
-	record, err := getLatestMatchPlayerStats(pbApp, matchID, playerID)
-	if err != nil {
-		return err
-	}
-
-	friendlyFireKills := record.GetInt("friendly_fire_kills")
-	record.Set("friendly_fire_kills", friendlyFireKills+1)
-
-	return pbApp.Save(record)
-}
-
-// IncrementMatchPlayerObjectivesDestroyed increments objectives destroyed count for a player in a match
-func IncrementMatchPlayerObjectivesDestroyed(ctx context.Context, pbApp core.App, matchID, playerID string) error {
-	record, err := getLatestMatchPlayerStats(pbApp, matchID, playerID)
-	if err != nil {
-		return err
-	}
-
-	objectivesDestroyed := record.GetInt("objectives_destroyed")
-	record.Set("objectives_destroyed", objectivesDestroyed+1)
-
-	return pbApp.Save(record)
-}
-
-// IncrementMatchPlayerObjectivesCaptured increments objectives captured count for a player in a match
-func IncrementMatchPlayerObjectivesCaptured(ctx context.Context, pbApp core.App, matchID, playerID string) error {
-	record, err := getLatestMatchPlayerStats(pbApp, matchID, playerID)
-	if err != nil {
-		return err
-	}
-
-	objectivesCaptured := record.GetInt("objectives_captured")
-	record.Set("objectives_captured", objectivesCaptured+1)
+	currentValue := record.GetInt(fieldName)
+	record.Set(fieldName, currentValue+1)
 
 	return pbApp.Save(record)
 }
@@ -502,9 +438,10 @@ func GetAllPlayersInMatch(ctx context.Context, pbApp core.App, matchID string) (
 			stat.Team = &teamInt
 		}
 
-		if joined := record.GetDateTime("first_joined_at"); !joined.IsZero() {
-			joinedTime := joined.Time()
-			stat.FirstJoinedAt = &joinedTime
+		// Use "created" field as first_joined_at since that's when the player joined
+		if created := record.GetDateTime("created"); !created.IsZero() {
+			createdTime := created.Time()
+			stat.FirstJoinedAt = &createdTime
 		}
 
 		if updated := record.GetDateTime("updated"); !updated.IsZero() {

@@ -246,7 +246,7 @@ func TestUpsertMatchPlayerStats(t *testing.T) {
 	}
 }
 
-func TestIncrementMatchPlayerKills(t *testing.T) {
+func TestIncrementMatchPlayerStat(t *testing.T) {
 	testApp, cleanup := setupTestApp(t)
 	defer cleanup()
 
@@ -259,9 +259,9 @@ func TestIncrementMatchPlayerKills(t *testing.T) {
 	UpsertMatchPlayerStats(ctx, testApp, match.ID, player.ID, int64Ptr(0), nil)
 
 	// Increment kills
-	err := IncrementMatchPlayerKills(ctx, testApp, match.ID, player.ID)
+	err := IncrementMatchPlayerStat(ctx, testApp, match.ID, player.ID, "kills")
 	if err != nil {
-		t.Fatalf("IncrementMatchPlayerKills() error = %v", err)
+		t.Fatalf("IncrementMatchPlayerStat() error = %v", err)
 	}
 
 	// Verify kills incremented
@@ -279,7 +279,7 @@ func TestIncrementMatchPlayerKills(t *testing.T) {
 	}
 
 	// Increment again
-	IncrementMatchPlayerKills(ctx, testApp, match.ID, player.ID)
+	IncrementMatchPlayerStat(ctx, testApp, match.ID, player.ID, "kills")
 
 	statsRecord, _ = testApp.FindRecordById("match_player_stats", statsRecord.Id)
 	if statsRecord.GetInt("kills") != 2 {
