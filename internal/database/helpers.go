@@ -11,15 +11,17 @@ import (
 
 // Match represents a match record from PocketBase
 type Match struct {
-	ID         string
-	ServerID   string
-	Map        *string
-	WinnerTeam *int64
-	StartTime  *time.Time
-	EndTime    *time.Time
-	Mode       string
-	PlayerTeam *string
-	UpdatedAt  *time.Time
+	ID             string
+	ServerID       string
+	Map            *string
+	WinnerTeam     *int64
+	StartTime      *time.Time
+	EndTime        *time.Time
+	Mode           string
+	PlayerTeam     *string
+	UpdatedAt      *time.Time
+	Round          int
+	RoundObjective int
 }
 
 // Player represents a player record from PocketBase
@@ -68,13 +70,19 @@ func GetActiveMatch(ctx context.Context, pbApp core.App, serverID string) (*Matc
 	log.Printf("[DB] Found active match %s for server %s", matchRecord.Id, serverID)
 
 	match := &Match{
-		ID:       matchRecord.Id,
-		ServerID: matchRecord.GetString("server"),
-		Mode:     matchRecord.GetString("mode"),
+		ID:             matchRecord.Id,
+		ServerID:       matchRecord.GetString("server"),
+		Mode:           matchRecord.GetString("mode"),
+		Round:          matchRecord.GetInt("round"),
+		RoundObjective: matchRecord.GetInt("round_objective"),
 	}
 
 	if mapName := matchRecord.GetString("map"); mapName != "" {
 		match.Map = &mapName
+	}
+
+	if playerTeam := matchRecord.GetString("player_team"); playerTeam != "" {
+		match.PlayerTeam = &playerTeam
 	}
 
 	if startTime := matchRecord.GetDateTime("start_time"); !startTime.IsZero() {
@@ -529,7 +537,9 @@ func DisconnectPlayerFromMatch(ctx context.Context, pbApp core.App, matchID, pla
 	// Get the latest match_player_stats record for this player
 	record, err := getLatestMatchPlayerStats(pbApp, matchID, playerID)
 	if err != nil {
-		return err
+		// Player was never in this match, nothing to disconnect
+		log.Printf("Player %s not found in match %s, skipping disconnect", playerID, matchID)
+		return nil
 	}
 
 	if lastLeftAt != nil {
@@ -591,4 +601,49 @@ func DeleteMatchIfEmpty(ctx context.Context, pbApp core.App, matchID string) err
 
 	log.Printf("Deleted empty match %s (no player or weapon stats)", matchID)
 	return nil
+}
+
+// UpdateMatchField updates a numeric field in a match record
+// Operation types: "set" - sets to exact value, "increment" - adds to current value
+func UpdateMatchField(ctx context.Context, pbApp core.App, matchID, fieldName, operation string, value int) error {
+	matchRecord, err := pbApp.FindRecordById("matches", matchID)
+	if err != nil {
+		return fmt.Errorf("failed to find match: %w", err)
+	}
+
+	var newValue int
+	switch operation {
+	case "set":
+		newValue = value
+	case "increment":
+		currentValue := matchRecord.GetInt(fieldName)
+		newValue = currentValue + value
+	default:
+		return fmt.Errorf("invalid operation: %s (must be 'set' or 'increment')", operation)
+	}
+
+	matchRecord.Set(fieldName, newValue)
+
+	if err := pbApp.Save(matchRecord); err != nil {
+		return fmt.Errorf("failed to update match %s: %w", fieldName, err)
+	}
+
+	log.Printf("Updated %s for match %s to %d (operation: %s)", fieldName, matchID, newValue, operation)
+	return nil
+}
+
+// IncrementMatchRound increments the round counter for a match
+func IncrementMatchRound(ctx context.Context, pbApp core.App, matchID string) error {
+	return UpdateMatchField(ctx, pbApp, matchID, "round", "increment", 1)
+}
+
+// IncrementMatchRoundObjective increments the round_objective counter for a match
+func IncrementMatchRoundObjective(ctx context.Context, pbApp core.App, matchID string) error {
+	return UpdateMatchField(ctx, pbApp, matchID, "round_objective", "increment", 1)
+}
+
+// ResetMatchRoundObjective resets the round_objective counter back to 0
+// This should be called at the start of each new round
+func ResetMatchRoundObjective(ctx context.Context, pbApp core.App, matchID string) error {
+	return UpdateMatchField(ctx, pbApp, matchID, "round_objective", "set", 0)
 }

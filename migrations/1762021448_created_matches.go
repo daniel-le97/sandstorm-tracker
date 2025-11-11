@@ -56,6 +56,30 @@ func init() {
 				},
 				{
 					"hidden": false,
+					"id": "number3320769076",
+					"max": null,
+					"min": null,
+					"name": "round",
+					"onlyInt": false,
+					"presentable": false,
+					"required": false,
+					"system": false,
+					"type": "number"
+				},
+				{
+					"hidden": false,
+					"id": "number846593620",
+					"max": null,
+					"min": null,
+					"name": "round_objective",
+					"onlyInt": false,
+					"presentable": false,
+					"required": false,
+					"system": false,
+					"type": "number"
+				},
+				{
+					"hidden": false,
 					"id": "number3137288",
 					"max": null,
 					"min": null,

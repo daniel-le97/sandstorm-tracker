@@ -217,6 +217,11 @@ func TestExtractAllEvents(t *testing.T) {
 			inputFile:  "test_data/full.log",
 			outputFile: "test_data/full.extracted.log",
 		},
+		{
+			name:       "Full Log 2",
+			inputFile:  "test_data/full-2.log",
+			outputFile: "test_data/full-2.extracted.log",
+		},
 	}
 
 	for _, tc := range testCases {
@@ -257,6 +262,9 @@ func TestExtractAllEvents(t *testing.T) {
 				if parser.patterns.PlayerKill.MatchString(line) {
 					eventType = "KILL"
 					matched = true
+				} else if parser.patterns.PlayerRegister.MatchString(line) {
+					eventType = "REGISTER"
+					matched = true
 				} else if parser.patterns.PlayerJoin.MatchString(line) {
 					eventType = "JOIN"
 					matched = true
@@ -274,6 +282,9 @@ func TestExtractAllEvents(t *testing.T) {
 					matched = true
 				} else if parser.patterns.MapLoad.MatchString(line) {
 					eventType = "MAP_LOAD"
+					matched = true
+				} else if parser.patterns.MapTravel.MatchString(line) {
+					eventType = "MAP_TRAVEL"
 					matched = true
 					// } else if parser.patterns.DifficultyChange.MatchString(line) {
 					// 	eventType = "DIFFICULTY"

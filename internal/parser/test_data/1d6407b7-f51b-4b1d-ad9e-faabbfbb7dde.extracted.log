@@ -1,4 +1,6 @@
 [MAP_LOAD] [2025.11.08-13.59.15:803][  0]LogLoad: LoadMap: /Game/Maps/Ministry/Ministry?Name=Player?Scenario=Scenario_Ministry_Checkpoint_Security?MaxPlayers=8?Lighting=Day
+[REGISTER] [2025.11.08-14.01.16:218][ 91]LogEOSAntiCheat: Display: ServerRegisterClient: Client: (76561198995742987) Result: (EOS_Success)
+[JOIN] [2025.11.08-14.01.16:218][ 91]LogNet: Join succeeded: ArmoredBear
 [ROUND_START] [2025.11.08-14.01.35:508][236]LogGameplayEvents: Display: Pre-round 1 started
 [KILL] [2025.11.08-14.01.57:657][549]LogGameplayEvents: Display: ArmoredBear[76561198995742987, team 0] killed Marksman[INVALID, team 1] with BP_Firearm_PF940_C_2147481687
 [KILL] [2025.11.08-14.01.59:158][639]LogGameplayEvents: Display: ArmoredBear[76561198995742987, team 0] killed Commander[INVALID, team 1] with BP_Firearm_PF940_C_2147481687
@@ -17,6 +19,5 @@
 [KILL] [2025.11.08-14.05.58:221][  2]LogGameplayEvents: Display: ArmoredBear[76561198995742987, team 0] killed Observer[INVALID, team 1] with BP_Firearm_PF940_C_2147480339
 [KILL] [2025.11.08-14.07.26:741][309]LogGameplayEvents: Display: ArmoredBear[76561198995742987, team 0] killed Suicide Bomber[INVALID, team 1] with BP_Firearm_PF940_C_2147479568
 [KILL] [2025.11.08-14.07.33:046][686]LogGameplayEvents: Display: Demolitions[INVALID, team 1] killed ArmoredBear[76561198995742987, team 0] with BP_Firearm_AKM_C_2147479697
-[ROUND_END] [2025.11.08-14.07.33:139][691]LogGameMode: Display: Round Over: Team 1 won (win reason: Elimination)
 [ROUND_END] [2025.11.08-14.07.33:139][691]LogGameplayEvents: Display: Round 1 Over: Team 1 won (win reason: Elimination)
 [DISCONNECT] [2025.11.08-14.07.37:843][970]LogEOSAntiCheat: Display: ServerUnregisterClient: UserId (76561198995742987), Result: (EOS_Success)

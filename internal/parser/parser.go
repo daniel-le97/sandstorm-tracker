@@ -19,16 +19,18 @@ import (
 
 // LogParser handles parsing log lines and writing directly to database
 type LogParser struct {
-	patterns    *logPatterns
-	pbApp       core.App
-	chatHandler *ChatCommandHandler
+	pbApp              core.App
+	patterns           *logPatterns
+	chatHandler        *ChatCommandHandler
+	lastMapTravelTimes map[string]time.Time // Track last map travel time per server to ignore reconnects
 }
 
 // logPatterns contains compiled regex patterns for log parsing
 type logPatterns struct {
 	CommandLine      *regexp.Regexp
 	PlayerKill       *regexp.Regexp
-	PlayerJoin       *regexp.Regexp
+	PlayerRegister   *regexp.Regexp // ServerRegisterClient (pre-match)
+	PlayerJoin       *regexp.Regexp // Join succeeded (in-match)
 	PlayerDisconnect *regexp.Regexp
 	RoundStart       *regexp.Regexp
 	RoundEnd         *regexp.Regexp
@@ -51,29 +53,30 @@ func newLogPatterns() *logPatterns {
 		// PlayerKill: timestamp, killerSection, victimName, victimSteam, victimTeam, weapon
 		PlayerKill: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\s*\d+\]LogGameplayEvents: Display: (.+?) killed ([^\[]+)\[([^,\]]*), team (\d+)\] with (.+)$`),
 
-		// Player connection events - handles both LogNet and LogEOSAntiCheat formats
-		// 1. [timestamp][id]LogNet: Join succeeded: PlayerName
-		// 2. [timestamp][id]LogEOSAntiCheat: Display: ServerRegisterClient: Client: (STEAMID) Result: (EOS_Success)
-		PlayerJoin: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\d+\](?:LogNet: Join succeeded: ([^\r\n]+)|LogEOSAntiCheat: Display: ServerRegisterClient: Client: \((\d+)\) Result: \(EOS_Success\))`),
+		// Player connection events - split into two distinct event types:
+		// 1. PlayerRegister: [timestamp][id]LogEOSAntiCheat: ServerRegisterClient (happens before player in match)
+		// 2. PlayerJoin: [timestamp][id]LogNet: Join succeeded (happens when player actually in match)
+		PlayerRegister: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\s*\d+\]LogEOSAntiCheat: Display: ServerRegisterClient: Client: \((\d+)\) Result: \(EOS_Success\)`),
+		PlayerJoin:     regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\s*\d+\]LogNet: Join succeeded: ([^\r\n]+)`),
 
-		PlayerDisconnect: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\d+\]LogEOSAntiCheat: Display: ServerUnregisterClient: UserId \((\d+)\), Result: \(EOS_Success\)`),
+		PlayerDisconnect: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\s*\d+\]LogEOSAntiCheat: Display: ServerUnregisterClient: UserId \((\d+)\), Result: \(EOS_Success\)`),
 
 		// Game state events
-		RoundStart: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\d+\]LogGameplayEvents: Display: (?:Pre-)?round (\d+) started`),
+		RoundStart: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\s*\d+\]LogGameplayEvents: Display: (?:Pre-)?round (\d+) started`),
 
-		RoundEnd: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\d+\]Log(?:GameMode|GameplayEvents): Display: Round (?:(\d+) )?O\s*ver: Team (\d+) won \(win reason: (.+)\)`),
+		RoundEnd: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\s*\d+\]LogGameplayEvents: Display: Round (\d+) O\s*ver: Team (\d+) won \(win reason: (.+)\)`),
 
-		GameOver: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\d+\]LogSession: Display: AINSGameSession::HandleMatchHasEnded`),
+		GameOver: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\s*\d+\]LogSession: Display: AINSGameSession::HandleMatchHasEnded`),
 
 		// Map and server events
 		MapLoad: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\s*\d+\]LogLoad: LoadMap: /Game/Maps/([^/]+)/[^?]+\?.*Scenario=([^?&]+).*MaxPlayers=(\d+).*Lighting=([^?&]+)`),
 		// ProcessServerTravel events when the map changes during runtime
 		// Example: [2025.10.21-20.12.42:785][454]LogGameMode: ProcessServerTravel: Town?Scenario=Scenario_Hideout_Skirmish?Game=?
-		MapTravel: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\d+\]LogGameMode: ProcessServerTravel: ([^?]+)\?Scenario=([^?]+)\?Game=([^\s]*)`),
+		MapTravel: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\s*\d+\]LogGameMode: ProcessServerTravel: ([^?]+)\?Scenario=([^?]+)\?Game=([^\s]*)`),
 
 		// DifficultyChange: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\s*\d+\]LogAI: Warning: AI difficulty set to ([0-9.]+)`), // Not currently used
 
-		MapVote: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\d+\]LogMapVoteManager: Display: .*Vote Options:`),
+		MapVote: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\s*\d+\]LogMapVoteManager: Display: New Vote Options:`),
 
 		// Chat and RCON events
 		ChatCommand: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\s*\d+\]LogChat: Display: ([^(]+)\((\d+)\) Global Chat: (!.+)`),
@@ -82,34 +85,23 @@ func newLogPatterns() *logPatterns {
 
 		// Objective events
 		// ObjectiveDestroyed: timestamp, objectiveNum, owningTeam, destroyingTeam, playerSection
-		ObjectiveDestroyed: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\d+\]LogGameplayEvents: Display: Objective (\d+) owned by team (\d+) was destroyed for team (\d+) by (.+)\.`),
+		ObjectiveDestroyed: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\s*\d+\]LogGameplayEvents: Display: Objective (\d+) owned by team (\d+) was destroyed for team (\d+) by (.+)\.`),
 
 		// ObjectiveCaptured: timestamp, objectiveNum, capturingTeam, losingTeam, playerSection
-		ObjectiveCaptured: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\d+\]LogGameplayEvents: Display: Objective (\d+) was captured for team (\d+) from team (\d+) by (.+)\.`),
+		ObjectiveCaptured: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\s*\d+\]LogGameplayEvents: Display: Objective (\d+) was captured for team (\d+) from team (\d+) by (.+)\.`),
 
 		// Utility pattern for timestamp extraction
 		Timestamp: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]`),
 	}
 }
 
-// tryProcessMapTravel handles in-game map transitions (ProcessServerTravel)
-// It force-ends any active match on the server and creates a new match with the provided map/scenario
-func (p *LogParser) tryProcessMapTravel(ctx context.Context, line string, timestamp time.Time, serverID string) bool {
-	matches := p.patterns.MapTravel.FindStringSubmatch(line)
-	if len(matches) < 4 {
-		return false
-	}
-
-	mapName := strings.TrimSpace(matches[2])
-	scenario := strings.TrimSpace(matches[3])
-	// gameParam := strings.TrimSpace(matches[4]) // currently unused
-
-	log.Printf("Map travel detected: %s (scenario: %s) on server %s", mapName, scenario, serverID)
-
+// endActiveMatchAndCreateNew ends any active match on the server and creates a new match
+// This is used when a map changes (either initial load or travel)
+func (p *LogParser) endActiveMatchAndCreateNew(ctx context.Context, serverID string, mapName, scenario string, timestamp time.Time, playerTeam *string) error {
 	// If there's an active match, force-end it first
 	activeMatch, err := database.GetActiveMatch(ctx, p.pbApp, serverID)
 	if err == nil && activeMatch != nil {
-		log.Printf("Found active match %s on server %s, force-ending it before travel",
+		log.Printf("Found active match %s on server %s, force-ending it before new map",
 			activeMatch.ID, serverID)
 
 		// Determine end time (use last player activity if available)
@@ -125,6 +117,7 @@ func (p *LogParser) tryProcessMapTravel(ctx context.Context, line string, timest
 					endTime = pl.UpdatedAt
 				}
 			}
+			log.Printf("Using last player activity as end time: %v", endTime)
 		}
 
 		if err := database.EndMatch(ctx, p.pbApp, activeMatch.ID, endTime, nil); err != nil {
@@ -135,17 +128,43 @@ func (p *LogParser) tryProcessMapTravel(ctx context.Context, line string, timest
 			log.Printf("Failed to disconnect players from match %s: %v", activeMatch.ID, err)
 		}
 
+		log.Printf("Successfully closed match %s", activeMatch.ID)
+
 		if err := database.DeleteMatchIfEmpty(ctx, p.pbApp, activeMatch.ID); err != nil {
 			log.Printf("Failed to check/delete empty match %s: %v", activeMatch.ID, err)
 		}
 	}
 
-	// Create the new match for the traveled map
-	_, err = database.CreateMatch(ctx, p.pbApp, serverID, &mapName, &scenario, &timestamp)
+	// Create the new match
+	_, err = database.CreateMatch(ctx, p.pbApp, serverID, &mapName, &scenario, &timestamp, playerTeam)
 	if err != nil {
-		log.Printf("Failed to create match for map travel %s on server %s: %v", mapName, serverID, err)
-	} else {
-		log.Printf("Created new match for traveled map %s on server %s", mapName, serverID)
+		return fmt.Errorf("failed to create match for map %s on server %s: %w", mapName, serverID, err)
+	}
+
+	log.Printf("Created new match for map %s on server %s", mapName, serverID)
+	return nil
+}
+
+// tryProcessMapTravel handles in-game map transitions (ProcessServerTravel)
+// This occurs when the server changes maps during runtime (after the initial map load)
+func (p *LogParser) tryProcessMapTravel(ctx context.Context, line string, timestamp time.Time, serverID string) bool {
+	matches := p.patterns.MapTravel.FindStringSubmatch(line)
+	if len(matches) < 4 {
+		return false
+	}
+
+	mapName := strings.TrimSpace(matches[2])
+	scenario := strings.TrimSpace(matches[3])
+	// gameParam := strings.TrimSpace(matches[4]) // currently unused
+
+	log.Printf("Map travel detected: %s (scenario: %s) on server %s", mapName, scenario, serverID)
+
+	// Track this map travel time so we can ignore immediate disconnects/reconnects
+	p.lastMapTravelTimes[serverID] = timestamp
+
+	// End active match and create new one
+	if err := p.endActiveMatchAndCreateNew(ctx, serverID, mapName, scenario, timestamp, nil); err != nil {
+		log.Printf("Failed to transition to new map: %v", err)
 	}
 
 	return true
@@ -154,9 +173,10 @@ func (p *LogParser) tryProcessMapTravel(ctx context.Context, line string, timest
 // NewLogParser creates a new log parser with PocketBase app
 func NewLogParser(pbApp core.App) *LogParser {
 	return &LogParser{
-		patterns:    newLogPatterns(),
-		pbApp:       pbApp,
-		chatHandler: nil, // Set later via SetChatHandler
+		patterns:           newLogPatterns(),
+		pbApp:              pbApp,
+		chatHandler:        nil, // Set later via SetChatHandler
+		lastMapTravelTimes: make(map[string]time.Time),
 	}
 }
 
@@ -206,11 +226,23 @@ func (p *LogParser) ParseAndProcess(ctx context.Context, line string, serverID s
 		return nil
 	}
 
+	if p.tryProcessPlayerRegister(ctx, line, timestamp, serverID) {
+		return nil
+	}
+
 	if p.tryProcessPlayerJoin(ctx, line, timestamp, serverID) {
 		return nil
 	}
 
 	if p.tryProcessPlayerDisconnect(ctx, line, timestamp, serverID) {
+		return nil
+	}
+
+	if p.tryProcessRoundStart(ctx, line, timestamp, serverID) {
+		return nil
+	}
+
+	if p.tryProcessRoundEnd(ctx, line, timestamp, serverID) {
 		return nil
 	}
 
@@ -401,46 +433,49 @@ func (p *LogParser) tryProcessKillEvent(ctx context.Context, line string, timest
 	return true
 }
 
-// tryProcessPlayerJoin parses and processes a player join event
-// Note: Player joins generate TWO log lines:
-// 1. LogNet: Join succeeded: PlayerName (comes first)
-// 2. LogEOSAntiCheat: ServerRegisterClient: Client: (STEAMID) (comes second)
-// We create the player from the LogNet event with just the name,
-// and update the external_id when we see kill events with their Steam ID
+// tryProcessPlayerRegister parses ServerRegisterClient events (pre-match)
+// This event happens before the player actually joins the match
+// Example: [timestamp][ 23]LogEOSAntiCheat: Display: ServerRegisterClient: Client: (76561198995742987) Result: (EOS_Success)
+func (p *LogParser) tryProcessPlayerRegister(ctx context.Context, line string, timestamp time.Time, serverID string) bool {
+	matches := p.patterns.PlayerRegister.FindStringSubmatch(line)
+	if len(matches) < 3 {
+		return false
+	}
+
+	// Group 1: timestamp
+	// Group 2: Steam ID
+	steamID := strings.TrimSpace(matches[2])
+	log.Printf("Player registered (pre-match): Steam ID %s on server %s", steamID, serverID)
+
+	// We don't create the player here - wait for the LogNet "Join succeeded" event
+	// which will have the player's name
+	return true
+}
+
+// tryProcessPlayerJoin parses Join succeeded events (in-match)
+// This event happens when the player actually joins the match
+// Example: [timestamp][ 23]LogNet: Join succeeded: PlayerName
 func (p *LogParser) tryProcessPlayerJoin(ctx context.Context, line string, timestamp time.Time, serverID string) bool {
 	matches := p.patterns.PlayerJoin.FindStringSubmatch(line)
 	if len(matches) < 3 {
 		return false
 	}
 
-	// PlayerJoin regex has alternation:
-	// Group 1: timestamp (always)
-	// Group 2: player name (LogNet branch) OR empty
-	// Group 3: Steam ID (EOS branch) OR empty
+	// Group 1: timestamp
+	// Group 2: player name
+	playerName := strings.TrimSpace(matches[2])
 
-	if matches[2] != "" {
-		// LogNet branch: "Join succeeded: PlayerName"
-		playerName := strings.TrimSpace(matches[2])
-
-		// Check if player already exists by name
-		_, err := database.GetPlayerByName(ctx, p.pbApp, playerName)
+	// Check if player already exists by name
+	_, err := database.GetPlayerByName(ctx, p.pbApp, playerName)
+	if err != nil {
+		// Player doesn't exist - create with name only (external_id will be empty)
+		_, err := database.CreatePlayer(ctx, p.pbApp, "", playerName)
 		if err != nil {
-			// Player doesn't exist - create with name only (external_id will be empty)
-			_, err := database.CreatePlayer(ctx, p.pbApp, "", playerName)
-			if err != nil {
-				log.Printf("Failed to create player on join: %v", err)
-			}
+			log.Printf("Failed to create player on join: %v", err)
 		}
-
-		return true
-	} else if len(matches) > 3 && matches[3] != "" {
-		// EOS branch: "ServerRegisterClient: Client: (STEAMID)"
-		// We don't need to do anything here - the player was already created from LogNet event
-		// Their external_id will be populated when we see them in a kill event
-		return true
 	}
 
-	return false
+	return true
 } // tryProcessPlayerDisconnect parses and processes a player disconnect event
 func (p *LogParser) tryProcessPlayerDisconnect(ctx context.Context, line string, timestamp time.Time, serverID string) bool {
 	matches := p.patterns.PlayerDisconnect.FindStringSubmatch(line)
@@ -451,6 +486,17 @@ func (p *LogParser) tryProcessPlayerDisconnect(ctx context.Context, line string,
 	steamID := strings.TrimSpace(matches[2])
 	if steamID == "INVALID" || steamID == "" {
 		return true // Parsed but invalid
+	}
+
+	// Check if this disconnect occurred shortly after a map travel
+	// If so, it's just the server reconnecting players during map change, not a real disconnect
+	if lastTravelTime, exists := p.lastMapTravelTimes[serverID]; exists {
+		timeSinceTravel := timestamp.Sub(lastTravelTime)
+		if timeSinceTravel >= 0 && timeSinceTravel < 30*time.Second {
+			// This is a temporary disconnect during map travel, ignore it
+			log.Printf("Ignoring disconnect for player %s during map travel (%.1fs after travel)", steamID, timeSinceTravel.Seconds())
+			return true
+		}
 	}
 
 	// Find the active match for this server
@@ -478,8 +524,96 @@ func (p *LogParser) tryProcessPlayerDisconnect(ctx context.Context, line string,
 	return true
 }
 
+// tryProcessRoundStart parses and processes round start events
+// Example: [2025.11.10-21.00.01:452][131]LogGameplayEvents: Display: Pre-round 2 started
+// Resets the round_objective counter to 0 at the start of each round
+func (p *LogParser) tryProcessRoundStart(ctx context.Context, line string, timestamp time.Time, serverID string) bool {
+	matches := p.patterns.RoundStart.FindStringSubmatch(line)
+	if len(matches) < 3 {
+		return false
+	}
+
+	roundNumStr := strings.TrimSpace(matches[2])
+	roundNum, err := strconv.Atoi(roundNumStr)
+	if err != nil {
+		log.Printf("Failed to parse round number: %v", err)
+		return true
+	}
+
+	log.Printf("Round %d started on server %s", roundNum, serverID)
+
+	// Get active match to reset round_objective counter
+	activeMatch, err := database.GetActiveMatch(ctx, p.pbApp, serverID)
+	if err != nil || activeMatch == nil {
+		log.Printf("No active match found for round start event on server %s", serverID)
+		return true
+	}
+
+	// Reset the round_objective counter to 0 at the start of each round
+	if err := database.ResetMatchRoundObjective(ctx, p.pbApp, activeMatch.ID); err != nil {
+		log.Printf("Failed to reset round_objective for match %s: %v", activeMatch.ID, err)
+	}
+
+	return true
+}
+
+// tryProcessRoundEnd parses and processes round end events
+// Example: [2025.11.10-20.59.41:417][930]LogGameplayEvents: Display: Round 1 Over: Team 1 won (win reason: Elimination)
+func (p *LogParser) tryProcessRoundEnd(ctx context.Context, line string, timestamp time.Time, serverID string) bool {
+	matches := p.patterns.RoundEnd.FindStringSubmatch(line)
+	if len(matches) < 5 {
+		return false
+	}
+
+	// Round number might be empty in some log formats
+	// roundNumStr := strings.TrimSpace(matches[2])
+	winningTeamStr := strings.TrimSpace(matches[3])
+	winReason := strings.TrimSpace(matches[4])
+
+	winningTeam, err := strconv.Atoi(winningTeamStr)
+	if err != nil {
+		log.Printf("Failed to parse winning team: %v", err)
+		return true
+	}
+
+	log.Printf("Round ended: Team %d won (reason: %s) on server %s", winningTeam, winReason, serverID)
+
+	// Get active match to increment round counter
+	activeMatch, err := database.GetActiveMatch(ctx, p.pbApp, serverID)
+	if err != nil || activeMatch == nil {
+		log.Printf("No active match found for round end event on server %s", serverID)
+		return true
+	}
+
+	// Increment the round counter
+	if err := database.IncrementMatchRound(ctx, p.pbApp, activeMatch.ID); err != nil {
+		log.Printf("Failed to increment round for match %s: %v", activeMatch.ID, err)
+	}
+
+	// Determine if player team won based on match configuration
+	// Team 0 = Security, Team 1 = Insurgents
+	// If player_team is "Security" and team 0 won, or player_team is "Insurgents" and team 1 won,
+	// then the player team won
+	if activeMatch.PlayerTeam != nil {
+		playerTeamWon := false
+		if *activeMatch.PlayerTeam == "Security" && winningTeam == 0 {
+			playerTeamWon = true
+		} else if *activeMatch.PlayerTeam == "Insurgents" && winningTeam == 1 {
+			playerTeamWon = true
+		}
+
+		if playerTeamWon {
+			log.Printf("Player team (%s) won round %d in match %s", *activeMatch.PlayerTeam, activeMatch.Round+1, activeMatch.ID)
+		} else {
+			log.Printf("Player team (%s) lost round %d in match %s", *activeMatch.PlayerTeam, activeMatch.Round+1, activeMatch.ID)
+		}
+	}
+
+	return true
+}
+
 // tryProcessMapLoad parses and processes map load events
-// When a new map loads, we check for any unfinished match on this server and force-end it
+// This occurs when the server first starts and loads the initial map
 func (p *LogParser) tryProcessMapLoad(ctx context.Context, line string, timestamp time.Time, serverID string) bool {
 	matches := p.patterns.MapLoad.FindStringSubmatch(line)
 	if len(matches) < 5 {
@@ -503,56 +637,9 @@ func (p *LogParser) tryProcessMapLoad(ctx context.Context, line string, timestam
 
 	log.Printf("Map load detected: %s (scenario: %s) on server %s", mapName, scenario, serverID)
 
-	// Check if there's an active match that never ended (server crash or restart)
-	activeMatch, err := database.GetActiveMatch(ctx, p.pbApp, serverID)
-	if err == nil {
-		log.Printf("Found unfinished match %s on server %s, force-ending it before new match",
-			activeMatch.ID, serverID)
-
-		// Determine the best end time: use last player activity, or fall back to match start time
-		endTime := activeMatch.StartTime // Default fallback
-		if activeMatch.UpdatedAt != nil {
-			// Use the last time the match record was updated (typically from player activity)
-			endTime = activeMatch.UpdatedAt
-		}
-
-		// Get all players in the match to find the last activity time
-		playersInMatch, err := database.GetAllPlayersInMatch(ctx, p.pbApp, activeMatch.ID)
-		if err == nil && len(playersInMatch) > 0 {
-			// Find the most recent player activity
-			for _, player := range playersInMatch {
-				if player.UpdatedAt != nil && player.UpdatedAt.After(*endTime) {
-					endTime = player.UpdatedAt
-				}
-			}
-			log.Printf("Using last player activity as end time: %v", endTime)
-		}
-
-		// Force-end the old match using the last known activity time
-		err = database.EndMatch(ctx, p.pbApp, activeMatch.ID, endTime, nil)
-		if err != nil {
-			log.Printf("Failed to force-end match %s: %v", activeMatch.ID, err)
-		}
-
-		// Disconnect all players still marked as connected in that match
-		err = database.DisconnectAllPlayersInMatch(ctx, p.pbApp, activeMatch.ID, endTime)
-		if err != nil {
-			log.Printf("Failed to disconnect players from match %s: %v", activeMatch.ID, err)
-		}
-
-		log.Printf("Successfully closed stale match %s", activeMatch.ID)
-
-		// Delete the match if it has no stats (was likely never used)
-		err = database.DeleteMatchIfEmpty(ctx, p.pbApp, activeMatch.ID)
-		if err != nil {
-			log.Printf("Failed to check/delete empty match %s: %v", activeMatch.ID, err)
-		}
-	}
-
-	// Create new match record
-	_, err = database.CreateMatch(ctx, p.pbApp, serverID, &mapName, &scenario, &timestamp, playerTeam)
-	if err != nil {
-		log.Printf("Failed to create match for map %s on server %s: %v", mapName, serverID, err)
+	// End active match (if any from previous server session) and create new one
+	if err := p.endActiveMatchAndCreateNew(ctx, serverID, mapName, scenario, timestamp, playerTeam); err != nil {
+		log.Printf("Failed to load new map: %v", err)
 	}
 
 	return true
@@ -789,6 +876,11 @@ func (p *LogParser) tryProcessObjectiveDestroyed(ctx context.Context, line strin
 		}
 	}
 
+	// Increment the round_objective counter for the match
+	if err := database.IncrementMatchRoundObjective(ctx, p.pbApp, activeMatch.ID); err != nil {
+		log.Printf("Failed to increment round_objective for match %s: %v", activeMatch.ID, err)
+	}
+
 	return true
 }
 
@@ -852,6 +944,11 @@ func (p *LogParser) tryProcessObjectiveCaptured(ctx context.Context, line string
 			// Could track assists here if desired
 			log.Printf("Player %s assisted in capturing objective %s", player.Name, objectiveNum)
 		}
+	}
+
+	// Increment the round_objective counter for the match
+	if err := database.IncrementMatchRoundObjective(ctx, p.pbApp, activeMatch.ID); err != nil {
+		log.Printf("Failed to increment round_objective for match %s: %v", activeMatch.ID, err)
 	}
 
 	return true

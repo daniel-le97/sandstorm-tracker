@@ -1,5 +1,5 @@
 [MAP_LOAD] [2025.11.08-17.35.41:912][  0]LogLoad: LoadMap: /Game/Maps/Ministry/Ministry?Name=Player?Scenario=Scenario_Ministry_Checkpoint_Security?MaxPlayers=8?Lighting=Day
-[JOIN] [2025.11.08-17.35.55:673][742]LogEOSAntiCheat: Display: ServerRegisterClient: Client: (76561198995742987) Result: (EOS_Success)
+[REGISTER] [2025.11.08-17.35.55:673][742]LogEOSAntiCheat: Display: ServerRegisterClient: Client: (76561198995742987) Result: (EOS_Success)
 [JOIN] [2025.11.08-17.35.55:673][742]LogNet: Join succeeded: ArmoredBear
 [ROUND_START] [2025.11.08-17.36.11:549][687]LogGameplayEvents: Display: Pre-round 1 started
 [KILL] [2025.11.08-17.36.33:548][989]LogGameplayEvents: Display: ArmoredBear[76561198995742987, team 0] killed Marksman[INVALID, team 1] with BP_Firearm_PF940_C_2147481685
@@ -21,6 +21,7 @@
 [KILL] [2025.11.08-17.43.01:845][327]LogGameplayEvents: Display: ArmoredBear[76561198995742987, team 0] killed Observer[INVALID, team 1] with BP_Firearm_PF940_C_2147480440
 [KILL] [2025.11.08-17.43.20:043][421]LogGameplayEvents: Display: ArmoredBear[76561198995742987, team 0] killed Commander[INVALID, team 1] with BP_Firearm_SVD_C_2147481021
 [OBJ_CAPTURED] [2025.11.08-17.43.37:472][462]LogGameplayEvents: Display: Objective 3 was captured for team 0 from team 1 by ArmoredBear[76561198995742987].
+[OBJ_DESTROYED] [2025.11.08-17.44.54:120][ 74]LogGameplayEvents: Display: Objective 4 owned by team 1 was destroyed for team 0 by ArmoredBear[76561198995742987].
 [KILL] [2025.11.08-17.45.09:834][ 20]LogGameplayEvents: Display: ArmoredBear[76561198995742987, team 0] killed Observer[INVALID, team 1] with BP_Firearm_SVD_C_2147481021
 [KILL] [2025.11.08-17.45.23:753][856]LogGameplayEvents: Display: ArmoredBear[76561198995742987, team 0] killed Marksman[INVALID, team 1] with BP_Firearm_SVD_C_2147481021
 [KILL] [2025.11.08-17.45.30:142][241]LogGameplayEvents: Display: ArmoredBear[76561198995742987, team 0] killed Commander[INVALID, team 1] with BP_Firearm_SVD_C_2147481021
@@ -34,11 +35,10 @@
 [KILL] [2025.11.08-17.48.41:957][776]LogGameplayEvents: Display: ArmoredBear[76561198995742987, team 0] killed Suicide Bomber[INVALID, team 1] with BP_Firearm_SVD_C_2147481021
 [KILL] [2025.11.08-17.49.13:219][660]LogGameplayEvents: Display: ArmoredBear[76561198995742987, team 0] killed Suicide Bomber[INVALID, team 1] with BP_Firearm_SVD_C_2147481021
 [KILL] [2025.11.08-17.49.31:141][737]LogGameplayEvents: Display: ArmoredBear[76561198995742987, team 0] killed Marksman[INVALID, team 1] with BP_Firearm_SVD_C_2147481021
-[ROUND_END] [2025.11.08-17.49.57:685][336]LogGameMode: Display: Round Over: Team 0 won (win reason: Objective)
 [ROUND_END] [2025.11.08-17.49.57:685][336]LogGameplayEvents: Display: Round 1 Over: Team 0 won (win reason: Objective)
 [GAME_OVER] [2025.11.08-17.50.17:696][528]LogSession: Display: AINSGameSession::HandleMatchHasEnded
-[MAP_VOTE] [2025.11.08-17.50.37:721][714]LogMapVoteManager: Display: Existing Vote Options:
 [MAP_VOTE] [2025.11.08-17.50.37:721][714]LogMapVoteManager: Display: New Vote Options:
+[MAP_TRAVEL] [2025.11.08-17.50.51:319][522]LogGameMode: ProcessServerTravel: Town?Scenario=Scenario_Hideout_Push_Security?Game=?
 [DISCONNECT] [2025.11.08-17.50.51:374][524]LogEOSAntiCheat: Display: ServerUnregisterClient: UserId (76561198995742987), Result: (EOS_Success)
-[JOIN] [2025.11.08-17.50.55:394][668]LogEOSAntiCheat: Display: ServerRegisterClient: Client: (76561198995742987) Result: (EOS_Success)
+[REGISTER] [2025.11.08-17.50.55:394][668]LogEOSAntiCheat: Display: ServerRegisterClient: Client: (76561198995742987) Result: (EOS_Success)
 [DISCONNECT] [2025.11.08-17.51.10:879][593]LogEOSAntiCheat: Display: ServerUnregisterClient: UserId (76561198995742987), Result: (EOS_Success)

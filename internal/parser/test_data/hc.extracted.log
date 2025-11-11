@@ -1,11 +1,12 @@
 [MAP_LOAD] [2025.10.04-21.18.15:445][  0]LogLoad: LoadMap: /Game/Maps/Town/Town?Name=Player?Scenario=Scenario_Hideout_Checkpoint_Security?MaxPlayers=10?Game=CheckpointHardcore?Lighting=Day
-[JOIN] [2025.10.04-21.27.51:780][866]LogEOSAntiCheat: Display: ServerRegisterClient: Client: (76561198262186571) Result: (EOS_Success)
+[REGISTER] [2025.10.04-21.27.51:780][866]LogEOSAntiCheat: Display: ServerRegisterClient: Client: (76561198262186571) Result: (EOS_Success)
 [JOIN] [2025.10.04-21.27.51:781][866]LogNet: Join succeeded: -=312th=- Rabbit
-[JOIN] [2025.10.04-21.27.56:889][490]LogEOSAntiCheat: Display: ServerRegisterClient: Client: (76561198007416544) Result: (EOS_Success)
+[REGISTER] [2025.10.04-21.27.56:889][490]LogEOSAntiCheat: Display: ServerRegisterClient: Client: (76561198007416544) Result: (EOS_Success)
 [JOIN] [2025.10.04-21.27.56:890][490]LogNet: Join succeeded: *OSS*0rigin
 [CHAT_CMD] [2025.10.04-21.28.22:312][561]LogChat: Display: *OSS*0rigin(76561198007416544) Global Chat: !maplist
 [CHAT_CMD] [2025.10.04-21.28.26:594][ 75]LogChat: Display: -=312th=- Rabbit(76561198262186571) Global Chat: !maplist
-[JOIN] [2025.10.04-21.28.57:676][662]LogEOSAntiCheat: Display: ServerRegisterClient: Client: (76561198047711504) Result: (EOS_Success)
+[ROUND_START] [2025.10.04-21.28.34:712][ 47]LogGameplayEvents: Display: Pre-round 1 started
+[REGISTER] [2025.10.04-21.28.57:676][662]LogEOSAntiCheat: Display: ServerRegisterClient: Client: (76561198047711504) Result: (EOS_Success)
 [JOIN] [2025.10.04-21.28.57:676][662]LogNet: Join succeeded: Blue
 [KILL] [2025.10.04-21.29.24:398][699]LogGameplayEvents: Display: *OSS*0rigin[76561198007416544, team 0] killed Rifleman[INVALID, team 1] with BP_Firearm_M4A1_C_2147480587
 [KILL] [2025.10.04-21.29.28:456][172]LogGameplayEvents: Display: *OSS*0rigin[76561198007416544, team 0] killed Gunner[INVALID, team 1] with BP_Firearm_M4A1_C_2147480587
@@ -19,7 +20,7 @@
 [KILL] [2025.10.04-21.29.36:623][966]LogGameplayEvents: Display: *OSS*0rigin[76561198007416544, team 0] killed Breacher[INVALID, team 1] with BP_Firearm_M4A1_C_2147480587
 [KILL] [2025.10.04-21.30.02:660][693]LogGameplayEvents: Display: -=312th=- Rabbit[76561198262186571, team 0] killed Rifleman[INVALID, team 1] with BP_Firearm_AKM_C_2147480635
 [KILL] [2025.10.04-21.30.07:055][175]LogGameplayEvents: Display: -=312th=- Rabbit[76561198262186571, team 0] killed Rifleman[INVALID, team 1] with BP_Firearm_AKM_C_2147480635
-[JOIN] [2025.10.04-21.30.15:593][108]LogEOSAntiCheat: Display: ServerRegisterClient: Client: (76561198995742987) Result: (EOS_Success)
+[REGISTER] [2025.10.04-21.30.15:593][108]LogEOSAntiCheat: Display: ServerRegisterClient: Client: (76561198995742987) Result: (EOS_Success)
 [JOIN] [2025.10.04-21.30.15:594][108]LogNet: Join succeeded: ArmoredBear
 [KILL] [2025.10.04-21.30.20:109][445]LogGameplayEvents: Display: *OSS*0rigin[76561198007416544, team 0] killed Rifleman[INVALID, team 1] with BP_Firearm_M4A1_C_2147480587
 [KILL] [2025.10.04-21.30.25:303][899]LogGameplayEvents: Display: -=312th=- Rabbit[76561198262186571, team 0] killed Rifleman[INVALID, team 1] with BP_Firearm_AKM_C_2147480635
@@ -75,6 +76,7 @@
 [KILL] [2025.10.04-21.34.45:708][749]LogGameplayEvents: Display: -=312th=- Rabbit[76561198262186571, team 0] killed Rifleman[INVALID, team 1] with BP_Projectile_F1_C_2147467341
 [KILL] [2025.10.04-21.34.45:710][749]LogGameplayEvents: Display: -=312th=- Rabbit[76561198262186571, team 0] killed Rifleman[INVALID, team 1] with BP_Projectile_F1_C_2147467341
 [KILL] [2025.10.04-21.34.45:713][749]LogGameplayEvents: Display: -=312th=- Rabbit[76561198262186571, team 0] killed Rifleman[INVALID, team 1] with BP_Projectile_F1_C_2147467341
+[OBJ_CAPTURED] [2025.10.04-21.35.09:295][ 74]LogGameplayEvents: Display: Objective 2 was captured for team 0 from team 1 by -=312th=- Rabbit[76561198262186571], Blue[76561198047711504], *OSS*0rigin[76561198007416544].
 [KILL] [2025.10.04-21.35.11:864][238]LogGameplayEvents: Display: ArmoredBear[76561198995742987, team 0] killed Rifleman[INVALID, team 1] with BP_Firearm_M4A1_C_2147472393
 [KILL] [2025.10.04-21.35.12:017][250]LogGameplayEvents: Display: ArmoredBear[76561198995742987, team 0] killed Breacher[INVALID, team 1] with BP_Firearm_M4A1_C_2147472393
 [KILL] [2025.10.04-21.35.16:331][549]LogGameplayEvents: Display: -=312th=- Rabbit[76561198262186571, team 0] killed Rifleman[INVALID, team 1] with BP_Firearm_PF940_C_2147480641
