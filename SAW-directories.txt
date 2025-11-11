@@ -1,0 +1,8 @@
+C:\Certbot
+C:\DiscordGSM\GameServerMonitor\ 
+C:\RankingSystem
+C:\Ruby31-x64
+C:\SAW_1.0.4
+C:\saw_certs
+C:\Scripts
+C:\SISSM
