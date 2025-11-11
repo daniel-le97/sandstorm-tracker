@@ -29,6 +29,7 @@ type LogParser struct {
 type logPatterns struct {
 	CommandLine      *regexp.Regexp
 	PlayerKill       *regexp.Regexp
+	PlayerLogin      *regexp.Regexp // Login request (earliest connection event)
 	PlayerRegister   *regexp.Regexp // ServerRegisterClient (pre-match)
 	PlayerJoin       *regexp.Regexp // Join succeeded (in-match)
 	PlayerDisconnect *regexp.Regexp
@@ -53,9 +54,11 @@ func newLogPatterns() *logPatterns {
 		// PlayerKill: timestamp, killerSection, victimName, victimSteam, victimTeam, weapon
 		PlayerKill: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\s*\d+\]LogGameplayEvents: Display: (.+?) killed ([^\[]+)\[([^,\]]*), team (\d+)\] with (.+)$`),
 
-		// Player connection events - split into two distinct event types:
-		// 1. PlayerRegister: [timestamp][id]LogEOSAntiCheat: ServerRegisterClient (happens before player in match)
-		// 2. PlayerJoin: [timestamp][id]LogNet: Join succeeded (happens when player actually in match)
+		// Player connection events - three stages:
+		// 1. PlayerLogin: [timestamp][id]LogNet: Login request (earliest connection event with name & Steam ID)
+		// 2. PlayerRegister: [timestamp][id]LogEOSAntiCheat: ServerRegisterClient (happens after login)
+		// 3. PlayerJoin: [timestamp][id]LogNet: Join succeeded (happens when player actually in match)
+		PlayerLogin:    regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\s*\d+\]LogNet: Login request:.*\?Name=([^\s]+).*userId: \w+:(\d+) platform: (\w+)`),
 		PlayerRegister: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\s*\d+\]LogEOSAntiCheat: Display: ServerRegisterClient: Client: \((\d+)\) Result: \(EOS_Success\)`),
 		PlayerJoin:     regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\s*\d+\]LogNet: Join succeeded: ([^\r\n]+)`),
 
@@ -223,6 +226,10 @@ func (p *LogParser) ParseAndProcess(ctx context.Context, line string, serverID s
 	}
 
 	if p.tryProcessKillEvent(ctx, line, timestamp, serverID, logFilePath) {
+		return nil
+	}
+
+	if p.tryProcessPlayerLogin(ctx, line, timestamp, serverID) {
 		return nil
 	}
 
@@ -428,6 +435,35 @@ func (p *LogParser) tryProcessKillEvent(ctx context.Context, line string, timest
 		if err != nil {
 			log.Printf("Failed to increment deaths for victim %s: %v", victimName, err)
 		}
+	}
+
+	return true
+}
+
+// tryProcessPlayerLogin parses Login request events (earliest connection event)
+// This event happens first when a player connects to the server, before ServerRegisterClient
+// Example: [2025.11.10-20.58.50:166][881]LogNet: Login request: ?InitialConnectTimeout=30?Name=ArmoredBear userId: SteamNWI:76561198995742987 platform: SteamNWI
+func (p *LogParser) tryProcessPlayerLogin(ctx context.Context, line string, timestamp time.Time, serverID string) bool {
+	matches := p.patterns.PlayerLogin.FindStringSubmatch(line)
+	if len(matches) < 5 {
+		return false
+	}
+
+	// Group 1: timestamp
+	// Group 2: player name
+	// Group 3: Steam ID (or other platform ID)
+	// Group 4: platform (SteamNWI, Epic, etc.)
+	playerName := strings.TrimSpace(matches[2])
+	playerID := strings.TrimSpace(matches[3])
+	platform := strings.TrimSpace(matches[4])
+
+	log.Printf("Player login request: %s (ID: %s, Platform: %s) on server %s", playerName, playerID, platform, serverID)
+
+	// Create or update player record early in the connection process
+	_, err := database.GetOrCreatePlayerBySteamID(ctx, p.pbApp, playerID, playerName)
+	if err != nil {
+		log.Printf("Error creating player from login request: %v", err)
+		return false
 	}
 
 	return true
