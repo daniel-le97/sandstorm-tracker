@@ -27,6 +27,7 @@ type LogParser struct {
 
 // logPatterns contains compiled regex patterns for log parsing
 type logPatterns struct {
+	LogFileOpen      *regexp.Regexp // Log file open timestamp (first line of log)
 	CommandLine      *regexp.Regexp
 	PlayerKill       *regexp.Regexp
 	PlayerLogin      *regexp.Regexp // Login request (earliest connection event)
@@ -49,6 +50,10 @@ type logPatterns struct {
 
 func newLogPatterns() *logPatterns {
 	return &logPatterns{
+		// Log file open timestamp (first line of every log file)
+		// Format: "Log file open, 11/10/25 20:58:31"
+		LogFileOpen: regexp.MustCompile(`^Log file open, (\d{2}/\d{2}/\d{2} \d{2}:\d{2}:\d{2})`),
+
 		CommandLine: regexp.MustCompile(`LogInit: Command Line:\s+(\w+)\?Scenario=([^?]+)\?MaxPlayers=(\d+)\?Game=([^?]+)\?Lighting=(\w+).*?-Hostname="([^"]+)"`),
 		// Kill events - always provide consistent capture groups for killer/victim/weapon fields
 		// PlayerKill: timestamp, killerSection, victimName, victimSteam, victimTeam, weapon
@@ -58,7 +63,7 @@ func newLogPatterns() *logPatterns {
 		// 1. PlayerLogin: [timestamp][id]LogNet: Login request (earliest connection event with name & Steam ID)
 		// 2. PlayerRegister: [timestamp][id]LogEOSAntiCheat: ServerRegisterClient (happens after login)
 		// 3. PlayerJoin: [timestamp][id]LogNet: Join succeeded (happens when player actually in match)
-		PlayerLogin:    regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\s*\d+\]LogNet: Login request:.*\?Name=([^\s]+).*userId: \w+:(\d+) platform: (\w+)`),
+		PlayerLogin:    regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\s*\d+\]LogNet: Login request:.*\?Name=(.+?) userId: \w+:(\d+) platform: (\w+)`),
 		PlayerRegister: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\s*\d+\]LogEOSAntiCheat: Display: ServerRegisterClient: Client: \((\d+)\) Result: \(EOS_Success\)`),
 		PlayerJoin:     regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\s*\d+\]LogNet: Join succeeded: ([^\r\n]+)`),
 
@@ -181,6 +186,35 @@ func NewLogParser(pbApp core.App) *LogParser {
 		chatHandler:        nil, // Set later via SetChatHandler
 		lastMapTravelTimes: make(map[string]time.Time),
 	}
+}
+
+// ExtractLogFileCreationTime reads the first line of a log file and extracts the creation timestamp
+// Returns the timestamp or error if not found
+func (p *LogParser) ExtractLogFileCreationTime(logFilePath string) (time.Time, error) {
+	file, err := os.Open(logFilePath)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("failed to open log file: %w", err)
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	if !scanner.Scan() {
+		return time.Time{}, fmt.Errorf("log file is empty")
+	}
+
+	firstLine := scanner.Text()
+	matches := p.patterns.LogFileOpen.FindStringSubmatch(firstLine)
+	if len(matches) < 2 {
+		return time.Time{}, fmt.Errorf("first line does not match log file open pattern: %s", firstLine)
+	}
+
+	// Parse timestamp: "11/10/25 20:58:31"
+	timestamp, err := time.Parse("01/02/06 15:04:05", matches[1])
+	if err != nil {
+		return time.Time{}, fmt.Errorf("failed to parse log file timestamp: %w", err)
+	}
+
+	return timestamp, nil
 }
 
 // SetChatHandler sets the chat command handler (must be called after parser creation)
@@ -502,13 +536,58 @@ func (p *LogParser) tryProcessPlayerJoin(ctx context.Context, line string, times
 	playerName := strings.TrimSpace(matches[2])
 
 	// Check if player already exists by name
-	_, err := database.GetPlayerByName(ctx, p.pbApp, playerName)
+	player, err := database.GetPlayerByName(ctx, p.pbApp, playerName)
 	if err != nil {
 		// Player doesn't exist - create with name only (external_id will be empty)
-		_, err := database.CreatePlayer(ctx, p.pbApp, "", playerName)
+		player, err = database.CreatePlayer(ctx, p.pbApp, "", playerName)
 		if err != nil {
 			log.Printf("Failed to create player on join: %v", err)
+			return true
 		}
+	}
+
+	// Send RCON join message with player stats (only for existing players with stats)
+	if p.chatHandler != nil && p.chatHandler.rconSender != nil {
+		go func() {
+			// Get player stats and rank
+			stats, rank, totalPlayers, err := database.GetPlayerStatsAndRank(ctx, p.pbApp, player.ID)
+			if err != nil {
+				log.Printf("Failed to get stats for player %s: %v", playerName, err)
+				return
+			}
+
+			// Skip message for new players (no play time)
+			if stats.TotalDurationSeconds == 0 {
+				log.Printf("[JOIN] Skipping message for new player: %s", playerName)
+				return
+			}
+
+			// Calculate score per minute
+			scorePerMin := float64(stats.TotalScore) / (float64(stats.TotalDurationSeconds) / 60.0)
+
+			// Format total play time
+			hours := stats.TotalDurationSeconds / 3600
+			minutes := (stats.TotalDurationSeconds % 3600) / 60
+
+			var playTimeStr string
+			if hours > 0 {
+				playTimeStr = fmt.Sprintf("%dh %dm", hours, minutes)
+			} else {
+				playTimeStr = fmt.Sprintf("%dm", minutes)
+			}
+
+			// Build join message
+			message := fmt.Sprintf("%s joined - #%d/%d with %.1f score/min over %s play time",
+				playerName, rank, totalPlayers, scorePerMin, playTimeStr)
+
+			// Send RCON message
+			_, err = p.chatHandler.rconSender.SendRconCommand(serverID, fmt.Sprintf("say %s", message))
+			if err != nil {
+				log.Printf("Failed to send join message for %s: %v", playerName, err)
+			} else {
+				log.Printf("[JOIN] Sent RCON message: %s", message)
+			}
+		}()
 	}
 
 	return true
@@ -799,16 +878,17 @@ func parseTimestamp(ts string) (time.Time, error) {
 	return dt.Add(time.Duration(ms) * time.Millisecond), nil
 }
 
-// findLastMapLoadEvent searches backwards through a log file to find the most recent map load event
-// Returns map name, scenario, and timestamp, or error if not found
-func (p *LogParser) findLastMapLoadEvent(logFilePath string, beforeTime time.Time) (mapName, scenario string, timestamp time.Time, err error) {
+// findLastMapEvent searches backwards through a log file to find the most recent map event (MapTravel or MapLoad)
+// Prioritizes MapTravel (runtime map change) over MapLoad (initial server start) since the server may not be on default map
+// Returns map name, scenario, timestamp, and line number where the event was found, or error if not found
+func (p *LogParser) findLastMapEvent(logFilePath string, beforeTime time.Time) (mapName, scenario string, timestamp time.Time, lineNumber int, err error) {
 	file, err := os.Open(logFilePath)
 	if err != nil {
-		return "", "", time.Time{}, fmt.Errorf("failed to open log file: %w", err)
+		return "", "", time.Time{}, 0, fmt.Errorf("failed to open log file: %w", err)
 	}
 	defer file.Close()
 
-	// Read file in reverse to find the last map load event before the given time
+	// Read file in reverse to find the last map event before the given time
 	// For simplicity, we'll read all lines and process from end to start
 	var lines []string
 	scanner := bufio.NewScanner(file)
@@ -816,38 +896,57 @@ func (p *LogParser) findLastMapLoadEvent(logFilePath string, beforeTime time.Tim
 		lines = append(lines, scanner.Text())
 	}
 	if err := scanner.Err(); err != nil {
-		return "", "", time.Time{}, fmt.Errorf("failed to read log file: %w", err)
+		return "", "", time.Time{}, 0, fmt.Errorf("failed to read log file: %w", err)
 	}
 
-	// Search backwards through lines
+	// Search backwards through lines, checking MapTravel first, then MapLoad
 	for i := len(lines) - 1; i >= 0; i-- {
 		line := lines[i]
 
-		// Try to match map load pattern
-		matches := p.patterns.MapLoad.FindStringSubmatch(line)
-		if len(matches) < 5 {
-			continue
+		// Try MapTravel pattern first (preferred as it means server is not on default map)
+		matches := p.patterns.MapTravel.FindStringSubmatch(line)
+		if len(matches) >= 4 {
+			// Parse timestamp
+			ts, err := parseTimestamp(matches[1])
+			if err != nil {
+				continue
+			}
+
+			// Only consider events before the target time
+			if ts.After(beforeTime) {
+				continue
+			}
+
+			// Found MapTravel event!
+			mapName = strings.TrimSpace(matches[2])
+			scenario = strings.TrimSpace(matches[3])
+			timestamp = ts
+			return mapName, scenario, timestamp, i, nil
 		}
 
-		// Parse timestamp
-		ts, err := parseTimestamp(matches[1])
-		if err != nil {
-			continue
-		}
+		// Try MapLoad pattern as fallback
+		matches = p.patterns.MapLoad.FindStringSubmatch(line)
+		if len(matches) >= 5 {
+			// Parse timestamp
+			ts, err := parseTimestamp(matches[1])
+			if err != nil {
+				continue
+			}
 
-		// Only consider events before the target time
-		if ts.After(beforeTime) {
-			continue
-		}
+			// Only consider events before the target time
+			if ts.After(beforeTime) {
+				continue
+			}
 
-		// Found it!
-		mapName = strings.TrimSpace(matches[2])
-		scenario = strings.TrimSpace(matches[3])
-		timestamp = ts
-		return mapName, scenario, timestamp, nil
+			// Found MapLoad event!
+			mapName = strings.TrimSpace(matches[2])
+			scenario = strings.TrimSpace(matches[3])
+			timestamp = ts
+			return mapName, scenario, timestamp, i, nil
+		}
 	}
 
-	return "", "", time.Time{}, fmt.Errorf("no map load event found before %v", beforeTime)
+	return "", "", time.Time{}, 0, fmt.Errorf("no map event found before %v", beforeTime)
 }
 
 // tryProcessObjectiveDestroyed parses and processes objective destroyed events
@@ -991,7 +1090,9 @@ func (p *LogParser) tryProcessObjectiveCaptured(ctx context.Context, line string
 }
 
 // getOrCreateMatchForEvent retrieves the active match for a server, or creates one if none exists
-// by searching backwards in the log file for the last map load event.
+// by searching backwards in the log file for the last map event (MapTravel or MapLoad).
+// NOTE: Catch-up processing is NOT done here to avoid duplicate event processing.
+// The watcher will naturally process all events as it reads through the file.
 func (p *LogParser) getOrCreateMatchForEvent(ctx context.Context, serverID, logFilePath string, timestamp time.Time, eventName string) (*database.Match, error) {
 	// Try to get active match first
 	activeMatch, err := database.GetActiveMatch(ctx, p.pbApp, serverID)
@@ -999,26 +1100,51 @@ func (p *LogParser) getOrCreateMatchForEvent(ctx context.Context, serverID, logF
 		return activeMatch, nil
 	}
 
-	// No active match found - search backwards in log for last map load event
-	log.Printf("No active match found for %s event on server %s, searching for last map load...", eventName, serverID)
+	// No active match found - search backwards in log for last map event
+	log.Printf("No active match found for %s event on server %s, searching for last map event...", eventName, serverID)
 
-	mapName, scenario, mapLoadTime, err := p.findLastMapLoadEvent(logFilePath, timestamp)
+	mapName, scenario, mapLoadTime, startLineNum, err := p.findLastMapEvent(logFilePath, timestamp)
 	if err != nil {
-		log.Printf("Failed to find last map load event: %v, creating match with unknown map", err)
+		log.Printf("Failed to find last map event: %v, creating match with unknown map", err)
 		// Create match with unknown map info
 		mode := "Unknown"
 		activeMatch, err = database.CreateMatch(ctx, p.pbApp, serverID, nil, &mode, &timestamp)
-	} else {
-		log.Printf("Found last map load: %s (%s) at %v", mapName, scenario, mapLoadTime)
-		// Create match with proper map info
-		activeMatch, err = database.CreateMatch(ctx, p.pbApp, serverID, &mapName, &scenario, &mapLoadTime)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create match for %s event: %w", eventName, err)
+		}
+		log.Printf("Created new match %s for server %s (unknown map)", activeMatch.ID, serverID)
+		return activeMatch, nil
 	}
 
+	log.Printf("Found last map event: %s (%s) at %v (line %d)", mapName, scenario, mapLoadTime, startLineNum)
+
+	// Extract player team from scenario
+	var playerTeam *string
+	if strings.Contains(scenario, "_Security") {
+		team := "Security"
+		playerTeam = &team
+	} else if strings.Contains(scenario, "_Insurgents") {
+		team := "Insurgents"
+		playerTeam = &team
+	}
+
+	// Create match with proper map info
+	activeMatch, err = database.CreateMatch(ctx, p.pbApp, serverID, &mapName, &scenario, &mapLoadTime, playerTeam)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create match for %s event: %w", eventName, err)
 	}
 
-	log.Printf("Created new match %s for server %s", activeMatch.ID, serverID)
+	log.Printf("Created new match %s for server %s (watcher will process events naturally)", activeMatch.ID, serverID)
+
+	// NOTE: We do NOT call catchUpOnMissedEvents here because the watcher is already
+	// processing the file sequentially. Doing catch-up would cause duplicate event processing:
+	// 1. Event at line 500 triggers this function
+	// 2. Match created based on map event at line 100
+	// 3. If we catch up from line 100-500, the event at line 500 gets processed twice
+	//
+	// Instead, the watcher continues processing from where it left off, and subsequent events
+	// will now find this active match.
+
 	return activeMatch, nil
 }
 

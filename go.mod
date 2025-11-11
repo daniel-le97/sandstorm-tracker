@@ -7,7 +7,7 @@ toolchain go1.24.9
 require (
 	github.com/fsnotify/fsnotify v1.9.0
 	github.com/joho/godotenv v1.5.1
-	github.com/pocketbase/pocketbase v0.31.0
+	github.com/pocketbase/pocketbase v0.32.0
 	github.com/spf13/viper v1.21.0
 )
 
@@ -52,5 +52,5 @@ require (
 	modernc.org/libc v1.66.10 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.11.0 // indirect
-	modernc.org/sqlite v1.39.1 // indirect
+	modernc.org/sqlite v1.40.0 // indirect
 )

@@ -351,13 +351,8 @@ func getActiveMatchForServer(pbApp core.App, serverID string) (*core.Record, err
 	return record, nil
 }
 
-// findOrCreatePlayerByName finds or creates a player by their display name
-func findOrCreatePlayerByName(pbApp core.App, name string) (*core.Record, error) {
-	collection, err := pbApp.FindCollectionByNameOrId("players")
-	if err != nil {
-		return nil, err
-	}
-
+// findPlayerByName finds a player by their display name (does not create)
+func findPlayerByName(pbApp core.App, name string) (*core.Record, error) {
 	// Try to find existing player by name
 	record, err := pbApp.FindFirstRecordByFilter(
 		"players",
@@ -365,20 +360,7 @@ func findOrCreatePlayerByName(pbApp core.App, name string) (*core.Record, error)
 		dbx.Params{"name": name},
 	)
 
-	if err == nil {
-		return record, nil
-	}
-
-	// Create new player record (use name as external_id since we don't have Steam ID from A2S)
-	record = core.NewRecord(collection)
-	record.Set("external_id", "a2s_"+name) // Prefix to distinguish from Steam IDs
-	record.Set("name", name)
-
-	if err := pbApp.Save(record); err != nil {
-		return nil, err
-	}
-
-	return record, nil
+	return record, err
 }
 
 // updatePlayerMatchScore updates a player's score in the match_player_stats table
@@ -497,10 +479,11 @@ func parseRconListPlayers(response string) []RconPlayer {
 func updatePlayersFromRcon(app AppInterface, matchID string, players []RconPlayer) {
 	successCount := 0
 	for _, player := range players {
-		// Find or create player record by name
-		playerRecord, err := findOrCreatePlayerByName(app, player.Name)
+		// Only find existing players - don't create new ones
+		// Players should be created via PlayerLogin events which provide Steam IDs
+		playerRecord, err := findPlayerByName(app, player.Name)
 		if err != nil {
-			cronLogger.Printf("Failed to find/create player %s: %v", player.Name, err)
+			// Player not found - likely an AI bot or player who hasn't logged in yet
 			continue
 		}
 

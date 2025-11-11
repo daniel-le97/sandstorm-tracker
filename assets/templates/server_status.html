@@ -1,0 +1,280 @@
+{{define "title"}}Server Status - Sandstorm Tracker{{end}}
+
+{{define "content"}}
+<div class="status-header">
+    <h1>Live Server Status</h1>
+    <p>Real-time server information and player counts</p>
+</div>
+
+<div class="servers-grid">
+    {{range .Servers}}
+    <div class="server-card {{if not .IsActive}}inactive{{end}}">
+        <div class="server-header">
+            <h2>{{.ServerName}}</h2>
+            <span class="status-badge {{if .IsActive}}active{{else}}inactive{{end}}">
+                {{if .IsActive}}● ACTIVE{{else}}○ NO MATCH{{end}}
+            </span>
+        </div>
+
+        {{if .IsActive}}
+        <div class="server-info">
+            <div class="info-row">
+                <span class="label">Map:</span>
+                <span class="value">{{.Map}}</span>
+            </div>
+            <div class="info-row">
+                <span class="label">Mode:</span>
+                <span class="value">{{.Mode}}</span>
+            </div>
+            <div class="info-row">
+                <span class="label">Round:</span>
+                <span class="value">{{.Round}}</span>
+            </div>
+            <div class="info-row">
+                <span class="label">Current Objective:</span>
+                <span class="value objective-letter">{{.CurrentObjective}}</span>
+            </div>
+            <div class="info-row">
+                <span class="label">Total Objectives:</span>
+                <span class="value">{{.TotalObjectivesStr}}</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" data-progress="{{.ObjectivePercent}}"></div>
+            </div>
+        </div>
+
+        <div class="players-section">
+            <h3>Players Online ({{.PlayerCount}})</h3>
+            {{if gt .PlayerCount 0}}
+            <ul class="players-list">
+                {{range .CurrentPlayers}}
+                <li>{{.Name}}</li>
+                {{end}}
+            </ul>
+            {{else}}
+                <p class="no-players">No players currently online</p>
+                {{end}}
+        </div>
+        {{else}}
+            <div class="server-inactive">
+                <p>No active match on this server</p>
+            </div>
+            {{end}}
+    </div>
+    {{else}}
+        <div class="no-servers">
+            <p>No servers configured</p>
+        </div>
+        {{end}}
+</div>
+
+<style>
+    .status-header {
+        text-align: center;
+        margin-bottom: 2rem;
+        padding: 2rem 0;
+    }
+
+    .status-header h1 {
+        font-size: 2.5rem;
+        color: #ff6b35;
+        margin-bottom: 0.5rem;
+    }
+
+    .status-header p {
+        color: #999;
+        font-size: 1.1rem;
+    }
+
+    .servers-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+        gap: 2rem;
+        padding: 0 2rem 2rem;
+    }
+
+    .server-card {
+        background: linear-gradient(135deg, #2d2d2d 0%, #252525 100%);
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        border: 2px solid #3a3a3a;
+        transition: all 0.3s ease;
+    }
+
+    .server-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+        border-color: #ff6b35;
+    }
+
+    .server-card.inactive {
+        opacity: 0.6;
+    }
+
+    .server-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid #3a3a3a;
+    }
+
+    .server-header h2 {
+        font-size: 1.5rem;
+        color: #fff;
+        margin: 0;
+    }
+
+    .status-badge {
+        padding: 0.4rem 1rem;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: bold;
+        letter-spacing: 0.5px;
+    }
+
+    .status-badge.active {
+        background: rgba(76, 175, 80, 0.2);
+        color: #4CAF50;
+        border: 1px solid #4CAF50;
+    }
+
+    .status-badge.inactive {
+        background: rgba(158, 158, 158, 0.2);
+        color: #9e9e9e;
+        border: 1px solid #666;
+    }
+
+    .server-info {
+        margin-bottom: 1.5rem;
+    }
+
+    .info-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid #333;
+    }
+
+    .info-row:last-child {
+        border-bottom: none;
+    }
+
+    .info-row .label {
+        color: #999;
+        font-weight: 500;
+    }
+
+    .info-row .value {
+        color: #fff;
+        font-weight: bold;
+    }
+
+    .info-row .value.objective-letter {
+        color: #ff6b35;
+        font-size: 1.2rem;
+        font-weight: 900;
+        letter-spacing: 1px;
+    }
+
+    .progress-bar {
+        width: 100%;
+        height: 8px;
+        background: #333;
+        border-radius: 4px;
+        overflow: hidden;
+        margin-top: 1rem;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #ff6b35 0%, #ff8c5a 100%);
+        transition: width 0.3s ease;
+    }
+
+    .players-section {
+        margin-top: 1.5rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid #3a3a3a;
+    }
+
+    .players-section h3 {
+        font-size: 1.1rem;
+        color: #ff6b35;
+        margin-bottom: 1rem;
+    }
+
+    .players-list {
+        list-style: none;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 0.5rem;
+    }
+
+    .players-list li {
+        background: #333;
+        padding: 0.5rem 0.75rem;
+        border-radius: 6px;
+        color: #e0e0e0;
+        font-size: 0.9rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .no-players {
+        color: #666;
+        font-style: italic;
+        text-align: center;
+        padding: 1rem 0;
+    }
+
+    .server-inactive {
+        text-align: center;
+        padding: 2rem 0;
+        color: #666;
+    }
+
+    .no-servers {
+        grid-column: 1 / -1;
+        text-align: center;
+        padding: 4rem 0;
+        color: #666;
+        font-size: 1.2rem;
+    }
+
+    @media (max-width: 768px) {
+        .servers-grid {
+            grid-template-columns: 1fr;
+            padding: 0 1rem 1rem;
+        }
+
+        .status-header h1 {
+            font-size: 2rem;
+        }
+    }
+</style>
+
+<script>
+    // Set progress bar widths from data attributes
+    document.addEventListener( 'DOMContentLoaded', function ()
+    {
+        document.querySelectorAll( '.progress-fill' ).forEach( function ( el )
+        {
+            const progress = el.getAttribute( 'data-progress' );
+            if ( progress )
+            {
+                el.style.width = progress + '%';
+            }
+        } );
+    } );
+
+    // Auto-refresh every 30 seconds
+    setInterval( function ()
+    {
+        window.location.reload();
+    }, 30000 );
+</script>
+{{end}}

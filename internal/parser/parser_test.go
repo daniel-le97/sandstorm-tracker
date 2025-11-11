@@ -175,7 +175,7 @@ func TestParseAndWriteLogToDB_HCLog(t *testing.T) {
 	t.Run("total parsed kills from DB", func(t *testing.T) {
 		total := actualKills["Rabbit"] + actualKills["0rigin"] + actualKills["ArmoredBear"] + actualKills["Blue"]
 		if total != 102 {
-			t.Errorf("Expected 102 total parsed kills from DB (excluding assists), got %d", total)
+			t.Errorf("Expected 102 total parsed kills from DB, got %d", total)
 		}
 	})
 

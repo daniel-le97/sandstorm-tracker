@@ -204,6 +204,14 @@ func (w *Watcher) processFile(filePath string) {
 	}
 
 	offset := serverRecord.GetInt("offset")
+	savedLogFileTime := serverRecord.GetString("log_file_creation_time")
+
+	// Extract current log file creation time
+	currentLogFileTime, err := w.parser.ExtractLogFileCreationTime(filePath)
+	if err != nil {
+		log.Printf("Warning: Could not extract log file creation time for %s: %v", filePath, err)
+		// Continue with size-based rotation detection
+	}
 
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -220,10 +228,32 @@ func (w *Watcher) processFile(filePath string) {
 	}
 	currentSize := fileInfo.Size()
 
-	// If offset is 0 (new server), set offset to current file size and wait for log rotation
-	if offset == 0 {
+	// Check if log file was rotated by comparing creation times
+	rotationDetected := false
+	if savedLogFileTime != "" && !currentLogFileTime.IsZero() {
+		savedTime, err := time.Parse(time.RFC3339, savedLogFileTime)
+		if err == nil && !currentLogFileTime.Equal(savedTime) {
+			log.Printf("Log rotation detected for %s (creation time changed: %v → %v)",
+				serverID, savedTime.Format("2006-01-02 15:04:05"), currentLogFileTime.Format("2006-01-02 15:04:05"))
+			rotationDetected = true
+			offset = 0
+		}
+	}
+
+	// Fallback: If current size is less than offset, log file was rotated (truncated/reset)
+	if !rotationDetected && currentSize < int64(offset) {
+		log.Printf("Log rotation detected for %s (file size %d < offset %d), resetting to 0", serverID, currentSize, offset)
+		rotationDetected = true
+		offset = 0
+	}
+
+	// If offset is 0 (new server or just after rotation), save current state
+	if offset == 0 && !rotationDetected {
 		log.Printf("New server %s detected, setting offset to %d bytes (waiting for first log rotation)", serverID, currentSize)
 		serverRecord.Set("offset", currentSize)
+		if !currentLogFileTime.IsZero() {
+			serverRecord.Set("log_file_creation_time", currentLogFileTime.Format(time.RFC3339))
+		}
 		if err := w.pbApp.Save(serverRecord); err != nil {
 			log.Printf("Error saving initial offset: %v", err)
 		}
@@ -234,12 +264,6 @@ func (w *Watcher) processFile(filePath string) {
 	if int64(offset) == currentSize {
 		log.Printf("Server %s at current end of file (%d bytes), waiting for new log entries", serverID, currentSize)
 		return // Don't process until new data is written
-	}
-
-	// If current size is less than offset, log file was rotated (truncated/reset)
-	if currentSize < int64(offset) {
-		log.Printf("Log rotation detected for %s (file size %d < offset %d), resetting to 0", serverID, currentSize, offset)
-		offset = 0
 	}
 
 	if _, err := file.Seek(int64(offset), 0); err != nil {
@@ -268,9 +292,12 @@ func (w *Watcher) processFile(filePath string) {
 
 	newOffset, _ := file.Seek(0, 1)
 
-	// Save new offset to database
+	// Save new offset and log file creation time to database
 	if linesProcessed > 0 {
 		serverRecord.Set("offset", newOffset)
+		if !currentLogFileTime.IsZero() {
+			serverRecord.Set("log_file_creation_time", currentLogFileTime.Format(time.RFC3339))
+		}
 		if err := w.pbApp.Save(serverRecord); err != nil {
 			log.Printf("Error saving server offset: %v", err)
 		} else {

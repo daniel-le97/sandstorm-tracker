@@ -22,8 +22,124 @@ type AppInterface interface {
 func Register(app AppInterface, e *core.ServeEvent) {
 	registry := template.NewRegistry()
 
-	// Servers page
+	// Live Server Status page (homepage)
 	e.Router.GET("/", func(re *core.RequestEvent) error {
+		servers, err := re.App.FindAllRecords("servers")
+		if err != nil {
+			servers = []*core.Record{}
+		}
+
+		// Build server status info
+		type PlayerInfo struct {
+			Name string
+		}
+
+		type ServerStatus struct {
+			ServerName         string
+			Map                string
+			Mode               string
+			Round              int
+			RoundObjective     int
+			NumObjectives      int
+			ObjectivePercent   int    // Calculated percentage for progress bar
+			CurrentObjective   string // Current objective letter (A, B, C, etc.)
+			TotalObjectivesStr string // Total objectives as letters (e.g., "A-F" for 6 objectives)
+			CurrentPlayers     []PlayerInfo
+			PlayerCount        int
+			IsActive           bool
+		}
+
+		serverStatuses := make([]ServerStatus, 0, len(servers))
+		for _, server := range servers {
+			// Get active match for this server
+			matches, err := re.App.FindRecordsByFilter(
+				"matches",
+				"server = {:serverId} && end_time = ''",
+				"-start_time",
+				1,
+				0,
+				map[string]any{"serverId": server.Id},
+			)
+
+			status := ServerStatus{
+				ServerName:     server.GetString("name"),
+				IsActive:       false,
+				CurrentPlayers: []PlayerInfo{},
+			}
+
+			if err == nil && len(matches) > 0 {
+				match := matches[0]
+				status.IsActive = true
+				status.Map = match.GetString("map")
+				status.Mode = match.GetString("mode")
+				status.Round = match.GetInt("round")
+				status.RoundObjective = match.GetInt("round_objective")
+				status.NumObjectives = match.GetInt("num_objectives")
+
+				// Calculate objective percentage
+				if status.NumObjectives > 0 {
+					status.ObjectivePercent = (status.RoundObjective * 100) / status.NumObjectives
+				}
+
+				// Convert objective numbers to letters
+				// 0 = A, 1 = B, 2 = C, etc.
+				status.CurrentObjective = string(rune('A' + status.RoundObjective))
+
+				// Total objectives as letter range (e.g., "A-F" for 6 objectives)
+				if status.NumObjectives > 0 {
+					lastLetter := string(rune('A' + status.NumObjectives - 1))
+					if status.NumObjectives == 1 {
+						status.TotalObjectivesStr = "A"
+					} else {
+						status.TotalObjectivesStr = "A-" + lastLetter
+					}
+				}
+
+				// Get currently connected players for this match
+				playerStats, err := re.App.FindRecordsByFilter(
+					"match_player_stats",
+					"match = {:matchId} && is_currently_connected = true",
+					"",
+					-1,
+					0,
+					map[string]any{"matchId": match.Id},
+				)
+
+				if err == nil {
+					// Expand player records to get names
+					re.App.ExpandRecords(playerStats, []string{"player"}, nil)
+
+					for _, stat := range playerStats {
+						if playerRec := stat.ExpandedOne("player"); playerRec != nil {
+							status.CurrentPlayers = append(status.CurrentPlayers, PlayerInfo{
+								Name: playerRec.GetString("name"),
+							})
+						}
+					}
+					status.PlayerCount = len(status.CurrentPlayers)
+				}
+			}
+
+			serverStatuses = append(serverStatuses, status)
+		}
+
+		html, err := registry.LoadFS(assets.GetWebAssets().FS(),
+			"templates/layout.html",
+			"templates/server_status.html",
+		).Render(map[string]any{
+			"ActivePage": "status",
+			"Servers":    serverStatuses,
+		})
+
+		if err != nil {
+			return re.InternalServerError("Failed to render template", err)
+		}
+
+		return re.HTML(http.StatusOK, html)
+	})
+
+	// Admin servers page (original functionality)
+	e.Router.GET("/admin/servers", func(re *core.RequestEvent) error {
 		servers, err := re.App.FindAllRecords("servers")
 		if err != nil {
 			servers = []*core.Record{} // Empty if error
