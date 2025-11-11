@@ -52,7 +52,8 @@ func newLogPatterns() *logPatterns {
 	return &logPatterns{
 		// Log file open timestamp (first line of every log file)
 		// Format: "Log file open, 11/10/25 20:58:31"
-		LogFileOpen: regexp.MustCompile(`^Log file open, (\d{2}/\d{2}/\d{2} \d{2}:\d{2}:\d{2})`),
+		// Note: May have UTF-8 BOM (U+FEFF) at the start
+		LogFileOpen: regexp.MustCompile(`^(?:` + "\uFEFF" + `)?Log file open, (\d{2}/\d{2}/\d{2} \d{2}:\d{2}:\d{2})\s*$`),
 
 		CommandLine: regexp.MustCompile(`LogInit: Command Line:\s+(\w+)\?Scenario=([^?]+)\?MaxPlayers=(\d+)\?Game=([^?]+)\?Lighting=(\w+).*?-Hostname="([^"]+)"`),
 		// Kill events - always provide consistent capture groups for killer/victim/weapon fields
