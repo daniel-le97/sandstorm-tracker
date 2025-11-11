@@ -15,7 +15,7 @@
 
 # SAW Path Configuration
 # Provide the root directory where Sandstorm Admin Wrapper is installed
-sawPath: "C:\\sandstorm-admin-wrapper"
+sawPath: "C:\\SAW_1.0.4"
 
 # Logging Configuration (optional - these are defaults)
 logging:

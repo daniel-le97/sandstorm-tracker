@@ -76,7 +76,7 @@ The tracker accepts configuration via YAML, TOML, or JSON files. There are two c
 
 ### For sandstorm-admin-wrapper Users
 
-If you're using [sandstorm-admin-wrapper](https://github.com/startersclan/sandstorm-admin-wrapper), configuration is simplified! The tracker automatically reads your SAW configuration and constructs log paths for all servers.
+If you're using [sandstorm-admin-wrapper](https://github.com/Joe-Klauza/sandstorm-admin-wrapper), configuration is simplified! The tracker automatically reads your SAW configuration and constructs log paths for all servers.
 
 **Simple configuration - just provide the SAW path:**
 
@@ -110,7 +110,7 @@ And construct log paths like:
 **Windows users:**
 
 ```yaml
-sawPath: "C:\\sandstorm-admin-wrapper"
+sawPath: "C:\\SAW_1.0.4"
 ```
 
 ### For Standalone Server Users
