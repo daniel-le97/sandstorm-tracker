@@ -978,8 +978,8 @@ func (p *LogParser) tryProcessObjectiveDestroyed(ctx context.Context, line strin
 		return true // Can't track without a match
 	}
 
-	// Process each player (first gets credit, rest get assists)
-	for i, player := range players {
+	// Process each player - all get credit for objective destroyed
+	for _, player := range players {
 		if player.SteamID == "INVALID" || player.SteamID == "" {
 			continue
 		}
@@ -999,16 +999,10 @@ func (p *LogParser) tryProcessObjectiveDestroyed(ctx context.Context, line strin
 			continue
 		}
 
-		// First player gets the objective destroy credit, others get assists
-		if i == 0 {
-			// Track as objective destroyed in match_player_stats
-			err = database.IncrementMatchPlayerStat(ctx, p.pbApp, activeMatch.ID, playerRecord.ID, "objectives_destroyed")
-			if err != nil {
-				log.Printf("Failed to increment objective destroyed for player %s: %v", player.Name, err)
-			}
-		} else {
-			// Could track assists here if desired
-			log.Printf("Player %s assisted in destroying objective %s", player.Name, objectiveNum)
+		// All players get the objective destroy credit
+		err = database.IncrementMatchPlayerStat(ctx, p.pbApp, activeMatch.ID, playerRecord.ID, "objectives_destroyed")
+		if err != nil {
+			log.Printf("Failed to increment objective destroyed for player %s: %v", player.Name, err)
 		}
 	}
 
@@ -1048,8 +1042,8 @@ func (p *LogParser) tryProcessObjectiveCaptured(ctx context.Context, line string
 		return true // Can't track without a match
 	}
 
-	// Process each player (first gets credit, rest get assists)
-	for i, player := range players {
+	// Process each player - all get credit for objective captured
+	for _, player := range players {
 		if player.SteamID == "INVALID" || player.SteamID == "" {
 			continue
 		}
@@ -1069,16 +1063,10 @@ func (p *LogParser) tryProcessObjectiveCaptured(ctx context.Context, line string
 			continue
 		}
 
-		// First player gets the objective capture credit, others get assists
-		if i == 0 {
-			// Track as objective captured in match_player_stats
-			err = database.IncrementMatchPlayerStat(ctx, p.pbApp, activeMatch.ID, playerRecord.ID, "objectives_captured")
-			if err != nil {
-				log.Printf("Failed to increment objective captured for player %s: %v", player.Name, err)
-			}
-		} else {
-			// Could track assists here if desired
-			log.Printf("Player %s assisted in capturing objective %s", player.Name, objectiveNum)
+		// All players get the objective capture credit
+		err = database.IncrementMatchPlayerStat(ctx, p.pbApp, activeMatch.ID, playerRecord.ID, "objectives_captured")
+		if err != nil {
+			log.Printf("Failed to increment objective captured for player %s: %v", player.Name, err)
 		}
 	}
 

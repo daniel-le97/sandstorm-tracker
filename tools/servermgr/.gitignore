@@ -1,0 +1,11 @@
+# Binaries
+servermgr
+servermgr.exe
+
+# PID files
+data/
+*.pid
+
+# Go build cache
+*.test
+*.out

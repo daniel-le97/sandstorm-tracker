@@ -202,6 +202,50 @@ logging:
 - Run the tracker as described above.
 - Stats will be collected and stored in the configured database.
 
+## Tools
+
+This project includes several standalone command-line tools in the `tools/` directory:
+
+### Server Manager (`tools/servermgr`)
+
+A standalone tool for managing Insurgency: Sandstorm dedicated server instances using SAW configurations.
+
+**Features:**
+
+- Start/stop individual or all servers
+- Check server status and detect stale processes
+- Update SteamCMD and game server files
+- Process management with PID tracking
+- Apply server-specific configuration files
+
+**Quick Start:**
+
+```bash
+# Build the tool
+cd tools/servermgr
+go build -o servermgr.exe
+
+# Set SAW path (optional)
+$env:SAW_PATH = "C:\path\to\sandstorm-admin-wrapper"
+
+# Start a server
+servermgr start server-1
+
+# Check status
+servermgr status
+
+# Stop all servers
+servermgr stop --all
+```
+
+See [tools/servermgr/README.md](tools/servermgr/README.md) for complete documentation and [tools/servermgr/QUICKREF.md](tools/servermgr/QUICKREF.md) for a quick reference guide.
+
+### Other Tools
+
+- **`tools/a2s-test-simple`**: Simple A2S query protocol testing
+- **`tools/rcon-test`**: RCON connection testing
+- **`tools/run-server`**: Development server runner
+
 ## License
 
 MIT
