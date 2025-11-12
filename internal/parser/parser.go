@@ -863,8 +863,8 @@ func parseTimestamp(ts string) (time.Time, error) {
 	dateTimePart := ts[:colonIdx]
 	msPart := ts[colonIdx+1:]
 
-	// Parse the date/time part
-	dt, err := time.Parse("2006.01.02-15.04.05", dateTimePart)
+	// Parse the date/time part in local timezone (log timestamps are in server's local time)
+	dt, err := time.ParseInLocation("2006.01.02-15.04.05", dateTimePart, time.Local)
 	if err != nil {
 		return time.Time{}, fmt.Errorf("failed to parse datetime part: %w", err)
 	}
@@ -880,9 +880,10 @@ func parseTimestamp(ts string) (time.Time, error) {
 }
 
 // findLastMapEvent searches backwards through a log file to find the most recent map event (MapTravel or MapLoad)
+// FindLastMapEvent finds the most recent map event in a log file before the given time.
 // Prioritizes MapTravel (runtime map change) over MapLoad (initial server start) since the server may not be on default map
 // Returns map name, scenario, timestamp, and line number where the event was found, or error if not found
-func (p *LogParser) findLastMapEvent(logFilePath string, beforeTime time.Time) (mapName, scenario string, timestamp time.Time, lineNumber int, err error) {
+func (p *LogParser) FindLastMapEvent(logFilePath string, beforeTime time.Time) (mapName, scenario string, timestamp time.Time, lineNumber int, err error) {
 	file, err := os.Open(logFilePath)
 	if err != nil {
 		return "", "", time.Time{}, 0, fmt.Errorf("failed to open log file: %w", err)
@@ -1092,7 +1093,7 @@ func (p *LogParser) getOrCreateMatchForEvent(ctx context.Context, serverID, logF
 	// No active match found - search backwards in log for last map event
 	log.Printf("No active match found for %s event on server %s, searching for last map event...", eventName, serverID)
 
-	mapName, scenario, mapLoadTime, startLineNum, err := p.findLastMapEvent(logFilePath, timestamp)
+	mapName, scenario, mapLoadTime, startLineNum, err := p.FindLastMapEvent(logFilePath, timestamp)
 	if err != nil {
 		log.Printf("Failed to find last map event: %v, creating match with unknown map", err)
 		// Create match with unknown map info

@@ -17,7 +17,7 @@ tasks:
     cmds:
       - task reset
       - task superuser
-      - task stop
+      # - task stop
       - go run main.go serve
   test:
     desc: Run all Go tests

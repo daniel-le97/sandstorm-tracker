@@ -7,11 +7,14 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
 
 	"sandstorm-tracker/internal/config"
+	"sandstorm-tracker/internal/database"
 	"sandstorm-tracker/internal/parser"
 	"sandstorm-tracker/internal/rcon"
 	"sandstorm-tracker/internal/util"
@@ -205,6 +208,19 @@ func (w *Watcher) processFile(filePath string) {
 
 	offset := serverRecord.GetInt("offset")
 	savedLogFileTime := serverRecord.GetString("log_file_creation_time")
+
+	// On first run (offset == 0 and no saved log time), check if we should do startup catch-up
+	if offset == 0 && savedLogFileTime == "" {
+		catchupOffset, shouldCatchup := w.checkStartupCatchup(filePath, serverID)
+		if shouldCatchup {
+			offset = catchupOffset
+			// Save the offset so we start from here
+			serverRecord.Set("offset", offset)
+			if err := w.pbApp.Save(serverRecord); err != nil {
+				log.Printf("Error saving catch-up offset: %v", err)
+			}
+		}
+	}
 
 	// Extract current log file creation time
 	currentLogFileTime, err := w.parser.ExtractLogFileCreationTime(filePath)
@@ -440,4 +456,201 @@ func (w *Watcher) markServerInactive(serverID string) {
 	if callback != nil {
 		go callback(serverID)
 	}
+}
+
+// checkStartupCatchup determines if we should do catch-up processing on tracker startup
+// Returns the offset to start watching from and whether catch-up was performed
+func (w *Watcher) checkStartupCatchup(filePath, serverID string) (int, bool) {
+	fileInfo, err := os.Stat(filePath)
+	if err != nil {
+		log.Printf("Failed to stat file %s: %v", filePath, err)
+		return 0, false
+	}
+
+	// Check 1: Is file recently modified?
+	fileModTime := fileInfo.ModTime()
+	timeSinceModification := time.Since(fileModTime)
+
+	// Detect if SAW is active by checking for recent RCON logs
+	sawActive := w.hasRecentRconLogs(filePath, 30*time.Second)
+
+	// Use adaptive threshold based on whether SAW is active
+	var fileModThreshold time.Duration
+	if sawActive {
+		fileModThreshold = 1 * time.Minute // SAW keeps file fresh with polling
+		log.Printf("[Catchup] SAW detected for %s, using 1-minute threshold", serverID)
+	} else {
+		fileModThreshold = 6 * time.Hour // Catch empty servers for longer
+		log.Printf("[Catchup] No SAW detected for %s, using 6-hour threshold", serverID)
+	}
+
+	fileRecentlyModified := timeSinceModification < fileModThreshold
+
+	if !fileRecentlyModified {
+		log.Printf("[Catchup] File %s not recently modified (%.1f minutes ago), skipping catch-up",
+			serverID, timeSinceModification.Minutes())
+		return 0, false
+	}
+
+	// Check 2: Is there a recent map event?
+	mapName, scenario, mapTime, startLineNum, err := w.parser.FindLastMapEvent(filePath, time.Now())
+	if err != nil {
+		log.Printf("[Catchup] No map event found for %s: %v, skipping catch-up", serverID, err)
+		return 0, false
+	}
+
+	timeSinceMap := time.Since(mapTime)
+	recentMapEvent := timeSinceMap < 30*time.Minute
+
+	if !recentMapEvent {
+		log.Printf("[Catchup] Map event too old for %s (%.1f minutes ago), skipping catch-up",
+			serverID, timeSinceMap.Minutes())
+		return 0, false
+	}
+
+	// Both conditions met - do catch-up!
+	log.Printf("[Catchup] Starting catch-up for %s: file modified %.1fs ago, map '%s' loaded %.1fs ago",
+		serverID, timeSinceModification.Seconds(), mapName, timeSinceMap.Seconds())
+
+	// Get current file size as the catch-up end point
+	catchupEndOffset := fileInfo.Size()
+
+	// Extract player team from scenario
+	var playerTeam *string
+	if strings.Contains(scenario, "_Security") {
+		team := "Security"
+		playerTeam = &team
+	} else if strings.Contains(scenario, "_Insurgents") {
+		team := "Insurgents"
+		playerTeam = &team
+	}
+
+	// Create match in database
+	_, err = w.pbApp.FindFirstRecordByFilter(
+		"matches",
+		"server = {:server} && end_time = ''",
+		map[string]any{"server": serverID},
+	)
+
+	// Only create match if one doesn't already exist
+	if err != nil {
+		_, err = database.CreateMatch(w.ctx, w.pbApp, serverID, &mapName, &scenario, &mapTime, playerTeam)
+		if err != nil {
+			log.Printf("[Catchup] Failed to create match for %s: %v", serverID, err)
+			return 0, false
+		}
+		log.Printf("[Catchup] Created match for %s: %s (%s) at %v", serverID, mapName, scenario, mapTime)
+	} else {
+		log.Printf("[Catchup] Active match already exists for %s, using existing match", serverID)
+	}
+
+	// Process historical events from map event to current position
+	linesProcessed := w.processHistoricalEvents(filePath, serverID, startLineNum, catchupEndOffset)
+
+	log.Printf("[Catchup] Completed for %s: processed %d lines from %d to %d",
+		serverID, linesProcessed, startLineNum, catchupEndOffset)
+
+	return int(catchupEndOffset), true
+}
+
+// hasRecentRconLogs checks if there are recent RCON log entries (indicates SAW is active)
+func (w *Watcher) hasRecentRconLogs(filePath string, threshold time.Duration) bool {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return false
+	}
+	defer file.Close()
+
+	// Read last 100 lines to check for recent RCON activity
+	scanner := bufio.NewScanner(file)
+	var lastLines []string
+	maxLines := 100
+
+	for scanner.Scan() {
+		lastLines = append(lastLines, scanner.Text())
+		if len(lastLines) > maxLines {
+			lastLines = lastLines[1:]
+		}
+	}
+
+	// Check if any of the last lines contain RCON log entries within threshold
+	cutoffTime := time.Now().Add(-threshold)
+	timestampPattern := regexp.MustCompile(`^\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{3})\]`)
+
+	for _, line := range lastLines {
+		if strings.Contains(line, "LogRcon:") {
+			// Try to extract timestamp from line
+			if matches := timestampPattern.FindStringSubmatch(line); len(matches) >= 2 {
+				if ts, err := parseTimestampFromLog(matches[1]); err == nil {
+					if ts.After(cutoffTime) {
+						return true
+					}
+				}
+			}
+		}
+	}
+
+	return false
+}
+
+// processHistoricalEvents processes events from a specific line number to an offset
+// Returns the number of lines processed
+func (w *Watcher) processHistoricalEvents(filePath, serverID string, startLine int, endOffset int64) int {
+	file, err := os.Open(filePath)
+	if err != nil {
+		log.Printf("[Catchup] Failed to open file for historical processing: %v", err)
+		return 0
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	lineNum := 0
+	linesProcessed := 0
+
+	// Read until we hit the start line
+	for scanner.Scan() && lineNum < startLine {
+		lineNum++
+	}
+
+	// Process lines from startLine until we reach endOffset
+	for scanner.Scan() {
+		currentPos, _ := file.Seek(0, 1)
+		if currentPos > endOffset {
+			break
+		}
+
+		line := scanner.Text()
+		if err := w.parser.ParseAndProcess(w.ctx, line, serverID, filePath); err != nil {
+			log.Printf("[Catchup] Error processing line %d: %v", lineNum, err)
+		}
+
+		linesProcessed++
+		lineNum++
+	}
+
+	return linesProcessed
+}
+
+// parseTimestampFromLog parses a timestamp from log format (2025.10.04-15.23.38:790)
+func parseTimestampFromLog(ts string) (time.Time, error) {
+	colonIdx := strings.LastIndex(ts, ":")
+	if colonIdx == -1 {
+		return time.Time{}, fmt.Errorf("invalid timestamp format: %s", ts)
+	}
+
+	dateTimePart := ts[:colonIdx]
+	msPart := ts[colonIdx+1:]
+
+	// Parse in local timezone (log timestamps are in server's local time)
+	dt, err := time.ParseInLocation("2006.01.02-15.04.05", dateTimePart, time.Local)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("failed to parse datetime part: %w", err)
+	}
+
+	ms, err := strconv.Atoi(msPart)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("failed to parse milliseconds: %w", err)
+	}
+
+	return dt.Add(time.Duration(ms) * time.Millisecond), nil
 }
