@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -40,39 +41,60 @@ func TestStartupCatchup(t *testing.T) {
 
 	setupTestCollections(t, testApp)
 
-	// Create a synthetic log file with CURRENT timestamps
-	// This simulates a match that started 5 minutes ago
+	// Read the real test.log file
+	sourceLogPath := filepath.Join(".", "test.log")
+	logData, err := os.ReadFile(sourceLogPath)
+	if err != nil {
+		t.Fatalf("Failed to read test.log: %v", err)
+	}
+
+	// Split into lines
+	allLines := strings.Split(string(logData), "\n")
+
+	// Find the marker line "--START WATCHER HERE--"
+	watchStartIdx := -1
+	for i, line := range allLines {
+		if strings.Contains(line, "--START WATCHER HERE--") {
+			watchStartIdx = i
+			break
+		}
+	}
+
+	if watchStartIdx == -1 {
+		t.Fatal("Could not find '--START WATCHER HERE--' marker in test.log")
+	}
+
+	// Split lines into: before watcher (catchup) and after watcher (live)
+	catchupLines := allLines[:watchStartIdx]
+	liveLines := allLines[watchStartIdx+1:] // Skip the marker line
+
+	// Update timestamps to be recent
+	now := time.Now()
+	baseTime := now.Add(-5 * time.Minute) // Match started 5 minutes ago
+
+	updatedCatchupLines, err := parser.UpdateLogTimestamps(catchupLines, baseTime)
+	if err != nil {
+		t.Fatalf("Failed to update catchup timestamps: %v", err)
+	}
+
+	// Calculate when live events should start (after catchup content)
+	liveBaseTime := baseTime.Add(2 * time.Minute) // Live events start 2 minutes after catchup base
+	updatedLiveLines, err := parser.UpdateLogTimestamps(liveLines, liveBaseTime)
+	if err != nil {
+		t.Fatalf("Failed to update live timestamps: %v", err)
+	}
+
+	// Create temp directory and log file
 	tmpDir := t.TempDir()
 	testLogPath := filepath.Join(tmpDir, "test-server.log")
 
-	now := time.Now()
-	matchStart := now.Add(-5 * time.Minute)
-
-	// Format timestamps in the game's format: 2006.01.02-15.04.05
-	formatTime := func(t time.Time) string {
-		return t.Format("2006.01.02-15.04.05")
-	}
-
-	// Create log content with current timestamps matching actual game format
-	logContent := "Log file open, " + formatTime(matchStart.Add(-30*time.Second)) + "\n" +
-		"[" + formatTime(matchStart) + ":123][  0]LogLoad: LoadMap: /Game/Maps/Ministry/Ministry_Main?Scenario=Scenario_Ministry_Checkpoint_Security?MaxPlayers=8?Lighting=Day\n" +
-		"[" + formatTime(matchStart.Add(5*time.Second)) + ":456][  0]LogWorld: Bringing World /Game/Maps/Ministry.Ministry up for play (max tick rate 0)\n" +
-		"[" + formatTime(matchStart.Add(10*time.Second)) + ":789][  0]LogNet: Join succeeded: TestPlayer1\n" +
-		"[" + formatTime(matchStart.Add(20*time.Second)) + ":790][  0]LogNet: Login request: /Game/Maps/Ministry/Ministry_Main?Scenario=Scenario_Ministry_Checkpoint_Security?Name=TestPlayer1 userId: SteamNWI:76561198000000001 platform: SteamNWI\n" +
-		"[" + formatTime(matchStart.Add(30*time.Second)) + ":100][  0]LogSquad: PostLogin NewPlayer: TestPlayer1\n" +
-		"[" + formatTime(matchStart.Add(35*time.Second)) + ":101][  0]LogINSGameMode: Display: Player: TestPlayer1 (UniqueId: 76561198000000001) has connected using platform: SteamNWI, Crossplay Enabled: False\n" +
-		"[" + formatTime(matchStart.Add(40*time.Second)) + ":102][  0]Round 1 started.\n" +
-		"[" + formatTime(matchStart.Add(60*time.Second)) + ":103][  0]LogINSGameMode: KILL: TestPlayer1(Team=0/Role=class'BP_INSPlayerController_C') killed AIBot(Team=1/Role=class'BP_HeadlessPlayerController_C') with BP_Weapon_PF940_C distance=15.2m\n" +
-		"[" + formatTime(matchStart.Add(90*time.Second)) + ":104][  0]LogINSGameMode: KILL: TestPlayer1(Team=0/Role=class'BP_INSPlayerController_C') killed AIBot2(Team=1/Role=class'BP_HeadlessPlayerController_C') with BP_Weapon_PF940_C distance=20.5m\n" +
-		"[" + formatTime(matchStart.Add(120*time.Second)) + ":105][  0]LogINSObjective: OBJ_CAPTURED: (ObjName=Objective_A) by Team 0, Contributors: TestPlayer1\n" +
-		"[" + formatTime(matchStart.Add(150*time.Second)) + ":106][  0]LogINSObjective: OBJ_DESTROYED: (ObjName=CacheDestruction_B) by Team 0, Contributors: TestPlayer1\n"
-
-	// Write to temp location with recent modification time
-	if err := os.WriteFile(testLogPath, []byte(logContent), 0644); err != nil {
+	// Write initial content (catchup portion only)
+	initialContent := strings.Join(updatedCatchupLines, "\n") + "\n"
+	if err := os.WriteFile(testLogPath, []byte(initialContent), 0644); err != nil {
 		t.Fatalf("Failed to write test log file: %v", err)
 	}
 
-	// Set file modification time to be recent (within 6 hours)
+	// Set file modification time to be recent (within 8 hours)
 	recentTime := now.Add(-2 * time.Minute)
 	if err := os.Chtimes(testLogPath, recentTime, recentTime); err != nil {
 		t.Fatalf("Failed to set file time: %v", err)
@@ -188,16 +210,44 @@ func TestStartupCatchup(t *testing.T) {
 		t.Logf("✓ Catch-up processed %d bytes successfully", offset)
 	})
 
+	// Test 4: Simulate live events after catch-up by appending lines
+	t.Run("LiveEventsAfterCatchup", func(t *testing.T) {
+		// Open file for appending
+		file, err := os.OpenFile(testLogPath, os.O_APPEND|os.O_WRONLY, 0644)
+		if err != nil {
+			t.Fatalf("Failed to open log file for appending: %v", err)
+		}
+		defer file.Close()
+
+		// Append some live lines (simulate new events being written)
+		numLinesToAppend := 10
+		if len(updatedLiveLines) > numLinesToAppend {
+			updatedLiveLines = updatedLiveLines[:numLinesToAppend]
+		}
+
+		for _, line := range updatedLiveLines {
+			if _, err := file.WriteString(line + "\n"); err != nil {
+				t.Fatalf("Failed to append line: %v", err)
+			}
+		}
+
+		t.Logf("✓ Appended %d live event lines to log file", len(updatedLiveLines))
+
+		// Note: Full watcher testing with fsnotify would require starting the watcher
+		// and waiting for events, which is more complex. This test verifies the setup works.
+	})
+
 	// Test 5: Test with old file (should skip catch-up)
 	t.Run("SkipCatchupForOldFile", func(t *testing.T) {
-		// Create another test file with old modification time
+		// Create another test file with old modification time using same content
 		oldLogPath := filepath.Join(tmpDir, "old-server.log")
-		if err := os.WriteFile(oldLogPath, []byte(logContent), 0644); err != nil {
+		oldContent := strings.Join(updatedCatchupLines, "\n") + "\n"
+		if err := os.WriteFile(oldLogPath, []byte(oldContent), 0644); err != nil {
 			t.Fatalf("Failed to write old log file: %v", err)
 		}
 
-		// Set file modification time to be old (more than 6 hours ago)
-		oldTime := time.Now().Add(-7 * time.Hour)
+		// Set file modification time to be old (more than 8 hours ago)
+		oldTime := time.Now().Add(-10 * time.Hour)
 		if err := os.Chtimes(oldLogPath, oldTime, oldTime); err != nil {
 			t.Fatalf("Failed to set old file time: %v", err)
 		}
@@ -218,7 +268,7 @@ func TestStartupCatchup(t *testing.T) {
 			t.Errorf("Expected offset=0 for skipped catch-up, got %d", offset)
 		}
 
-		t.Log("Correctly skipped catch-up for old file")
+		t.Log("✓ Correctly skipped catch-up for old file")
 	})
 }
 

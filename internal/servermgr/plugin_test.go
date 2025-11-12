@@ -1,3 +1,8 @@
+//TODO make this cross platform
+//go:build windows
+
+
+
 package servermgr
 
 import (

@@ -40,6 +40,10 @@ func TestRconClientWithSpawnedServer(t *testing.T) {
 
 	// Adjust these paths and credentials for your setup
 	serverPath := os.Getenv("INSURGENCY_SERVER_PATH")
+	if serverPath == "" {
+		t.Skip("Skipping test: INSURGENCY_SERVER_PATH environment variable not set")
+	}
+
 	serverArgs := []string{
 		"Oilfield?Scenario=Scenario_Oilfield_Checkpoint_Security",
 		"Port=27102",

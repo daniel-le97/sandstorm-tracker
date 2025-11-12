@@ -480,8 +480,8 @@ func (w *Watcher) checkStartupCatchup(filePath, serverID string) (int, bool) {
 		fileModThreshold = 1 * time.Minute // SAW keeps file fresh with polling
 		log.Printf("[Catchup] SAW detected for %s, using 1-minute threshold", serverID)
 	} else {
-		fileModThreshold = 6 * time.Hour // Catch empty servers for longer
-		log.Printf("[Catchup] No SAW detected for %s, using 6-hour threshold", serverID)
+		fileModThreshold = 9 * time.Hour // Servers restart every 8 hours, allow some buffer
+		log.Printf("[Catchup] No SAW detected for %s, using 9-hour threshold", serverID)
 	}
 
 	fileRecentlyModified := timeSinceModification < fileModThreshold
