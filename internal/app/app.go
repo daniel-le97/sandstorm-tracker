@@ -141,7 +141,7 @@ func (app *App) onServe(e *core.ServeEvent) error {
 	}
 
 	// Initialize watcher with configured servers
-	w, err := watcher.NewWatcher(app.PocketBase, app.Parser, app.RconPool, app.Config.Servers)
+	w, err := watcher.NewWatcher(app.PocketBase, app.Parser, app.RconPool, app.A2SPool, app.Config.Servers)
 	if err != nil {
 		return fmt.Errorf("failed to create watcher: %w", err)
 	}

@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"sandstorm-tracker/internal/config"
 	"sandstorm-tracker/internal/database"
 	"sandstorm-tracker/internal/parser"
 
@@ -104,11 +105,28 @@ func TestStartupCatchup(t *testing.T) {
 	ctx := context.Background()
 	logParser := parser.NewLogParser(testApp)
 
+	// Create mock A2S pool and configure it to return Town map (matching test.log)
+	mockA2S := NewMockA2SPool()
+	queryAddr := "127.0.0.1:27015"
+	mockA2S.SetServerOnline(queryAddr, "Test Server", "Town") // Town is the map in test.log line 2
+
+	// Create server configs map for watcher
+	serverConfigs := map[string]config.ServerConfig{
+		"test-server-123": {
+			Name:         "Test Server",
+			LogPath:      testLogPath,
+			QueryAddress: queryAddr,
+			Enabled:      true,
+		},
+	}
+
 	// Create watcher (we'll call checkStartupCatchup directly)
 	watcher := &Watcher{
-		pbApp:  testApp,
-		parser: logParser,
-		ctx:    ctx,
+		pbApp:         testApp,
+		parser:        logParser,
+		ctx:           ctx,
+		a2sPool:       mockA2S,
+		serverConfigs: serverConfigs,
 	}
 
 	// Create test server in database

@@ -13,6 +13,7 @@ import (
 	"sync"
 	"time"
 
+	"sandstorm-tracker/internal/a2s"
 	"sandstorm-tracker/internal/config"
 	"sandstorm-tracker/internal/database"
 	"sandstorm-tracker/internal/parser"
@@ -22,6 +23,12 @@ import (
 	"github.com/fsnotify/fsnotify"
 	"github.com/pocketbase/pocketbase/core"
 )
+
+// A2SQuerier is an interface for querying A2S server status
+// This allows for mocking in tests
+type A2SQuerier interface {
+	QueryServer(ctx context.Context, address string) (*a2s.ServerStatus, error)
+}
 
 // Watcher monitors log files and processes events
 type Watcher struct {
@@ -33,6 +40,7 @@ type Watcher struct {
 	wg               sync.WaitGroup
 	mu               sync.RWMutex
 	rconPool         *rcon.ClientPool
+	a2sPool          A2SQuerier
 	serverConfigs    map[string]config.ServerConfig
 	onServerActive   func(serverID string) // Callback when server becomes active (log rotation detected)
 	onServerInactive func(serverID string) // Callback when server becomes inactive (no activity for 10s)
@@ -44,8 +52,8 @@ type Watcher struct {
 }
 
 // NewWatcher creates a new file watcher
-// All dependencies are injected: parser and rconPool
-func NewWatcher(pbApp core.App, logParser *parser.LogParser, rconPool *rcon.ClientPool, serverConfigs []config.ServerConfig) (*Watcher, error) {
+// All dependencies are injected: parser, rconPool, and a2sPool
+func NewWatcher(pbApp core.App, logParser *parser.LogParser, rconPool *rcon.ClientPool, a2sPool *a2s.ServerPool, serverConfigs []config.ServerConfig) (*Watcher, error) {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create file watcher: %w", err)
@@ -72,6 +80,7 @@ func NewWatcher(pbApp core.App, logParser *parser.LogParser, rconPool *rcon.Clie
 		ctx:             ctx,
 		cancel:          cancel,
 		rconPool:        rconPool,
+		a2sPool:         a2sPool,
 		serverConfigs:   scMap,
 		activeServers:   make(map[string]bool),
 		lastActivity:    make(map[string]time.Time),
@@ -459,15 +468,50 @@ func (w *Watcher) markServerInactive(serverID string) {
 }
 
 // checkStartupCatchup determines if we should do catch-up processing on tracker startup
+// Strategy:
+// 1. Query A2S to check if server is online and get current map
+// 2. If server offline, skip catch-up (can't run listplayers to get scores)
+// 3. If server online, find last map event matching A2S current map
+// 4. Only do catch-up if map matches (ensures we can get scores for this match)
 // Returns the offset to start watching from and whether catch-up was performed
 func (w *Watcher) checkStartupCatchup(filePath, serverID string) (int, bool) {
+	// Get server config to access query address
+	serverConfig, exists := w.serverConfigs[serverID]
+	if !exists {
+		log.Printf("[Catchup] No config found for server %s, skipping catch-up", serverID)
+		return 0, false
+	}
+
+	// Check 1: Query A2S to verify server is online and get current map
+	if serverConfig.QueryAddress == "" {
+		log.Printf("[Catchup] No query address configured for %s, skipping catch-up", serverID)
+		return 0, false
+	}
+
+	ctx, cancel := context.WithTimeout(w.ctx, 5*time.Second)
+	defer cancel()
+
+	serverStatus, err := w.a2sPool.QueryServer(ctx, serverConfig.QueryAddress)
+	if err != nil {
+		log.Printf("[Catchup] Server %s appears offline (A2S query failed: %v), skipping catch-up", serverID, err)
+		return 0, false
+	}
+
+	if serverStatus == nil || serverStatus.Info == nil {
+		log.Printf("[Catchup] Server %s returned no info, skipping catch-up", serverID)
+		return 0, false
+	}
+
+	currentMap := serverStatus.Info.Map
+	log.Printf("[Catchup] Server %s is online, current map: %s", serverID, currentMap)
+
+	// Check 2: Is file recently modified?
 	fileInfo, err := os.Stat(filePath)
 	if err != nil {
 		log.Printf("Failed to stat file %s: %v", filePath, err)
 		return 0, false
 	}
 
-	// Check 1: Is file recently modified?
 	fileModTime := fileInfo.ModTime()
 	timeSinceModification := time.Since(fileModTime)
 
@@ -492,7 +536,7 @@ func (w *Watcher) checkStartupCatchup(filePath, serverID string) (int, bool) {
 		return 0, false
 	}
 
-	// Check 2: Is there a recent map event?
+	// Check 3: Find last map event in log file
 	mapName, scenario, mapTime, startLineNum, err := w.parser.FindLastMapEvent(filePath, time.Now())
 	if err != nil {
 		log.Printf("[Catchup] No map event found for %s: %v, skipping catch-up", serverID, err)
@@ -508,9 +552,17 @@ func (w *Watcher) checkStartupCatchup(filePath, serverID string) (int, bool) {
 		return 0, false
 	}
 
-	// Both conditions met - do catch-up!
-	log.Printf("[Catchup] Starting catch-up for %s: file modified %.1fs ago, map '%s' loaded %.1fs ago",
-		serverID, timeSinceModification.Seconds(), mapName, timeSinceMap.Seconds())
+	// Check 4: Does the log map match the current server map?
+	// This is critical - we only process events if we can run listplayers to get scores
+	if !strings.EqualFold(mapName, currentMap) {
+		log.Printf("[Catchup] Map mismatch for %s: log has '%s' but server is on '%s', skipping catch-up (can't get scores for old match)",
+			serverID, mapName, currentMap)
+		return 0, false
+	}
+
+	// All conditions met - do catch-up!
+	log.Printf("[Catchup] Starting catch-up for %s: server online, map matches (%s), file modified %.1fs ago, map loaded %.1fs ago",
+		serverID, mapName, timeSinceModification.Seconds(), timeSinceMap.Seconds())
 
 	// Get current file size as the catch-up end point
 	catchupEndOffset := fileInfo.Size()

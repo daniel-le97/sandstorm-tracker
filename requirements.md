@@ -1,7 +1,7 @@
-#todos:
+# todos:
 
 ## internal/watcher package
-1. refactor watcher package to take in an App interface
+1. refactor watcher package to take in an App interface of my main App struct in /internal/app
 2. change watcher catchup functionlity to:
    - send a2s server query to check if server is online and what map
    - find last map event that matches current map and then processevents for the current one
@@ -18,4 +18,5 @@
 
 
 
-
+commit before changes:
+ef470cc
