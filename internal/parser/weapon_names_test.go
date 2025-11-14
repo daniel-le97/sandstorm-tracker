@@ -33,7 +33,7 @@ func TestWeaponNameStandardization(t *testing.T) {
 		}
 
 		// Create parser
-		parser := NewLogParser(testApp)
+		parser := NewLogParser(testApp, testApp.Logger())
 
 		// Create a map load event first to establish a match
 		mapLoadLine := `[2025.11.08-13.59.15:803][  0]LogLoad: LoadMap: /Game/Maps/Ministry/Ministry?Name=Player?Scenario=Scenario_Ministry_Checkpoint_Security?MaxPlayers=8?Lighting=Day`
@@ -153,7 +153,7 @@ func TestWeaponStatsAggregation(t *testing.T) {
 		}
 
 		// Create parser
-		parser := NewLogParser(testApp)
+		parser := NewLogParser(testApp, testApp.Logger())
 
 		// Create a map load event first
 		mapLoadLine := `[2025.11.08-13.59.15:803][  0]LogLoad: LoadMap: /Game/Maps/Ministry/Ministry?Name=Player?Scenario=Scenario_Ministry_Checkpoint_Security?MaxPlayers=8?Lighting=Day`
@@ -223,7 +223,7 @@ func TestWeaponStatsAggregation(t *testing.T) {
 		}
 
 		// Create parser
-		parser := NewLogParser(testApp)
+		parser := NewLogParser(testApp, testApp.Logger())
 
 		// Create a map load event first
 		mapLoadLine := `[2025.11.08-13.59.15:803][  0]LogLoad: LoadMap: /Game/Maps/Ministry/Ministry?Name=Player?Scenario=Scenario_Ministry_Checkpoint_Security?MaxPlayers=8?Lighting=Day`
@@ -296,7 +296,7 @@ func TestWeaponStatsAggregation(t *testing.T) {
 		}
 
 		// Create parser
-		parser := NewLogParser(testApp)
+		parser := NewLogParser(testApp, testApp.Logger())
 
 		// Create a map load event first
 		mapLoadLine := `[2025.11.08-13.59.15:803][  0]LogLoad: LoadMap: /Game/Maps/Ministry/Ministry?Name=Player?Scenario=Scenario_Ministry_Checkpoint_Security?MaxPlayers=8?Lighting=Day`

@@ -2,6 +2,7 @@ package watcher
 
 import (
 	"context"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -103,7 +104,7 @@ func TestStartupCatchup(t *testing.T) {
 
 	// Create parser and watcher
 	ctx := context.Background()
-	logParser := parser.NewLogParser(testApp)
+	logParser := parser.NewLogParser(testApp, testApp.Logger())
 
 	// Create mock A2S pool and configure it to return Town map (matching test.log)
 	mockA2S := NewMockA2SPool()
@@ -298,7 +299,7 @@ func TestFindLastMapEvent(t *testing.T) {
 	testDataPath := filepath.Join("..", "parser", "test_data", "hc.log")
 
 	// Create parser
-	logParser := parser.NewLogParser(nil) // nil app OK for this test
+	logParser := parser.NewLogParser(nil, &slog.Logger{}) // nil app OK for this test
 
 	// Find last map event before now
 	mapName, scenario, timestamp, lineNum, err := logParser.FindLastMapEvent(testDataPath, time.Now())
@@ -338,7 +339,7 @@ func TestTimestampParsing(t *testing.T) {
 	testDataPath := filepath.Join("..", "parser", "test_data", "hc.log")
 
 	// Create parser
-	logParser := parser.NewLogParser(nil)
+	logParser := parser.NewLogParser(nil, &slog.Logger{}) // nil app OK for this test
 
 	// Find map event
 	_, _, timestamp, _, err := logParser.FindLastMapEvent(testDataPath, time.Now())

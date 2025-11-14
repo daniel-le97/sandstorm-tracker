@@ -6,6 +6,8 @@ import (
 	"testing"
 
 	"sandstorm-tracker/internal/parser"
+
+	"github.com/pocketbase/pocketbase/tests"
 )
 
 // TestLogRotationScenario provides a manual test scenario for log rotation
@@ -88,13 +90,20 @@ func TestExtractLogFileCreationTime(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			// Create temporary log file
 			tmpDir := t.TempDir()
+			temp := t.TempDir()
+			testApp, err := tests.NewTestApp(temp)
+			if err != nil {
+				t.Fatalf("Failed to create test app: %v", err)
+			}
+			defer testApp.Cleanup()
+
 			logFile := filepath.Join(tmpDir, "test.log")
 			if err := os.WriteFile(logFile, []byte(tc.content), 0644); err != nil {
 				t.Fatalf("Failed to create test log file: %v", err)
 			}
 
 			// Create parser and extract timestamp
-			logParser := parser.NewLogParser(nil) // nil app OK for this test
+			logParser := parser.NewLogParser(testApp, testApp.Logger()) // nil app OK for this test
 			timestamp, err := logParser.ExtractLogFileCreationTime(logFile)
 			if err != nil {
 				t.Fatalf("Failed to extract timestamp: %v", err)

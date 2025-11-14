@@ -33,7 +33,7 @@ func TestMapLoadEvents(t *testing.T) {
 		}
 
 		// Create parser
-		parser := NewLogParser(testApp)
+		parser := NewLogParser(testApp, testApp.Logger())
 
 		// Map load log line
 		logLine := `[2025.10.04-21.18.15:445][  0]LogLoad: LoadMap: /Game/Maps/Town/Town?Name=Player?Scenario=Scenario_Hideout_Checkpoint_Security?MaxPlayers=10?Game=CheckpointHardcore?Lighting=Day`
@@ -87,7 +87,7 @@ func TestMapLoadEvents(t *testing.T) {
 		}
 
 		// Create parser
-		parser := NewLogParser(testApp)
+		parser := NewLogParser(testApp, testApp.Logger())
 
 		// Map load log line
 		logLine := `[2025.11.08-13.59.15:803][  0]LogLoad: LoadMap: /Game/Maps/Ministry/Ministry?Name=Player?Scenario=Scenario_Ministry_Checkpoint_Security?MaxPlayers=8?Lighting=Day`
@@ -141,7 +141,7 @@ func TestMapLoadEvents(t *testing.T) {
 		}
 
 		// Create parser
-		parser := NewLogParser(testApp)
+		parser := NewLogParser(testApp, testApp.Logger())
 
 		// Map load log line with Insurgents scenario
 		logLine := `[2025.11.08-14.00.00:000][  0]LogLoad: LoadMap: /Game/Maps/Ministry/Ministry?Name=Player?Scenario=Scenario_Ministry_Checkpoint_Insurgents?MaxPlayers=8?Lighting=Day`

@@ -50,7 +50,7 @@ func TestProcessFullLog(t *testing.T) {
 	defer file.Close()
 
 	// Create parser with PocketBase app
-	parser := NewLogParser(testApp)
+	parser := NewLogParser(testApp, testApp.Logger())
 	scanner := bufio.NewScanner(file)
 
 	// Parse and write all events

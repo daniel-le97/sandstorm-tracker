@@ -250,3 +250,73 @@
 [CRON] 2025/11/14 10:46:54 Unregistered cron job for server 1d6407b7-f51b-4b1d-ad9e-faabbfbb7dde
 [CRON] 2025/11/14 11:07:27 Server Sandstorm Admin Wrapper became active, performing immediate score update
 [CRON] 2025/11/14 11:07:27 Registered cron job for server 1d6407b7-f51b-4b1d-ad9e-faabbfbb7dde (Sandstorm Admin Wrapper)
+[CRON] 2025/11/14 12:03:27 Server Sandstorm Admin Wrapper became active, performing immediate score update
+[CRON] 2025/11/14 12:03:27 Registered cron job for server 1d6407b7-f51b-4b1d-ad9e-faabbfbb7dde (Sandstorm Admin Wrapper)
+[CRON] 2025/11/14 12:03:49 Unregistered cron job for server 1d6407b7-f51b-4b1d-ad9e-faabbfbb7dde
+[CRON] 2025/11/14 12:03:50 Server Sandstorm Admin Wrapper became active, performing immediate score update
+[CRON] 2025/11/14 12:03:50 Registered cron job for server 1d6407b7-f51b-4b1d-ad9e-faabbfbb7dde (Sandstorm Admin Wrapper)
+[CRON] 2025/11/14 12:04:00 Server Sandstorm Admin Wrapper info: Players=0/8, Map=Ministry
+[CRON] 2025/11/14 12:04:14 Unregistered cron job for server 1d6407b7-f51b-4b1d-ad9e-faabbfbb7dde
+[CRON] 2025/11/14 12:07:18 Server Sandstorm Admin Wrapper became active, performing immediate score update
+[CRON] 2025/11/14 12:07:18 Registered cron job for server 1d6407b7-f51b-4b1d-ad9e-faabbfbb7dde (Sandstorm Admin Wrapper)
+[CRON] 2025/11/14 12:07:21 Failed to query players via RCON for Sandstorm Admin Wrapper: error sending command packet: write tcp 127.0.0.1:64620->127.0.0.1:27015: wsasend: An existing connection was forcibly closed by the remote host.
+[CRON] 2025/11/14 12:07:39 Unregistered cron job for server 1d6407b7-f51b-4b1d-ad9e-faabbfbb7dde
+[CRON] 2025/11/14 12:07:40 Server Sandstorm Admin Wrapper became active, performing immediate score update
+[CRON] 2025/11/14 12:07:40 Registered cron job for server 1d6407b7-f51b-4b1d-ad9e-faabbfbb7dde (Sandstorm Admin Wrapper)
+[CRON] 2025/11/14 12:08:00 Server Sandstorm Admin Wrapper info: Players=0/8, Map=Ministry
+[CRON] 2025/11/14 12:15:07 Server Sandstorm Admin Wrapper became active, performing immediate score update
+[CRON] 2025/11/14 12:15:07 Registered cron job for server 1d6407b7-f51b-4b1d-ad9e-faabbfbb7dde (Sandstorm Admin Wrapper)
+[CRON] 2025/11/14 12:15:12 Failed immediate query for server Sandstorm Admin Wrapper at 127.0.0.1:27131: failed to read response: read udp 127.0.0.1:54554->127.0.0.1:27131: i/o timeout
+[CRON] 2025/11/14 12:15:46 Unregistered cron job for server 1d6407b7-f51b-4b1d-ad9e-faabbfbb7dde
+[CRON] 2025/11/14 12:15:48 Server Sandstorm Admin Wrapper became active, performing immediate score update
+[CRON] 2025/11/14 12:15:48 Registered cron job for server 1d6407b7-f51b-4b1d-ad9e-faabbfbb7dde (Sandstorm Admin Wrapper)
+[CRON] 2025/11/14 12:16:00 Server Sandstorm Admin Wrapper info: Players=0/8, Map=Ministry
+[CRON] 2025/11/14 12:16:11 Unregistered cron job for server 1d6407b7-f51b-4b1d-ad9e-faabbfbb7dde
+[CRON] 2025/11/14 12:23:59 Server Sandstorm Admin Wrapper became active, performing immediate score update
+[CRON] 2025/11/14 12:23:59 Registered cron job for server 1d6407b7-f51b-4b1d-ad9e-faabbfbb7dde (Sandstorm Admin Wrapper)
+[CRON] 2025/11/14 12:24:00 Server Sandstorm Admin Wrapper info: Players=0/8, Map=Ministry
+[CRON] 2025/11/14 12:24:15 Unregistered cron job for server 1d6407b7-f51b-4b1d-ad9e-faabbfbb7dde
+[CRON] 2025/11/14 12:27:59 Server Sandstorm Admin Wrapper became active, performing immediate score update
+[CRON] 2025/11/14 12:27:59 Registered cron job for server 1d6407b7-f51b-4b1d-ad9e-faabbfbb7dde (Sandstorm Admin Wrapper)
+[CRON] 2025/11/14 12:28:00 Server Sandstorm Admin Wrapper info: Players=0/8, Map=Ministry
+[CRON] 2025/11/14 12:28:11 Unregistered cron job for server 1d6407b7-f51b-4b1d-ad9e-faabbfbb7dde
+[CRON] 2025/11/14 12:31:59 Server Sandstorm Admin Wrapper became active, performing immediate score update
+[CRON] 2025/11/14 12:31:59 Registered cron job for server 1d6407b7-f51b-4b1d-ad9e-faabbfbb7dde (Sandstorm Admin Wrapper)
+[CRON] 2025/11/14 12:32:00 Server Sandstorm Admin Wrapper info: Players=0/8, Map=Ministry
+[CRON] 2025/11/14 12:32:11 Unregistered cron job for server 1d6407b7-f51b-4b1d-ad9e-faabbfbb7dde
+[CRON] 2025/11/14 12:39:59 Server Sandstorm Admin Wrapper became active, performing immediate score update
+[CRON] 2025/11/14 12:39:59 Registered cron job for server 1d6407b7-f51b-4b1d-ad9e-faabbfbb7dde (Sandstorm Admin Wrapper)
+[CRON] 2025/11/14 12:40:00 Server Sandstorm Admin Wrapper info: Players=0/8, Map=Ministry
+[CRON] 2025/11/14 12:40:14 Unregistered cron job for server 1d6407b7-f51b-4b1d-ad9e-faabbfbb7dde
+[CRON] 2025/11/14 12:44:00 Server Sandstorm Admin Wrapper became active, performing immediate score update
+[CRON] 2025/11/14 12:44:00 Registered cron job for server 1d6407b7-f51b-4b1d-ad9e-faabbfbb7dde (Sandstorm Admin Wrapper)
+[CRON] 2025/11/14 12:45:49 Server Sandstorm Admin Wrapper became active, performing immediate score update
+[CRON] 2025/11/14 12:45:49 Registered cron job for server 1d6407b7-f51b-4b1d-ad9e-faabbfbb7dde (Sandstorm Admin Wrapper)
+[CRON] 2025/11/14 12:46:00 Server Sandstorm Admin Wrapper info: Players=0/8, Map=Ministry
+[CRON] 2025/11/14 12:46:24 Server Sandstorm Admin Wrapper became active, performing immediate score update
+[CRON] 2025/11/14 12:46:24 Registered cron job for server 1d6407b7-f51b-4b1d-ad9e-faabbfbb7dde (Sandstorm Admin Wrapper)
+[CRON] 2025/11/14 12:46:24 No active match found for server Sandstorm Admin Wrapper, skipping player update
+[CRON] 2025/11/14 12:46:45 Unregistered cron job for server 1d6407b7-f51b-4b1d-ad9e-faabbfbb7dde
+[CRON] 2025/11/14 12:50:35 Server Sandstorm Admin Wrapper became active, performing immediate score update
+[CRON] 2025/11/14 12:50:35 Registered cron job for server 1d6407b7-f51b-4b1d-ad9e-faabbfbb7dde (Sandstorm Admin Wrapper)
+[CRON] 2025/11/14 12:50:35 No active match found for server Sandstorm Admin Wrapper, skipping player update
+[CRON] 2025/11/14 12:50:47 Unregistered cron job for server 1d6407b7-f51b-4b1d-ad9e-faabbfbb7dde
+[CRON] 2025/11/14 12:58:34 Server Sandstorm Admin Wrapper became active, performing immediate score update
+[CRON] 2025/11/14 12:58:34 Registered cron job for server 1d6407b7-f51b-4b1d-ad9e-faabbfbb7dde (Sandstorm Admin Wrapper)
+[CRON] 2025/11/14 12:58:34 No active match found for server Sandstorm Admin Wrapper, skipping player update
+[CRON] 2025/11/14 12:58:44 Unregistered cron job for server 1d6407b7-f51b-4b1d-ad9e-faabbfbb7dde
+[CRON] 2025/11/14 13:02:33 Server Sandstorm Admin Wrapper became active, performing immediate score update
+[CRON] 2025/11/14 13:02:33 Registered cron job for server 1d6407b7-f51b-4b1d-ad9e-faabbfbb7dde (Sandstorm Admin Wrapper)
+[CRON] 2025/11/14 13:02:34 No active match found for server Sandstorm Admin Wrapper, skipping player update
+[CRON] 2025/11/14 13:02:44 Unregistered cron job for server 1d6407b7-f51b-4b1d-ad9e-faabbfbb7dde
+[CRON] 2025/11/14 13:06:33 Server Sandstorm Admin Wrapper became active, performing immediate score update
+[CRON] 2025/11/14 13:06:33 Registered cron job for server 1d6407b7-f51b-4b1d-ad9e-faabbfbb7dde (Sandstorm Admin Wrapper)
+[CRON] 2025/11/14 13:06:33 No active match found for server Sandstorm Admin Wrapper, skipping player update
+[CRON] 2025/11/14 13:06:44 Unregistered cron job for server 1d6407b7-f51b-4b1d-ad9e-faabbfbb7dde
+[CRON] 2025/11/14 13:10:33 Server Sandstorm Admin Wrapper became active, performing immediate score update
+[CRON] 2025/11/14 13:10:33 Registered cron job for server 1d6407b7-f51b-4b1d-ad9e-faabbfbb7dde (Sandstorm Admin Wrapper)
+[CRON] 2025/11/14 13:10:33 No active match found for server Sandstorm Admin Wrapper, skipping player update
+[CRON] 2025/11/14 13:10:48 Unregistered cron job for server 1d6407b7-f51b-4b1d-ad9e-faabbfbb7dde
+[CRON] 2025/11/14 13:14:32 Server Sandstorm Admin Wrapper became active, performing immediate score update
+[CRON] 2025/11/14 13:14:32 Registered cron job for server 1d6407b7-f51b-4b1d-ad9e-faabbfbb7dde (Sandstorm Admin Wrapper)
+[CRON] 2025/11/14 13:14:32 No active match found for server Sandstorm Admin Wrapper, skipping player update

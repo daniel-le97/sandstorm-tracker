@@ -53,11 +53,9 @@ func NewFileWriter(config FileWriterConfig) (*FileWriter, error) {
 		return nil, fmt.Errorf("failed to create log directory: %w", err)
 	}
 
-	// Check if log rotation is needed before opening
-	if config.MaxSize > 0 {
-		if err := rotateIfNeeded(config.FilePath, config.MaxSize, config.MaxBackups); err != nil {
-			return nil, fmt.Errorf("failed to rotate log file: %w", err)
-		}
+	// Always rotate existing log file at startup if it has content
+	if err := rotateOnStartup(config.FilePath, config.MaxBackups); err != nil {
+		return nil, fmt.Errorf("failed to rotate log file: %w", err)
 	}
 
 	// Open file for appending
@@ -78,7 +76,6 @@ func NewFileWriter(config FileWriterConfig) (*FileWriter, error) {
 	// Start periodic flush goroutine
 	if config.FlushEvery > 0 {
 		fw.ticker = time.NewTicker(config.FlushEvery)
-		fmt.Fprintf(os.Stderr, "FileWriter: Starting periodic flush goroutine (every %v)\n", config.FlushEvery)
 		fw.wg.Add(1)
 		go fw.periodicFlush()
 	}
@@ -91,9 +88,6 @@ func (fw *FileWriter) WriteRecord(r slog.Record) error {
 	fw.mu.Lock()
 	defer fw.mu.Unlock()
 
-	// Debug: verify this is being called
-	fmt.Fprintf(os.Stderr, "FileWriter.WriteRecord called: %s\n", r.Message)
-
 	// Format log as JSON
 	entry := map[string]interface{}{
 		"time":    r.Time.Format(time.RFC3339Nano),
@@ -102,10 +96,17 @@ func (fw *FileWriter) WriteRecord(r slog.Record) error {
 	}
 
 	// Add attributes from the record
+	attrCount := 0
 	r.Attrs(func(a slog.Attr) bool {
 		entry[a.Key] = a.Value.Any()
+		attrCount++
 		return true
 	})
+
+	// Debug: check if we're receiving attributes
+	if attrCount == 0 && r.NumAttrs() > 0 {
+		fmt.Fprintf(os.Stderr, "Warning: Record has %d attrs but Attrs() returned 0\n", r.NumAttrs())
+	}
 
 	// Marshal to JSON
 	data, err := json.Marshal(entry)
@@ -123,12 +124,9 @@ func (fw *FileWriter) WriteRecord(r slog.Record) error {
 		return fmt.Errorf("failed to write newline: %w", err)
 	}
 
-	// Flush if buffer is getting full
-	if fw.writer.Available() < 1024 {
-		return fw.writer.Flush()
-	}
-
-	return nil
+	// Flush immediately (rely on periodic flush for batching if needed)
+	// This ensures logs are visible quickly in development
+	return fw.writer.Flush()
 }
 
 // WriteLog writes a PocketBase log entry to the file (for backward compatibility)
@@ -166,53 +164,46 @@ func (fw *FileWriter) WriteLog(log *core.Log) error {
 		return fmt.Errorf("failed to write newline: %w", err)
 	}
 
-	// Flush if buffer is getting full
-	if fw.writer.Available() < 1024 {
-		return fw.writer.Flush()
-	}
-
-	return nil
+	// Flush immediately (rely on periodic flush for batching if needed)
+	// This ensures logs are visible quickly in development
+	return fw.writer.Flush()
 }
 
 // Flush flushes the buffer to disk
 func (fw *FileWriter) Flush() error {
 	fw.mu.Lock()
 	defer fw.mu.Unlock()
-	buffered := fw.writer.Buffered()
-	fmt.Fprintf(os.Stderr, "FileWriter.Flush: %d bytes buffered\n", buffered)
 	return fw.writer.Flush()
 }
 
 // Close closes the file writer
 func (fw *FileWriter) Close() error {
-	fmt.Fprintf(os.Stderr, "FileWriter: Close() called, stopping flush goroutine\n")
+	// Stop ticker and signal goroutine to stop
 	if fw.ticker != nil {
 		fw.ticker.Stop()
 		close(fw.done)
 		fw.wg.Wait() // Wait for goroutine to finish
-		fmt.Fprintf(os.Stderr, "FileWriter: Flush goroutine stopped\n")
 	}
-	fw.Flush()
-	fmt.Fprintf(os.Stderr, "FileWriter: Final flush completed, closing file\n")
+
+	// Final flush
+	fw.mu.Lock()
+	if err := fw.writer.Flush(); err != nil {
+		fw.mu.Unlock()
+		return err
+	}
+	fw.mu.Unlock()
+
 	return fw.file.Close()
 }
 
 // periodicFlush flushes the buffer periodically
 func (fw *FileWriter) periodicFlush() {
 	defer fw.wg.Done()
-	fmt.Fprintf(os.Stderr, "FileWriter: periodicFlush goroutine started\n")
 	for {
 		select {
 		case <-fw.ticker.C:
-			fmt.Fprintf(os.Stderr, "FileWriter: Flushing buffer now\n")
-			if err := fw.Flush(); err != nil {
-				// Log flush errors to stderr
-				fmt.Fprintf(os.Stderr, "FileWriter: periodic flush failed: %v\n", err)
-			} else {
-				fmt.Fprintf(os.Stderr, "FileWriter: Flush completed successfully\n")
-			}
+			_ = fw.Flush() // Ignore errors during periodic flush
 		case <-fw.done:
-			fmt.Fprintf(os.Stderr, "FileWriter: periodicFlush goroutine stopping\n")
 			return
 		}
 	}
@@ -232,4 +223,47 @@ func logLevelToString(level int) string {
 	default:
 		return fmt.Sprintf("LEVEL_%d", level)
 	}
+}
+
+// rotateOnStartup rotates the log file at startup if it exists and has content
+// Rotation strategy: app.log -> app.log.1 -> app.log.2 -> ... (keeps last maxBackups rotations)
+func rotateOnStartup(filePath string, maxBackups int) error {
+	// Check if file exists
+	info, err := os.Stat(filePath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil // File doesn't exist, nothing to rotate
+		}
+		return fmt.Errorf("failed to stat log file: %w", err)
+	}
+
+	// Don't rotate empty files
+	if info.Size() == 0 {
+		return nil
+	}
+
+	// Default to 5 backups if not specified
+	if maxBackups <= 0 {
+		maxBackups = 5
+	}
+
+	// Remove .log extension for rotation (app.log -> app)
+	basePath := filePath[:len(filePath)-4] // Remove ".log"
+
+	// Rotate existing backups (app.4.log -> app.5.log, app.3.log -> app.4.log, etc.)
+	for i := maxBackups - 1; i >= 1; i-- {
+		oldPath := fmt.Sprintf("%s.%d.log", basePath, i)
+		newPath := fmt.Sprintf("%s.%d.log", basePath, i+1)
+		if _, err := os.Stat(oldPath); err == nil {
+			os.Rename(oldPath, newPath) // Overwrite oldest backup
+		}
+	}
+
+	// Rotate current log file to .1.log (app.log -> app.1.log)
+	backupPath := fmt.Sprintf("%s.1.log", basePath)
+	if err := os.Rename(filePath, backupPath); err != nil {
+		return fmt.Errorf("failed to rotate log file: %w", err)
+	}
+
+	return nil
 }

@@ -538,6 +538,9 @@ func Register(app AppInterface, e *core.ServeEvent) {
 		return re.JSON(http.StatusOK, health)
 	})
 
+
+	app.Logger().Info("Registered custom HTTP handlers")
+
 	// Note: Server management API endpoints are registered by the servermgr plugin
 	// See internal/servermgr/plugin.go for:
 	// - POST /api/server/start

@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"log/slog"
 	"os"
 	"regexp"
 	"strconv"
@@ -20,6 +21,7 @@ import (
 // LogParser handles parsing log lines and writing directly to database
 type LogParser struct {
 	pbApp              core.App
+	logger             *slog.Logger
 	patterns           *logPatterns
 	chatHandler        *ChatCommandHandler
 	lastMapTravelTimes map[string]time.Time // Track last map travel time per server to ignore reconnects
@@ -180,10 +182,11 @@ func (p *LogParser) tryProcessMapTravel(ctx context.Context, line string, timest
 }
 
 // NewLogParser creates a new log parser with PocketBase app
-func NewLogParser(pbApp core.App) *LogParser {
+func NewLogParser(pbApp core.App, logger *slog.Logger) *LogParser {
 	return &LogParser{
 		patterns:           newLogPatterns(),
 		pbApp:              pbApp,
+		logger:             logger,
 		chatHandler:        nil, // Set later via SetChatHandler
 		lastMapTravelTimes: make(map[string]time.Time),
 	}

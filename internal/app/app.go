@@ -2,7 +2,7 @@ package app
 
 import (
 	"fmt"
-	// "log/slog"
+	"log/slog"
 	"path/filepath"
 	"time"
 
@@ -35,7 +35,7 @@ type App struct {
 	Watcher       *watcher.Watcher
 	ServerManager *servermgr.Plugin  // Server manager plugin
 	logFileWriter *logger.FileWriter // File writer for PocketBase logs
-	// customLogger  *slog.Logger       // Logger with TeeHandler (writes to both console and file)
+	customLogger  *slog.Logger       // Logger with TeeHandler (writes to both console and file)
 }
 
 // New creates and initializes the sandstorm-tracker application
@@ -57,11 +57,11 @@ func New() (*App, error) {
 	}
 	// Note: Logger setup happens in OnBootstrap hook (after PocketBase is fully initialized)
 
-	// Initialize parser
-	app.Parser = parser.NewLogParser(app.PocketBase)
+	// Initialize parser with logger
+	app.Parser = parser.NewLogParser(app.PocketBase, app.Logger().With("component", "PARSER"))
 
 	// Initialize RCON pool (servers added in onServe)
-	app.RconPool = rcon.NewClientPool(app.PocketBase.Logger())
+	app.RconPool = rcon.NewClientPool(app.Logger().WithGroup("RCON"))
 
 	// Set up chat command handler (needs RCON pool)
 	app.Parser.SetChatHandler(app)
@@ -142,7 +142,8 @@ func (app *App) Bootstrap() error {
 
 // onServe is called when the server starts
 func (app *App) onServe(e *core.ServeEvent) error {
-	app.Logger().WithGroup("APP").Info("Starting sandstorm-tracker application")
+	logger := app.Logger().With("component", "APP")
+	logger.Info("Starting sandstorm-tracker application")
 	// Validate configuration before starting
 	if err := app.Config.Validate(); err != nil {
 		return fmt.Errorf("invalid configuration: %w", err)
@@ -202,13 +203,13 @@ func (app *App) onServe(e *core.ServeEvent) error {
 	// Don't register score updater cron immediately - wait for servers to become active
 	// Set callback to register score updater job when server becomes active
 	app.Watcher.OnServerActive(func(serverID string) {
-		app.Logger().Info("Server became active, registering score updater cron job", "serverID", serverID)
+		app.Logger().Info("Server became active, registering score updater cron job", "component", "WATCHER", "serverID", serverID)
 		jobs.RegisterScoreUpdaterForServer(app, app.Config, serverID)
 	})
 
 	// Set callback to unregister score updater job when server becomes inactive
 	app.Watcher.OnServerInactive(func(serverID string) {
-		app.Logger().Info("Server became inactive, unregistering score updater cron job", "serverID", serverID)
+		app.Logger().Info("Server became inactive, unregistering score updater cron job", "component", "WATCHER", "serverID", serverID)
 		jobs.UnregisterScoreUpdaterForServer(app, serverID)
 	})
 
@@ -225,7 +226,7 @@ func (app *App) onServe(e *core.ServeEvent) error {
 	go func() {
 		defer func() {
 			if r := recover(); r != nil {
-				app.Logger().Error("Watcher panic recovered", "panic", r)
+				app.Logger().Error("Watcher panic recovered", "component", "WATCHER", "panic", r)
 			}
 		}()
 		app.Watcher.Start()
@@ -247,7 +248,7 @@ func (app *App) onTerminate(e *core.TerminateEvent) error {
 
 	if app.logFileWriter != nil {
 		if err := app.logFileWriter.Close(); err != nil {
-			app.Logger().Error("Failed to close log file writer", "error", err)
+			app.Logger().Error("Failed to close log file writer", "component", "APP", "error", err)
 		}
 	}
 
@@ -322,6 +323,13 @@ func (app *App) GetServerManager() *servermgr.Plugin {
 	return app.ServerManager
 }
 
+func (app *App) Logger() *slog.Logger {
+	if app.customLogger != nil {
+		return app.customLogger
+	}
+	return app.PocketBase.Logger()
+}
+
 // setupLogFileWriter initializes the file writer.
 // This must be called AFTER app.Config is loaded.
 func (app *App) setupLogFileWriter() error {
@@ -348,19 +356,22 @@ func (app *App) setupLogFileWriter() error {
 
 	app.logFileWriter = fw
 
-	app.OnModelCreate(core.LogsTableName).BindFunc(func(e *core.ModelEvent) error {
-		l := e.Model.(*core.Log)
+	// app.OnModelCreate(core.LogsTableName).BindFunc(func(e *core.ModelEvent) error {
+	// 	l := e.Model.(*core.Log)
+	// 	// Write to file
+	// 	if app.logFileWriter != nil {
+	// 		if err := app.logFileWriter.WriteLog(l); err != nil {
+	// 			// Don't fail the hook on write errors
+	// 			fmt.Printf("Warning: Failed to write log to file: %v\n", err)
+	// 		}
+	// 	}
 
-		// Write to file
-		if app.logFileWriter != nil {
-			if err := app.logFileWriter.WriteLog(l); err != nil {
-				// Don't fail the hook on write errors
-				fmt.Printf("Warning: Failed to write log to file: %v\n", err)
-			}
-		}
+	// 	return e.Next()
+	// })
 
-		return e.Next()
-	})
+	// Use TeeHandler for centralized logging to both console and file
+	teeHandler := logger.NewTeeHandler(app.PocketBase.Logger().Handler(), fw)
+	app.customLogger = slog.New(teeHandler)
 
 	return nil
 }
