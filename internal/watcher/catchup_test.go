@@ -120,13 +120,16 @@ func TestStartupCatchup(t *testing.T) {
 		},
 	}
 
-	// Create watcher (we'll call checkStartupCatchup directly)
+	// Create watcher components
 	watcher := &Watcher{
-		pbApp:         testApp,
-		parser:        logParser,
-		ctx:           ctx,
-		a2sPool:       mockA2S,
-		serverConfigs: serverConfigs,
+		pbApp:            testApp,
+		parser:           logParser,
+		ctx:              ctx,
+		a2sPool:          mockA2S,
+		serverConfigs:    serverConfigs,
+		stateTracker:     NewServerStateTracker(10 * time.Second),
+		rotationDetector: NewRotationDetector(logParser),
+		catchupProcessor: NewCatchupProcessor(logParser, mockA2S, serverConfigs, testApp, ctx),
 	}
 
 	// Create test server in database
@@ -138,7 +141,7 @@ func TestStartupCatchup(t *testing.T) {
 
 	// Test 1: Check startup catch-up detection and execution
 	t.Run("DetectCatchupNeeded", func(t *testing.T) {
-		offset, shouldCatchup := watcher.checkStartupCatchup(testLogPath, serverID)
+		offset, shouldCatchup := watcher.catchupProcessor.CheckStartupCatchup(testLogPath, serverID)
 
 		if !shouldCatchup {
 			t.Error("Expected catch-up to be needed, but it wasn't detected")
@@ -276,7 +279,7 @@ func TestStartupCatchup(t *testing.T) {
 			t.Fatalf("Failed to create old server: %v", err)
 		}
 
-		offset, shouldCatchup := watcher.checkStartupCatchup(oldLogPath, oldServerID)
+		offset, shouldCatchup := watcher.catchupProcessor.CheckStartupCatchup(oldLogPath, oldServerID)
 
 		if shouldCatchup {
 			t.Error("Expected catch-up to be skipped for old file, but it was triggered")

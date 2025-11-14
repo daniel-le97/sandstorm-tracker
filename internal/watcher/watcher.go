@@ -7,15 +7,12 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"regexp"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
 
 	"sandstorm-tracker/internal/a2s"
 	"sandstorm-tracker/internal/config"
-	"sandstorm-tracker/internal/database"
 	"sandstorm-tracker/internal/parser"
 	"sandstorm-tracker/internal/rcon"
 	"sandstorm-tracker/internal/util"
@@ -38,17 +35,14 @@ type Watcher struct {
 	ctx              context.Context
 	cancel           context.CancelFunc
 	wg               sync.WaitGroup
-	mu               sync.RWMutex
 	rconPool         *rcon.ClientPool
 	a2sPool          A2SQuerier
 	serverConfigs    map[string]config.ServerConfig
-	onServerActive   func(serverID string) // Callback when server becomes active (log rotation detected)
-	onServerInactive func(serverID string) // Callback when server becomes inactive (no activity for 10s)
-	activeServers    map[string]bool       // Track which servers are active
-	activeServersMu  sync.RWMutex
-	lastActivity     map[string]time.Time // Track last activity time for each server
-	lastActivityMu   sync.RWMutex
-	inactivityTimer  *time.Duration // How long to wait before marking server as inactive (default 10s)
+	serverQueues     map[string]chan string // Per-server work queues for sequential event processing
+	serverQueuesMu   sync.RWMutex
+	stateTracker     *ServerStateTracker
+	rotationDetector *RotationDetector
+	catchupProcessor *CatchupProcessor
 }
 
 // NewWatcher creates a new file watcher
@@ -74,17 +68,18 @@ func NewWatcher(pbApp core.App, logParser *parser.LogParser, rconPool *rcon.Clie
 	inactivityDuration := 10 * time.Second
 
 	w := &Watcher{
-		watcher:         watcher,
-		parser:          logParser,
-		pbApp:           pbApp,
-		ctx:             ctx,
-		cancel:          cancel,
-		rconPool:        rconPool,
-		a2sPool:         a2sPool,
-		serverConfigs:   scMap,
-		activeServers:   make(map[string]bool),
-		lastActivity:    make(map[string]time.Time),
-		inactivityTimer: &inactivityDuration,
+		watcher:          watcher,
+		parser:           logParser,
+		pbApp:            pbApp,
+		ctx:              ctx,
+		cancel:           cancel,
+		rconPool:         rconPool,
+		a2sPool:          a2sPool,
+		serverConfigs:    scMap,
+		serverQueues:     make(map[string]chan string),
+		stateTracker:     NewServerStateTracker(inactivityDuration),
+		rotationDetector: NewRotationDetector(logParser),
+		catchupProcessor: NewCatchupProcessor(logParser, a2sPool, scMap, pbApp, ctx),
 	}
 
 	// Start inactivity monitor
@@ -95,16 +90,26 @@ func NewWatcher(pbApp core.App, logParser *parser.LogParser, rconPool *rcon.Clie
 
 // OnServerActive sets a callback to be called when a server becomes active (log rotation detected)
 func (w *Watcher) OnServerActive(callback func(serverID string)) {
-	w.mu.Lock()
-	defer w.mu.Unlock()
-	w.onServerActive = callback
+	w.stateTracker.SetCallbacks(callback, nil)
 }
 
 // OnServerInactive sets a callback to be called when a server becomes inactive (no activity for 10s)
 func (w *Watcher) OnServerInactive(callback func(serverID string)) {
-	w.mu.Lock()
-	defer w.mu.Unlock()
-	w.onServerInactive = callback
+	var activeCallback func(string)
+	w.stateTracker.callbacksMu.RLock()
+	activeCallback = w.stateTracker.onServerActive
+	w.stateTracker.callbacksMu.RUnlock()
+	w.stateTracker.SetCallbacks(activeCallback, callback)
+}
+
+// IsServerActive returns whether a server is currently active (has recent log activity)
+func (w *Watcher) IsServerActive(serverID string) bool {
+	return w.stateTracker.IsActive(serverID)
+}
+
+// GetServerLastActivity returns the last activity time for a server
+func (w *Watcher) GetServerLastActivity(serverID string) (time.Time, bool) {
+	return w.stateTracker.GetLastActivity(serverID)
 }
 
 // AddPath adds a file or directory to watch
@@ -138,7 +143,8 @@ func (w *Watcher) AddPath(path string) error {
 		for _, file := range files {
 			if !file.IsDir() && strings.HasSuffix(file.Name(), ".log") && !strings.Contains(file.Name(), "-backup-") {
 				logFilePath := filepath.Join(absPath, file.Name())
-				go w.processFile(logFilePath)
+				serverID := w.extractServerIDFromPath(logFilePath)
+				w.enqueueFileEvent(serverID, logFilePath)
 			}
 		}
 	} else {
@@ -150,7 +156,8 @@ func (w *Watcher) AddPath(path string) error {
 			return fmt.Errorf("failed to watch directory %s: %w", dir, err)
 		}
 
-		go w.processFile(absPath)
+		serverID := w.extractServerIDFromPath(absPath)
+		w.enqueueFileEvent(serverID, absPath)
 		log.Printf("Watching file: %s", absPath)
 	}
 	return nil
@@ -162,10 +169,23 @@ func (w *Watcher) Start() {
 	go w.watchLoop()
 }
 
-// Stop stops the watcher
+// Stop stops the watcher and all server workers
 func (w *Watcher) Stop() {
+	// Cancel context to signal all workers to stop
 	w.cancel()
+
+	// Close all server queues to unblock workers
+	w.serverQueuesMu.Lock()
+	for serverID, queue := range w.serverQueues {
+		close(queue)
+		log.Printf("Closed queue for server %s", serverID)
+	}
+	w.serverQueuesMu.Unlock()
+
+	// Wait for all workers to finish
 	w.wg.Wait()
+
+	// Close the file watcher
 	w.watcher.Close()
 }
 
@@ -193,7 +213,52 @@ func (w *Watcher) handleFileEvent(event fsnotify.Event) {
 	if event.Has(fsnotify.Write) || event.Has(fsnotify.Create) {
 		name := filepath.Base(event.Name)
 		if strings.HasSuffix(name, ".log") && !strings.Contains(name, "-backup-") {
-			go w.processFile(event.Name)
+			serverID := w.extractServerIDFromPath(event.Name)
+			w.enqueueFileEvent(serverID, event.Name)
+		}
+	}
+}
+
+// enqueueFileEvent sends a file event to the appropriate server's work queue
+// If the server doesn't have a worker yet, one is created
+func (w *Watcher) enqueueFileEvent(serverID, filePath string) {
+	w.serverQueuesMu.Lock()
+	queue, exists := w.serverQueues[serverID]
+	if !exists {
+		// Create a buffered channel for this server
+		queue = make(chan string, 100)
+		w.serverQueues[serverID] = queue
+		// Start a worker for this server
+		w.wg.Add(1)
+		go w.serverWorker(serverID, queue)
+	}
+	w.serverQueuesMu.Unlock()
+
+	// Non-blocking send to avoid blocking the fsnotify loop
+	select {
+	case queue <- filePath:
+		// Successfully enqueued
+	default:
+		log.Printf("Warning: Queue full for server %s, dropping event for %s", serverID, filePath)
+	}
+}
+
+// serverWorker processes file events sequentially for a single server
+func (w *Watcher) serverWorker(serverID string, queue chan string) {
+	defer w.wg.Done()
+	log.Printf("Started worker for server %s", serverID)
+
+	for {
+		select {
+		case <-w.ctx.Done():
+			log.Printf("Stopping worker for server %s", serverID)
+			return
+		case filePath, ok := <-queue:
+			if !ok {
+				log.Printf("Queue closed for server %s", serverID)
+				return
+			}
+			w.processFile(filePath)
 		}
 	}
 }
@@ -220,7 +285,7 @@ func (w *Watcher) processFile(filePath string) {
 
 	// On first run (offset == 0 and no saved log time), check if we should do startup catch-up
 	if offset == 0 && savedLogFileTime == "" {
-		catchupOffset, shouldCatchup := w.checkStartupCatchup(filePath, serverID)
+		catchupOffset, shouldCatchup := w.catchupProcessor.CheckStartupCatchup(filePath, serverID)
 		if shouldCatchup {
 			offset = catchupOffset
 			// Save the offset so we start from here
@@ -229,13 +294,6 @@ func (w *Watcher) processFile(filePath string) {
 				log.Printf("Error saving catch-up offset: %v", err)
 			}
 		}
-	}
-
-	// Extract current log file creation time
-	currentLogFileTime, err := w.parser.ExtractLogFileCreationTime(filePath)
-	if err != nil {
-		log.Printf("Warning: Could not extract log file creation time for %s: %v", filePath, err)
-		// Continue with size-based rotation detection
 	}
 
 	file, err := os.Open(filePath)
@@ -251,44 +309,23 @@ func (w *Watcher) processFile(filePath string) {
 		log.Printf("Error getting file info for %s: %v", filePath, err)
 		return
 	}
-	currentSize := fileInfo.Size()
 
-	// Check if log file was rotated by comparing creation times
-	rotationDetected := false
-	if savedLogFileTime != "" && !currentLogFileTime.IsZero() {
-		savedTime, err := time.Parse(time.RFC3339, savedLogFileTime)
-		if err == nil && !currentLogFileTime.Equal(savedTime) {
-			log.Printf("Log rotation detected for %s (creation time changed: %v → %v)",
-				serverID, savedTime.Format("2006-01-02 15:04:05"), currentLogFileTime.Format("2006-01-02 15:04:05"))
-			rotationDetected = true
-			offset = 0
-		}
+	// Check for rotation using rotation detector
+	rotationResult := w.rotationDetector.CheckRotation(filePath, serverID, serverRecord, fileInfo)
+	offset = rotationResult.NewOffset
+
+	// Extract current log file creation time for saving
+	currentLogFileTime, err := w.parser.ExtractLogFileCreationTime(filePath)
+	if err != nil {
+		log.Printf("Warning: Could not extract log file creation time for %s: %v", filePath, err)
 	}
 
-	// Fallback: If current size is less than offset, log file was rotated (truncated/reset)
-	if !rotationDetected && currentSize < int64(offset) {
-		log.Printf("Log rotation detected for %s (file size %d < offset %d), resetting to 0", serverID, currentSize, offset)
-		rotationDetected = true
-		offset = 0
-	}
-
-	// If offset is 0 (new server or just after rotation), save current state
-	if offset == 0 && !rotationDetected {
-		log.Printf("New server %s detected, setting offset to %d bytes (waiting for first log rotation)", serverID, currentSize)
-		serverRecord.Set("offset", currentSize)
-		if !currentLogFileTime.IsZero() {
-			serverRecord.Set("log_file_creation_time", currentLogFileTime.Format(time.RFC3339))
-		}
-		if err := w.pbApp.Save(serverRecord); err != nil {
-			log.Printf("Error saving initial offset: %v", err)
-		}
-		return // Don't process until first rotation
-	}
-
-	// If offset equals current size, this is the first time we're watching - wait for new data
-	if int64(offset) == currentSize {
-		log.Printf("Server %s at current end of file (%d bytes), waiting for new log entries", serverID, currentSize)
-		return // Don't process until new data is written
+	// Check if we should skip processing
+	if shouldSkip, _ := w.rotationDetector.ShouldSkipProcessing(
+		serverID, offset, rotationResult.CurrentSize, rotationResult.Rotated,
+		savedLogFileTime, currentLogFileTime, serverRecord, w.pbApp,
+	); shouldSkip {
+		return
 	}
 
 	if _, err := file.Seek(int64(offset), 0); err != nil {
@@ -329,42 +366,9 @@ func (w *Watcher) processFile(filePath string) {
 			log.Printf("Processed %d lines from %s (new offset: %d)", linesProcessed, filePath, newOffset)
 		}
 
-		// Mark server as active and trigger callback if this is the first time
-		w.markServerActive(serverID)
-
-		// Update last activity time
-		w.updateLastActivity(serverID)
-	}
-}
-
-// updateLastActivity updates the last activity timestamp for a server
-func (w *Watcher) updateLastActivity(serverID string) {
-	w.lastActivityMu.Lock()
-	defer w.lastActivityMu.Unlock()
-	w.lastActivity[serverID] = time.Now()
-}
-
-// markServerActive marks a server as active and triggers the onServerActive callback
-func (w *Watcher) markServerActive(serverID string) {
-	w.activeServersMu.Lock()
-	defer w.activeServersMu.Unlock()
-
-	// Check if server was already marked as active
-	if w.activeServers[serverID] {
-		return
-	}
-
-	// Mark as active
-	w.activeServers[serverID] = true
-	log.Printf("[Watcher] Server %s became active (log rotation detected)", serverID)
-
-	// Trigger callback if set
-	w.mu.RLock()
-	callback := w.onServerActive
-	w.mu.RUnlock()
-
-	if callback != nil {
-		go callback(serverID)
+		// Mark server as active and update activity time
+		w.stateTracker.MarkActive(serverID)
+		w.stateTracker.UpdateActivity(serverID)
 	}
 }
 
@@ -418,291 +422,5 @@ func (w *Watcher) startInactivityMonitor() {
 
 // checkInactiveServers checks for servers that haven't had activity in 10 seconds and marks them inactive
 func (w *Watcher) checkInactiveServers() {
-	w.lastActivityMu.RLock()
-	now := time.Now()
-	inactivityThreshold := *w.inactivityTimer
-
-	var inactiveServers []string
-	for serverID, lastTime := range w.lastActivity {
-		if now.Sub(lastTime) > inactivityThreshold {
-			// Check if server is currently marked as active
-			w.activeServersMu.RLock()
-			isActive := w.activeServers[serverID]
-			w.activeServersMu.RUnlock()
-
-			if isActive {
-				inactiveServers = append(inactiveServers, serverID)
-			}
-		}
-	}
-	w.lastActivityMu.RUnlock()
-
-	// Mark servers as inactive and trigger callback
-	for _, serverID := range inactiveServers {
-		w.markServerInactive(serverID)
-	}
-}
-
-// markServerInactive marks a server as inactive and triggers the onServerInactive callback
-func (w *Watcher) markServerInactive(serverID string) {
-	w.activeServersMu.Lock()
-	defer w.activeServersMu.Unlock()
-
-	// Check if server was actually active
-	if !w.activeServers[serverID] {
-		return
-	}
-
-	// Mark as inactive
-	w.activeServers[serverID] = false
-	log.Printf("[Watcher] Server %s became inactive (no activity for 10s)", serverID)
-
-	// Trigger callback if set
-	w.mu.RLock()
-	callback := w.onServerInactive
-	w.mu.RUnlock()
-
-	if callback != nil {
-		go callback(serverID)
-	}
-}
-
-// checkStartupCatchup determines if we should do catch-up processing on tracker startup
-// Strategy:
-// 1. Query A2S to check if server is online and get current map
-// 2. If server offline, skip catch-up (can't run listplayers to get scores)
-// 3. If server online, find last map event matching A2S current map
-// 4. Only do catch-up if map matches (ensures we can get scores for this match)
-// Returns the offset to start watching from and whether catch-up was performed
-func (w *Watcher) checkStartupCatchup(filePath, serverID string) (int, bool) {
-	// Get server config to access query address
-	serverConfig, exists := w.serverConfigs[serverID]
-	if !exists {
-		log.Printf("[Catchup] No config found for server %s, skipping catch-up", serverID)
-		return 0, false
-	}
-
-	// Check 1: Query A2S to verify server is online and get current map
-	if serverConfig.QueryAddress == "" {
-		log.Printf("[Catchup] No query address configured for %s, skipping catch-up", serverID)
-		return 0, false
-	}
-
-	ctx, cancel := context.WithTimeout(w.ctx, 5*time.Second)
-	defer cancel()
-
-	serverStatus, err := w.a2sPool.QueryServer(ctx, serverConfig.QueryAddress)
-	if err != nil {
-		log.Printf("[Catchup] Server %s appears offline (A2S query failed: %v), skipping catch-up", serverID, err)
-		return 0, false
-	}
-
-	if serverStatus == nil || serverStatus.Info == nil {
-		log.Printf("[Catchup] Server %s returned no info, skipping catch-up", serverID)
-		return 0, false
-	}
-
-	currentMap := serverStatus.Info.Map
-	log.Printf("[Catchup] Server %s is online, current map: %s", serverID, currentMap)
-
-	// Check 2: Is file recently modified?
-	fileInfo, err := os.Stat(filePath)
-	if err != nil {
-		log.Printf("Failed to stat file %s: %v", filePath, err)
-		return 0, false
-	}
-
-	fileModTime := fileInfo.ModTime()
-	timeSinceModification := time.Since(fileModTime)
-
-	// Detect if SAW is active by checking for recent RCON logs
-	sawActive := w.hasRecentRconLogs(filePath, 30*time.Second)
-
-	// Use adaptive threshold based on whether SAW is active
-	var fileModThreshold time.Duration
-	if sawActive {
-		fileModThreshold = 1 * time.Minute // SAW keeps file fresh with polling
-		log.Printf("[Catchup] SAW detected for %s, using 1-minute threshold", serverID)
-	} else {
-		fileModThreshold = 9 * time.Hour // Servers restart every 8 hours, allow some buffer
-		log.Printf("[Catchup] No SAW detected for %s, using 9-hour threshold", serverID)
-	}
-
-	fileRecentlyModified := timeSinceModification < fileModThreshold
-
-	if !fileRecentlyModified {
-		log.Printf("[Catchup] File %s not recently modified (%.1f minutes ago), skipping catch-up",
-			serverID, timeSinceModification.Minutes())
-		return 0, false
-	}
-
-	// Check 3: Find last map event in log file
-	mapName, scenario, mapTime, startLineNum, err := w.parser.FindLastMapEvent(filePath, time.Now())
-	if err != nil {
-		log.Printf("[Catchup] No map event found for %s: %v, skipping catch-up", serverID, err)
-		return 0, false
-	}
-
-	timeSinceMap := time.Since(mapTime)
-	recentMapEvent := timeSinceMap < 30*time.Minute
-
-	if !recentMapEvent {
-		log.Printf("[Catchup] Map event too old for %s (%.1f minutes ago), skipping catch-up",
-			serverID, timeSinceMap.Minutes())
-		return 0, false
-	}
-
-	// Check 4: Does the log map match the current server map?
-	// This is critical - we only process events if we can run listplayers to get scores
-	if !strings.EqualFold(mapName, currentMap) {
-		log.Printf("[Catchup] Map mismatch for %s: log has '%s' but server is on '%s', skipping catch-up (can't get scores for old match)",
-			serverID, mapName, currentMap)
-		return 0, false
-	}
-
-	// All conditions met - do catch-up!
-	log.Printf("[Catchup] Starting catch-up for %s: server online, map matches (%s), file modified %.1fs ago, map loaded %.1fs ago",
-		serverID, mapName, timeSinceModification.Seconds(), timeSinceMap.Seconds())
-
-	// Get current file size as the catch-up end point
-	catchupEndOffset := fileInfo.Size()
-
-	// Extract player team from scenario
-	var playerTeam *string
-	if strings.Contains(scenario, "_Security") {
-		team := "Security"
-		playerTeam = &team
-	} else if strings.Contains(scenario, "_Insurgents") {
-		team := "Insurgents"
-		playerTeam = &team
-	}
-
-	// Create match in database
-	_, err = w.pbApp.FindFirstRecordByFilter(
-		"matches",
-		"server = {:server} && end_time = ''",
-		map[string]any{"server": serverID},
-	)
-
-	// Only create match if one doesn't already exist
-	if err != nil {
-		_, err = database.CreateMatch(w.ctx, w.pbApp, serverID, &mapName, &scenario, &mapTime, playerTeam)
-		if err != nil {
-			log.Printf("[Catchup] Failed to create match for %s: %v", serverID, err)
-			return 0, false
-		}
-		log.Printf("[Catchup] Created match for %s: %s (%s) at %v", serverID, mapName, scenario, mapTime)
-	} else {
-		log.Printf("[Catchup] Active match already exists for %s, using existing match", serverID)
-	}
-
-	// Process historical events from map event to current position
-	linesProcessed := w.processHistoricalEvents(filePath, serverID, startLineNum, catchupEndOffset)
-
-	log.Printf("[Catchup] Completed for %s: processed %d lines from %d to %d",
-		serverID, linesProcessed, startLineNum, catchupEndOffset)
-
-	return int(catchupEndOffset), true
-}
-
-// hasRecentRconLogs checks if there are recent RCON log entries (indicates SAW is active)
-func (w *Watcher) hasRecentRconLogs(filePath string, threshold time.Duration) bool {
-	file, err := os.Open(filePath)
-	if err != nil {
-		return false
-	}
-	defer file.Close()
-
-	// Read last 100 lines to check for recent RCON activity
-	scanner := bufio.NewScanner(file)
-	var lastLines []string
-	maxLines := 100
-
-	for scanner.Scan() {
-		lastLines = append(lastLines, scanner.Text())
-		if len(lastLines) > maxLines {
-			lastLines = lastLines[1:]
-		}
-	}
-
-	// Check if any of the last lines contain RCON log entries within threshold
-	cutoffTime := time.Now().Add(-threshold)
-	timestampPattern := regexp.MustCompile(`^\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{3})\]`)
-
-	for _, line := range lastLines {
-		if strings.Contains(line, "LogRcon:") {
-			// Try to extract timestamp from line
-			if matches := timestampPattern.FindStringSubmatch(line); len(matches) >= 2 {
-				if ts, err := parseTimestampFromLog(matches[1]); err == nil {
-					if ts.After(cutoffTime) {
-						return true
-					}
-				}
-			}
-		}
-	}
-
-	return false
-}
-
-// processHistoricalEvents processes events from a specific line number to an offset
-// Returns the number of lines processed
-func (w *Watcher) processHistoricalEvents(filePath, serverID string, startLine int, endOffset int64) int {
-	file, err := os.Open(filePath)
-	if err != nil {
-		log.Printf("[Catchup] Failed to open file for historical processing: %v", err)
-		return 0
-	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
-	lineNum := 0
-	linesProcessed := 0
-
-	// Read until we hit the start line
-	for scanner.Scan() && lineNum < startLine {
-		lineNum++
-	}
-
-	// Process lines from startLine until we reach endOffset
-	for scanner.Scan() {
-		currentPos, _ := file.Seek(0, 1)
-		if currentPos > endOffset {
-			break
-		}
-
-		line := scanner.Text()
-		if err := w.parser.ParseAndProcess(w.ctx, line, serverID, filePath); err != nil {
-			log.Printf("[Catchup] Error processing line %d: %v", lineNum, err)
-		}
-
-		linesProcessed++
-		lineNum++
-	}
-
-	return linesProcessed
-}
-
-// parseTimestampFromLog parses a timestamp from log format (2025.10.04-15.23.38:790)
-func parseTimestampFromLog(ts string) (time.Time, error) {
-	colonIdx := strings.LastIndex(ts, ":")
-	if colonIdx == -1 {
-		return time.Time{}, fmt.Errorf("invalid timestamp format: %s", ts)
-	}
-
-	dateTimePart := ts[:colonIdx]
-	msPart := ts[colonIdx+1:]
-
-	// Parse in local timezone (log timestamps are in server's local time)
-	dt, err := time.ParseInLocation("2006.01.02-15.04.05", dateTimePart, time.Local)
-	if err != nil {
-		return time.Time{}, fmt.Errorf("failed to parse datetime part: %w", err)
-	}
-
-	ms, err := strconv.Atoi(msPart)
-	if err != nil {
-		return time.Time{}, fmt.Errorf("failed to parse milliseconds: %w", err)
-	}
-
-	return dt.Add(time.Duration(ms) * time.Millisecond), nil
+	w.stateTracker.CheckInactiveServers()
 }

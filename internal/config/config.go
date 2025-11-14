@@ -23,6 +23,7 @@ type ServerConfig struct {
 type LoggingConfig struct {
 	Level            string `mapstructure:"level"`
 	EnableServerLogs bool   `mapstructure:"enableServerLogs"`
+	MaxBackups       int    `mapstructure:"maxBackups"` // Number of rotated log files to keep (default: 5)
 }
 
 type Config struct {

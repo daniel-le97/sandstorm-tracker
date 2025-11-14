@@ -2,16 +2,20 @@ package app
 
 import (
 	"fmt"
+	// "log/slog"
+	"path/filepath"
+	"time"
+
 	"sandstorm-tracker/internal/a2s"
 	"sandstorm-tracker/internal/config"
 	"sandstorm-tracker/internal/handlers"
 	"sandstorm-tracker/internal/jobs"
+	"sandstorm-tracker/internal/logger"
 	"sandstorm-tracker/internal/parser"
 	"sandstorm-tracker/internal/rcon"
 	"sandstorm-tracker/internal/servermgr"
 	"sandstorm-tracker/internal/util"
 	"sandstorm-tracker/internal/watcher"
-	"time"
 
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/core"
@@ -29,7 +33,9 @@ type App struct {
 	RconPool      *rcon.ClientPool
 	A2SPool       *a2s.ServerPool
 	Watcher       *watcher.Watcher
-	ServerManager *servermgr.Plugin // Server manager plugin
+	ServerManager *servermgr.Plugin  // Server manager plugin
+	logFileWriter *logger.FileWriter // File writer for PocketBase logs
+	// customLogger  *slog.Logger       // Logger with TeeHandler (writes to both console and file)
 }
 
 // New creates and initializes the sandstorm-tracker application
@@ -44,6 +50,12 @@ func New() (*App, error) {
 		return nil, fmt.Errorf("failed to load config: %w", err)
 	}
 	app.Config = cfg
+
+	err = app.setupLogFileWriter()
+	if err != nil {
+		return nil, fmt.Errorf("failed to setup log file writer: %w", err)
+	}
+	// Note: Logger setup happens in OnBootstrap hook (after PocketBase is fully initialized)
 
 	// Initialize parser
 	app.Parser = parser.NewLogParser(app.PocketBase)
@@ -86,6 +98,36 @@ func (app *App) setupPlugins() {
 
 // Bootstrap initializes all application components and registers hooks
 func (app *App) Bootstrap() error {
+	// Setup log file writer after bootstrap
+	// app.OnBootstrap().BindFunc(func(e *core.BootstrapEvent) error {
+	// 	// Wait for bootstrap to complete first
+	// 	if err := e.Next(); err != nil {
+	// 		return err
+	// 	}
+
+	// 	// Setup file writer
+	// 	if err := app.setupLogFileWriter(); err != nil {
+	// 		return fmt.Errorf("failed to setup log file writer: %w", err)
+	// 	}
+
+	// 	// Intercept logs via model hook and write to file
+	// 	app.OnModelCreate(core.LogsTableName).BindFunc(func(e *core.ModelEvent) error {
+	// 		l := e.Model.(*core.Log)
+
+	// 		// Write to file
+	// 		if app.logFileWriter != nil {
+	// 			if err := app.logFileWriter.WriteLog(l); err != nil {
+	// 				// Don't fail the hook on write errors
+	// 				fmt.Printf("Warning: Failed to write log to file: %v\n", err)
+	// 			}
+	// 		}
+
+	// 		return e.Next()
+	// 	})
+
+	// 	return nil
+	// })
+
 	// Register lifecycle hooks
 	app.OnServe().BindFunc(func(e *core.ServeEvent) error {
 		return app.onServe(e)
@@ -100,6 +142,7 @@ func (app *App) Bootstrap() error {
 
 // onServe is called when the server starts
 func (app *App) onServe(e *core.ServeEvent) error {
+	app.Logger().WithGroup("APP").Info("Starting sandstorm-tracker application")
 	// Validate configuration before starting
 	if err := app.Config.Validate(); err != nil {
 		return fmt.Errorf("invalid configuration: %w", err)
@@ -202,6 +245,12 @@ func (app *App) onTerminate(e *core.TerminateEvent) error {
 		app.RconPool.CloseAll()
 	}
 
+	if app.logFileWriter != nil {
+		if err := app.logFileWriter.Close(); err != nil {
+			app.Logger().Error("Failed to close log file writer", "error", err)
+		}
+	}
+
 	// Note: ServerManager plugin handles its own cleanup via OnTerminate hook
 
 	return e.Next()
@@ -271,4 +320,47 @@ func (app *App) GetA2SPool() *a2s.ServerPool {
 // GetServerManager returns the server manager plugin
 func (app *App) GetServerManager() *servermgr.Plugin {
 	return app.ServerManager
+}
+
+// setupLogFileWriter initializes the file writer.
+// This must be called AFTER app.Config is loaded.
+func (app *App) setupLogFileWriter() error {
+	// Determine log file path
+	logFilePath := filepath.Join(".", "logs", "app.log")
+
+	// Get max backups from config (default to 5 if not set)
+	maxBackups := app.Config.Logging.MaxBackups
+	if maxBackups <= 0 {
+		maxBackups = 5
+	}
+
+	// Create file writer with buffering and rotation
+	fw, err := logger.NewFileWriter(logger.FileWriterConfig{
+		FilePath:   logFilePath,
+		MaxSize:    10 * 1024 * 1024, // 10MB max file size
+		MaxBackups: maxBackups,
+		BufferSize: 8192,                   // 8KB buffer
+		FlushEvery: 500 * time.Millisecond, // Flush every 500ms (more responsive for development)
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create file writer: %w", err)
+	}
+
+	app.logFileWriter = fw
+
+	app.OnModelCreate(core.LogsTableName).BindFunc(func(e *core.ModelEvent) error {
+		l := e.Model.(*core.Log)
+
+		// Write to file
+		if app.logFileWriter != nil {
+			if err := app.logFileWriter.WriteLog(l); err != nil {
+				// Don't fail the hook on write errors
+				fmt.Printf("Warning: Failed to write log to file: %v\n", err)
+			}
+		}
+
+		return e.Next()
+	})
+
+	return nil
 }
