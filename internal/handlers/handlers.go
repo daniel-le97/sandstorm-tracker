@@ -7,6 +7,7 @@ import (
 
 	"sandstorm-tracker/assets"
 
+	"github.com/pocketbase/pocketbase/apis"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/tools/template"
 )
@@ -21,6 +22,9 @@ type AppInterface interface {
 // Register registers all HTTP routes for the web UI
 func Register(app AppInterface, e *core.ServeEvent) {
 	registry := template.NewRegistry()
+
+	// Serve static files (PocketBase JS SDK, etc.) using PocketBase's apis.Static helper
+	e.Router.GET("/static/{path...}", apis.Static(assets.StaticFS(), false))
 
 	// Live Server Status page (homepage)
 	e.Router.GET("/", func(re *core.RequestEvent) error {
@@ -537,7 +541,6 @@ func Register(app AppInterface, e *core.ServeEvent) {
 
 		return re.JSON(http.StatusOK, health)
 	})
-
 
 	app.Logger().Info("Registered custom HTTP handlers")
 

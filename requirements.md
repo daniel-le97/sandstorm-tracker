@@ -18,17 +18,20 @@ COMPLETED: Implemented per-server worker queues to ensure sequential event proce
 - Different servers can still process events concurrently (good for performance)
 - Proper cleanup: queues are closed on shutdown, workers exit cleanly -->
 
-## internal/handlers and /assets packages
+<!-- ## internal/handlers and /assets packages
+COMPLETED:
+1. ✅ UI uses self-hosted PocketBase JS SDK (no external CDN dependencies)
+2. ✅ Server-side rendering for initial page load (full HTML with data)
+3. ✅ PocketBase client subscriptions for real-time updates via WebSockets
+4. ✅ Server status page implemented with real-time match/player subscriptions
+5. ✅ Static files served from embedded assets/static/ directory
+6. ✅ Example subscriptions and documentation in docs/REALTIME_UPDATES.md
+Next: Add data attributes to templates and implement direct DOM updates (currently reloads page) -->
 
-1. refactor our ui to use pocketbases js client library or find a way to update the ui from our backend
-2. if we do pocketbase js client then we only need to do subcribes and unsubscribes as the intial data fetch would already be rendered into the html
-
-## internal/app internal/watcher internal/jobs
+<!-- ## internal/app internal/watcher internal/jobs
+COMPLETED:
  - refactor our score cron job, if there has not been a parser event in over a minute, we can assume server is no longer active
- - if server is active we do not want to try to update scores if there are no players
- - we should probably only run it when the server gets its first join event join event in the parser
-
- help me think of a way to efficently update scores as best as possible without spamming the server with listplayers rcon command
+ - if server is active we do not want to try to update scores if there are no players -->
 
 <!-- 1. ensure an rcon listplayers command is only ran once every 10 seconds per server unless there is a game over event -->
 
@@ -38,7 +41,6 @@ COMPLETED:
 - i want to also be able to log everything to a single log file
 - if possible i want to also to be able to just use one of the loggers when needed for specific events
 - it may be easiest to use a custom handler wrapper -->
-
 
 // IGNORE
 commit before changes:

@@ -7,8 +7,11 @@ import (
 	"path/filepath"
 )
 
-//go:embed templates/*.html configs/*
+//go:embed templates/*.html configs/* static/*
 var webFS embed.FS
+
+//go:embed static/*
+var staticFS embed.FS
 
 // WebAssets holds the embedded web UI files
 type WebAssets struct {
@@ -66,6 +69,15 @@ func (w *WebAssets) WriteExampleConfig(path string, format string) error {
 	}
 
 	return os.WriteFile(path, content, 0644)
+}
+
+// StaticFS returns the embedded static filesystem
+func StaticFS() fs.FS {
+	sub, err := fs.Sub(staticFS, "static")
+	if err != nil {
+		panic(err)
+	}
+	return sub
 }
 
 // ListConfigs returns a list of all embedded config files

@@ -257,6 +257,9 @@
     }
 </style>
 
+{{end}}
+
+{{define "scripts"}}
 <script>
     // Set progress bar widths from data attributes
     document.addEventListener( 'DOMContentLoaded', function ()
@@ -269,12 +272,33 @@
                 el.style.width = progress + '%';
             }
         } );
-    } );
 
-    // Auto-refresh every 30 seconds
-    setInterval( function ()
-    {
-        window.location.reload();
-    }, 30000 );
+        // Subscribe to real-time match updates (replaces 30s polling)
+        pb.collection( 'matches' ).subscribe( '*', function ( e )
+        {
+            console.log( 'Match update:', e.action, e.record );
+
+            // Reload page on match changes (create, update, delete)
+            // TODO: Update DOM directly instead of full reload for better UX
+            if ( e.action === 'update' || e.action === 'create' )
+            {
+                window.location.reload();
+            }
+        } );
+
+        // Subscribe to player stats updates (for player counts/scores)
+        pb.collection( 'match_player_stats' ).subscribe( '*', function ( e )
+        {
+            console.log( 'Player stats update:', e.action, e.record );
+            // Player joined/left or score changed - could update count dynamically
+        } );
+
+        // Clean up subscriptions when page unloads
+        window.addEventListener( 'beforeunload', function ()
+        {
+            pb.collection( 'matches' ).unsubscribe();
+            pb.collection( 'match_player_stats' ).unsubscribe();
+        } );
+    } );
 </script>
 {{end}}

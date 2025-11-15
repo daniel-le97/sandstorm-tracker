@@ -173,6 +173,14 @@
             } );
         } );
     </script>
+    <script type="module">
+        import PocketBase from '/static/pocketbase.es.mjs';
+
+        // Initialize PocketBase client for real-time updates
+        const pb = new PocketBase( window.location.origin );
+        window.pb = pb; // Make available globally for page-specific scripts
+    </script>
+    {{block "scripts" .}}{{end}}
 </body>
 
 </html>
