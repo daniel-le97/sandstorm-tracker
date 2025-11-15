@@ -21,6 +21,8 @@ import (
 // ScoreDebouncer interface for triggering score updates
 type ScoreDebouncer interface {
 	TriggerScoreUpdate(serverID string)
+	TriggerScoreUpdateFixed(serverID string, delay time.Duration)
+	ExecuteImmediately(serverID string)
 }
 
 // LogParser handles parsing log lines and writing directly to database
@@ -299,6 +301,10 @@ func (p *LogParser) ParseAndProcess(ctx context.Context, line string, serverID s
 	}
 
 	if p.tryProcessRoundEnd(ctx, line, timestamp, serverID) {
+		return nil
+	}
+
+	if p.tryProcessGameOver(ctx, line, timestamp, serverID) {
 		return nil
 	}
 
@@ -757,6 +763,24 @@ func (p *LogParser) tryProcessRoundEnd(ctx context.Context, line string, timesta
 	return true
 }
 
+// tryProcessGameOver parses and processes game over events
+// This occurs when a match ends, and we want to immediately capture final scores
+// Example: [2025.11.10-21.12.25:385][831]LogSession: Display: AINSGameSession::HandleMatchHasEnded
+func (p *LogParser) tryProcessGameOver(ctx context.Context, line string, timestamp time.Time, serverID string) bool {
+	if !p.patterns.GameOver.MatchString(line) {
+		return false
+	}
+
+	log.Printf("Game over detected for server %s", serverID)
+
+	// Trigger immediate score update for final scores
+	if p.scoreDebouncer != nil {
+		p.scoreDebouncer.ExecuteImmediately(serverID)
+	}
+
+	return true
+}
+
 // tryProcessMapLoad parses and processes map load events
 // This occurs when the server first starts and loads the initial map
 func (p *LogParser) tryProcessMapLoad(ctx context.Context, line string, timestamp time.Time, serverID string) bool {
@@ -1041,9 +1065,9 @@ func (p *LogParser) tryProcessObjectiveDestroyed(ctx context.Context, line strin
 		log.Printf("Failed to increment round_objective for match %s: %v", activeMatch.ID, err)
 	}
 
-	// Trigger debounced score update - objectives indicate active players
+	// Trigger score update with fixed 10s delay for objectives
 	if p.scoreDebouncer != nil {
-		p.scoreDebouncer.TriggerScoreUpdate(serverID)
+		p.scoreDebouncer.TriggerScoreUpdateFixed(serverID, 10*time.Second)
 	}
 
 	return true
@@ -1110,9 +1134,9 @@ func (p *LogParser) tryProcessObjectiveCaptured(ctx context.Context, line string
 		log.Printf("Failed to increment round_objective for match %s: %v", activeMatch.ID, err)
 	}
 
-	// Trigger debounced score update - objectives indicate active players
+	// Trigger score update with fixed 10s delay for objectives
 	if p.scoreDebouncer != nil {
-		p.scoreDebouncer.TriggerScoreUpdate(serverID)
+		p.scoreDebouncer.TriggerScoreUpdateFixed(serverID, 10*time.Second)
 	}
 
 	return true

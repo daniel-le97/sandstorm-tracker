@@ -1,7 +1,9 @@
 package jobs
 
 import (
+	"log/slog"
 	"testing"
+	"time"
 )
 
 func TestParseRconListPlayers(t *testing.T) {
@@ -61,4 +63,87 @@ func TestParseRconListPlayers_SkipsInvalidEntries(t *testing.T) {
 			t.Logf("Unexpected player %d: Name=%s, Score=%d, NetID=%s", i, p.Name, p.Score, p.NetID)
 		}
 	}
+}
+
+func TestScoreDebouncer_TriggerScoreUpdateFixed(t *testing.T) {
+	// Test that TriggerScoreUpdateFixed creates a timer with fixed delay
+	// and clears the firstTriggerAt (indicating it's not using debounce logic)
+	debouncer := &ScoreDebouncer{
+		timers:         make(map[string]*time.Timer),
+		firstTriggerAt: make(map[string]time.Time),
+		logger:         slog.Default(),
+		debounceWindow: 5 * time.Second,
+		maxWait:        15 * time.Second,
+	}
+
+	// Set a firstTriggerAt to ensure it gets cleared
+	debouncer.mu.Lock()
+	debouncer.firstTriggerAt["test-server"] = time.Now()
+	debouncer.mu.Unlock()
+
+	// Trigger with fixed delay
+	debouncer.TriggerScoreUpdateFixed("test-server", 100*time.Millisecond)
+
+	// Check that timer was created
+	debouncer.mu.Lock()
+	_, timerExists := debouncer.timers["test-server"]
+	_, firstTriggerExists := debouncer.firstTriggerAt["test-server"]
+	debouncer.mu.Unlock()
+
+	if !timerExists {
+		t.Error("Expected timer to be created")
+	}
+
+	if firstTriggerExists {
+		t.Error("Expected firstTriggerAt to be cleared when using fixed delay")
+	}
+
+	// Stop timer to prevent execution (we don't have a real app)
+	debouncer.Stop()
+	t.Log("TriggerScoreUpdateFixed correctly creates timer with fixed delay")
+}
+
+func TestScoreDebouncer_FixedDelayReplacesDebounce(t *testing.T) {
+	// Test that fixed delay cancels existing timer and clears debounce state
+	debouncer := &ScoreDebouncer{
+		timers:         make(map[string]*time.Timer),
+		firstTriggerAt: make(map[string]time.Time),
+		logger:         slog.Default(),
+		debounceWindow: 200 * time.Millisecond,
+		maxWait:        500 * time.Millisecond,
+	}
+
+	originalFired := false
+
+	// Create an existing debounce timer
+	debouncer.mu.Lock()
+	debouncer.firstTriggerAt["test-server"] = time.Now()
+	debouncer.timers["test-server"] = time.AfterFunc(200*time.Millisecond, func() {
+		originalFired = true
+	})
+	debouncer.mu.Unlock()
+
+	// Trigger fixed delay - should cancel original
+	debouncer.TriggerScoreUpdateFixed("test-server", 100*time.Millisecond)
+
+	// Stop the new timer immediately to prevent execution
+	debouncer.Stop()
+
+	// Wait to ensure original doesn't fire
+	time.Sleep(250 * time.Millisecond)
+
+	if originalFired {
+		t.Error("Original debounce timer should have been cancelled")
+	}
+
+	// Check that firstTriggerAt was cleared
+	debouncer.mu.Lock()
+	_, hasFirstTrigger := debouncer.firstTriggerAt["test-server"]
+	debouncer.mu.Unlock()
+
+	if hasFirstTrigger {
+		t.Error("Expected firstTriggerAt to be cleared when using fixed delay")
+	}
+
+	t.Log("Fixed delay successfully cancelled and replaced debounce timer")
 }

@@ -83,7 +83,6 @@ func (d *ScoreDebouncer) TriggerScoreUpdate(serverID string) {
 
 		return
 	}
-
 	// Normal debounce behavior - stop existing timer if any
 	if timer, exists := d.timers[serverID]; exists {
 		timer.Stop()
@@ -102,6 +101,35 @@ func (d *ScoreDebouncer) TriggerScoreUpdate(serverID string) {
 
 	d.logger.Debug("Score update triggered",
 		"serverID", serverID, "debounce", d.debounceWindow, "timeSinceFirst", timeSinceFirst)
+}
+
+// TriggerScoreUpdateFixed triggers a score update with a fixed delay, ignoring debounce logic
+// This is used for objective events where we want a guaranteed update exactly N seconds later
+// Any existing debounce timer is cancelled and replaced with the fixed delay
+func (d *ScoreDebouncer) TriggerScoreUpdateFixed(serverID string, delay time.Duration) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
+	// Stop existing timer if any
+	if timer, exists := d.timers[serverID]; exists {
+		timer.Stop()
+	}
+
+	// Clear the first trigger time since we're using fixed delay
+	delete(d.firstTriggerAt, serverID)
+
+	// Create a new timer with the specified fixed delay
+	d.timers[serverID] = time.AfterFunc(delay, func() {
+		d.executeScoreUpdate(serverID)
+
+		// Clean up the timer
+		d.mu.Lock()
+		delete(d.timers, serverID)
+		d.mu.Unlock()
+	})
+
+	d.logger.Debug("Score update scheduled with fixed delay",
+		"serverID", serverID, "delay", delay)
 }
 
 // executeScoreUpdate performs the actual RCON query and database update
@@ -168,6 +196,22 @@ func (d *ScoreDebouncer) executeScoreUpdate(serverID string) {
 	} else {
 		d.logger.Info("No players found via RCON", "component", "SCORE_DEBOUNCER", "server", serverCfg.Name)
 	}
+}
+
+// ExecuteImmediately cancels any pending debounce and executes the score update right now
+// Used for game over events when we want final scores immediately
+func (d *ScoreDebouncer) ExecuteImmediately(serverID string) {
+	d.mu.Lock()
+	// Stop existing timer if any
+	if timer, exists := d.timers[serverID]; exists {
+		timer.Stop()
+		delete(d.timers, serverID)
+	}
+	delete(d.firstTriggerAt, serverID)
+	d.mu.Unlock()
+
+	d.logger.Info("Executing immediate score update", "serverID", serverID)
+	d.executeScoreUpdate(serverID)
 }
 
 // Stop cancels all pending score updates
