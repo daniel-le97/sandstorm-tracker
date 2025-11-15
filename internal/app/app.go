@@ -204,8 +204,13 @@ func (app *App) onServe(e *core.ServeEvent) error {
 	// Create score debouncer for event-driven score updates
 	// Scores update 10 seconds after any kill/objective/round event
 	scoreDebouncer := jobs.NewScoreDebouncer(app, app.Config, 10*time.Second, 30*time.Second)
-	app.Parser.SetScoreDebouncer(scoreDebouncer)
 	app.Logger().Info("Initialized event-driven score updater", "component", "APP", "debounce", "10s", "maxWait", "30s")
+
+	// Register event handlers for hook-based processing
+	// Handlers process events created by the parser and trigger score updates
+	gameEventHandlers := handlers.NewGameEventHandlers(app, scoreDebouncer)
+	gameEventHandlers.RegisterHooks()
+	app.Logger().Info("Registered game event handlers", "component", "APP")
 
 	// Start file watcher
 	for _, serverCfg := range app.Config.Servers {

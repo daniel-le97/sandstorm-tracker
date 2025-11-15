@@ -1,0 +1,68 @@
+{
+    "BP_Firearm_M16A4": "M16A4",
+    "BP_Firearm_AK74": "AK-74",
+    "BP_Firearm_M4A1": "M4A1",
+    "BP_Firearm_AKM": "AKM",
+    "BP_Firearm_SCARH": "SCAR-H",
+    "BP_Firearm_G36K": "G36K",
+    "BP_Firearm_AK12": "AK-12",
+    "BP_Firearm_M16A2": "M16A2",
+    "BP_Firearm_AKS74U": "AKS-74U",
+    "BP_Firearm_Alpha_AK": "Alpha AK",
+    "BP_Firearm_VHS": "VHS-2",
+
+    "BP_Firearm_M24": "M24 SWS",
+    "BP_Firearm_Mosin": "Mosin Nagant",
+    "BP_Firearm_M110": "M110 SASS",
+    "BP_Firearm_SVD": "SVD",
+    "BP_Firearm_L96A1": "L96A1",
+
+    "BP_Firearm_M590A1": "M590A1",
+    "BP_Firearm_TOZ": "TOZ-194",
+
+    "BP_Firearm_Sterling": "Sterling L2A3",
+    "BP_Firearm_UMP45": "UMP-45",
+    "BP_Firearm_MP5A2": "MP5A2",
+    "BP_Firearm_MP7": "MP7",
+    "BP_Firearm_Uzi": "Uzi",
+
+    "BP_Firearm_M249": "M249 SAW",
+    "BP_Firearm_PKM": "PKM",
+    "BP_Firearm_M240B": "M240B",
+    "BP_Firearm_MG3": "MG3",
+
+    "BP_Firearm_M9": "M9 Beretta",
+    "BP_Firearm_Makarov": "Makarov",
+    "BP_Firearm_M45": "M45A1",
+    "BP_Firearm_Welrod": "Welrod Mk II",
+    "BP_Firearm_PF940": "PF940C",
+
+    "BP_Firearm_M203": "M203 Grenade Launcher",
+    "BP_Firearm_GP25": "GP-25 Grenade Launcher",
+    "BP_Firearm_RPG7": "RPG-7",
+    "BP_Firearm_AT4": "AT4",
+    "BP_Firearm_M3MAAWS": "M3 MAAWS",
+
+    "BP_Projectile_Rocket_155mm": "155mm Artillery",
+    "BP_Projectile_Rocket_120mm": "120mm Mortar",
+    "BP_Projectile_Mortar_HE": "Mortar Strike",
+    "BP_Projectile_Mortar_Smoke": "Mortar Smoke",
+    "BP_Projectile_Artillery_HE": "Artillery Strike",
+    "BP_Projectile_Artillery_Smoke": "Artillery Smoke",
+    "BP_Vehicle_Helicopter_Gunship": "Attack Helicopter",
+    "BP_Projectile_Hellfire": "Hellfire Missile",
+    "BP_Projectile_Airstrike": "Air Strike",
+    "BP_Projectile_Strafe": "Strafing Run",
+
+    "BP_Projectile_Molotov": "Molotov Cocktail",
+    "BP_Projectile_Grenade_Frag": "Frag Grenade",
+    "BP_Projectile_Grenade_Smoke": "Smoke Grenade",
+    "BP_Projectile_IED": "IED",
+    "BP_Character_Player": "Fall Damage",
+    "BP_Projectile_Rocket": "Rocket",
+    "BP_Projectile_40mm": "40mm Grenade",
+
+    "BP_Melee_Knife": "Combat Knife",
+    "BP_Melee_Kukri": "Kukri",
+    "BP_Melee_Machete": "Machete"
+}

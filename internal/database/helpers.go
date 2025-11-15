@@ -300,6 +300,8 @@ func UpsertMatchPlayerStats(ctx context.Context, pbApp core.App, matchID, player
 		record.Set("kills", 0)
 		record.Set("deaths", 0)
 		record.Set("assists", 0)
+		record.Set("friendly_fire_kills", 0)
+		record.Set("suicides", 0)
 		record.Set("session_count", 1)
 		record.Set("is_currently_connected", true)
 		record.Set("objectives_destroyed", 0)
@@ -369,15 +371,23 @@ func UpsertMatchWeaponStats(ctx context.Context, pbApp core.App, matchID, player
 		record.Set("player", playerID)
 		record.Set("weapon_name", weaponName)
 		record.Set("kills", 0)
+		record.Set("assists", 0)
 
 		if kills != nil {
 			record.Set("kills", *kills)
 		}
+		if assists != nil {
+			record.Set("assists", *assists)
+		}
 	} else {
-		// Update existing - increment kills
+		// Update existing - increment kills and assists
 		currentKills := record.GetInt("kills")
+		currentAssists := record.GetInt("assists")
 		if kills != nil {
 			record.Set("kills", currentKills+int(*kills))
+		}
+		if assists != nil {
+			record.Set("assists", currentAssists+int(*assists))
 		}
 	}
 

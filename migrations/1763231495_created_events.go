@@ -65,19 +65,6 @@ func init() {
 					"type": "relation"
 				},
 				{
-					"cascadeDelete": false,
-					"collectionId": "pbc_2936669995",
-					"hidden": false,
-					"id": "relation642663334",
-					"maxSelect": 999,
-					"minSelect": 0,
-					"name": "players",
-					"presentable": false,
-					"required": false,
-					"system": false,
-					"type": "relation"
-				},
-				{
 					"hidden": false,
 					"id": "autodate2990389176",
 					"name": "created",
@@ -103,7 +90,6 @@ func init() {
 				"CREATE INDEX ` + "`" + `idx_events_type` + "`" + ` ON ` + "`" + `events` + "`" + ` (` + "`" + `type` + "`" + `)",
 				"CREATE INDEX ` + "`" + `idx_events_server` + "`" + ` ON ` + "`" + `events` + "`" + ` (` + "`" + `server` + "`" + `)",
 				"CREATE INDEX ` + "`" + `idx_events_created` + "`" + ` ON ` + "`" + `events` + "`" + ` (` + "`" + `created` + "`" + `)",
-				"CREATE INDEX ` + "`" + `idx_events_players` + "`" + ` ON ` + "`" + `events` + "`" + ` (` + "`" + `players` + "`" + `)",
 				"CREATE INDEX ` + "`" + `idx_events_server_type` + "`" + ` ON ` + "`" + `events` + "`" + ` (\n  ` + "`" + `server` + "`" + `,\n  ` + "`" + `type` + "`" + `\n)"
 			],
 			"listRule": null,

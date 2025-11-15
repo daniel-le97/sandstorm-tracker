@@ -41,6 +41,12 @@ func (p *LogParser) tryProcessChatCommand(ctx context.Context, line string, time
 
 	log.Printf("[CHAT] %s (%s): %s", playerName, steamID, command)
 
+	// Skip command processing during catchup mode (avoid RCON spam)
+	if isCatchupMode(ctx) {
+		log.Printf("[CHAT] Skipping command processing (catchup mode): %s", command)
+		return true
+	}
+
 	if handler == nil || handler.rconSender == nil {
 		log.Printf("[CHAT] No handler configured, skipping command")
 		return true

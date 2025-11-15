@@ -225,6 +225,13 @@ func (c *CatchupProcessor) processHistoricalEvents(filePath, serverID string, st
 	}
 	defer file.Close()
 
+	// Create context that marks this as catchup mode
+	// Events will be created, but side effects (scoring, RCON) will be skipped
+	type contextKey string
+	isCatchupModeKey := contextKey("isCatchupMode")
+	catchupCtx := context.WithValue(c.ctx, isCatchupModeKey, true)
+	log.Printf("[Catchup] Processing historical events in catchup mode (no scoring/RCON)")
+
 	scanner := bufio.NewScanner(file)
 	lineNum := 0
 	linesProcessed := 0
@@ -242,7 +249,7 @@ func (c *CatchupProcessor) processHistoricalEvents(filePath, serverID string, st
 		}
 
 		line := scanner.Text()
-		if err := c.parser.ParseAndProcess(c.ctx, line, serverID, filePath); err != nil {
+		if err := c.parser.ParseAndProcess(catchupCtx, line, serverID, filePath); err != nil {
 			log.Printf("[Catchup] Error processing line %d: %v", lineNum, err)
 		}
 

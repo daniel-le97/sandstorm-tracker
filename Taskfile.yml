@@ -23,6 +23,10 @@ tasks:
     desc: Run all Go tests
     cmds:
       - go test ./...
+  test-integration:
+    desc: Run all integration tests
+    cmds:
+      - go test ./tests/integration/... -count=1
   fmt:
     desc: Run gofmt on all Go files
     cmds:

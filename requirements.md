@@ -42,19 +42,21 @@ COMPLETED:
 - if possible i want to also to be able to just use one of the loggers when needed for specific events
 - it may be easiest to use a custom handler wrapper -->
 
-
-im thinking of refactoring my app more to use pocketbases built in features such as 
-```
-app.OnRecordCreate("events").BindFunc(func(e *core.RecordEvent) error {
-        // e.App
-        // e.Record
-
-        return e.Next()
-    })
-```
-i can setup an event bus that my app struct holds and have these handlers publish to the event bus
-then other parts of my app can subscribe to these events, ie my parser will publish events when it parses them
-
+# kill events requirements
+## Data
+1. player killed team mate
+   - [2025.10.04-15.12.17:473][441]LogGameplayEvents: Display: ArmoredBear[76561198995742987, team 0] killed Rabbit[76561198995742956, team 0] with BP_Firearm_M16A4_C_2147481419
+   - this does not increase the player who killed a teammates stats, but should increase their match_player_stats (friendly_fire_kills) field
+   - this should still increase the player who died, match_player_stats (deaths) field
+2. regular player kills
+   - [2025.10.04-14.31.05:706][800]LogGameplayEvents: Display: ArmoredBear[76561198995742987, team 0] killed Marksman[INVALID, team 1] with BP_Firearm_M16A4_C_2147481419
+3. player died to enviroment/suicide
+   - [2025.10.04-15.12.17:473][441]LogGameplayEvents: Display: ArmoredBear[76561198995742987, team 0] killed ArmoredBear[76561198995742987, team 0] with BP_Character_Player_C_2147481498
+   - [2025.10.04-15.22.58:646][535]LogGameplayEvents: Display: ArmoredBear[76561198995742987, team 0] killed ArmoredBear[76561198995742987, team 0] with BP_Projectile_Molotov_C_2147480055
+4. multi-player kills
+   - [2025.10.04-21.29.31:291][459]LogGameplayEvents: Display: -=312th=- Rabbit[76561198262186571, team 0] + *OSS*0rigin[76561198007416544, team 0] killed Rifleman[INVALID, team 1] with BP_Projectile_GAU8_C_2147477120
+   - for the first player in the killer section, they should get a kill in their match_player_stats (kills) field, it should also create or update a match_weapon_stats record for them
+   - for any other player listed, we are just going to increase their match_player_stats (assists) field
 
 
 // IGNORE
