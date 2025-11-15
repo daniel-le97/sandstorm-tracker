@@ -24,8 +24,13 @@ COMPLETED: Implemented per-server worker queues to ensure sequential event proce
 2. if we do pocketbase js client then we only need to do subcribes and unsubscribes as the intial data fetch would already be rendered into the html
 
 ## internal/app internal/watcher internal/jobs
+ - refactor our score cron job, if there has not been a parser event in over a minute, we can assume server is no longer active
+ - if server is active we do not want to try to update scores if there are no players
+ - we should probably only run it when the server gets its first join event join event in the parser
 
-1. ensure an rcon listplayers command is only ran once every 10 seconds per server unless there is a game over event
+ help me think of a way to efficently update scores as best as possible without spamming the server with listplayers rcon command
+
+<!-- 1. ensure an rcon listplayers command is only ran once every 10 seconds per server unless there is a game over event -->
 
 <!-- ## internal/logger
 COMPLETED:
