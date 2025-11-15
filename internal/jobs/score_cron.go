@@ -409,11 +409,16 @@ func queryPlayersViaRcon(app AppInterface, serverID string) ([]RconPlayer, error
 		return nil, err
 	}
 
-	return parseRconListPlayers(response), nil
+	app.Logger().Info("RCON listplayers response", "component", "SCORE_DEBOUNCER", "serverID", serverID, "response", response)
+	players := parseRconListPlayers(response)
+	app.Logger().Info("Parsed RCON players", "component", "SCORE_DEBOUNCER", "serverID", serverID, "count", len(players))
+
+	return players, nil
 }
 
 // parseRconListPlayers parses the RCON listplayers response
-// Format: ID | Name | NetID | IP | Score | ...
+// Format: All player data is on one line, pipe-separated
+// Each player: ID\t | Name\t | NetID\t | IP\t | Score\t | ...
 func parseRconListPlayers(response string) []RconPlayer {
 	players := []RconPlayer{}
 
@@ -424,36 +429,46 @@ func parseRconListPlayers(response string) []RconPlayer {
 			continue
 		}
 
-		// Parse line by splitting on |
+		// All player data is on one line, pipe-separated
+		// Split by pipe to get all fields
 		parts := splitOnPipe(line)
-		if len(parts) < 5 {
-			continue
+
+		// Process fields in groups of 6 (ID, Name, NetID, IP, Score, ...)
+		// But the actual format might have extra fields, so we look for patterns
+		for i := 0; i+4 < len(parts); i += 5 {
+			// Extract and trim fields (accounting for tabs)
+			idStr := trimSpace(parts[i])
+			name := trimSpace(parts[i+1])
+			netID := trimSpace(parts[i+2])
+			// parts[i+3] is IP, skip it
+			scoreStr := trimSpace(parts[i+4])
+
+			// Skip if ID is empty or 0 (invalid entries)
+			if idStr == "" || idStr == "0" {
+				continue
+			}
+
+			// Skip if name is empty, matches default classes, or is a number
+			if name == "" || name == "Observer" || name == "Commander" || name == "Marksman" || name == "0" || name == "1" || name == "2" {
+				continue
+			}
+
+			// Skip if NetID is empty or invalid (accept Steam, Epic, and other platforms)
+			// Valid NetIDs contain platform identifiers like "SteamNWI:", "EOS:", etc.
+			if netID == "" || netID == "0" || containsString(netID, "None:INVALID") {
+				continue
+			}
+
+			// Parse score
+			score := int32(0)
+			fmt.Sscanf(scoreStr, "%d", &score)
+
+			players = append(players, RconPlayer{
+				Name:  name,
+				Score: score,
+				NetID: netID,
+			})
 		}
-
-		name := trimSpace(parts[1])
-		scoreStr := trimSpace(parts[4])
-		netID := trimSpace(parts[2])
-
-		// Skip if name is empty, matches default classes, or is a number
-		if name == "" || name == "Observer" || name == "Commander" || name == "Marksman" || name == "0" || name == "1" || name == "2" {
-			continue
-		}
-
-		// Skip if NetID is empty or invalid (accept Steam, Epic, and other platforms)
-		// Valid NetIDs contain platform identifiers like "SteamNWI:", "EOS:", etc.
-		if netID == "" || netID == "0" {
-			continue
-		}
-
-		// Parse score
-		score := int32(0)
-		fmt.Sscanf(scoreStr, "%d", &score)
-
-		players = append(players, RconPlayer{
-			Name:  name,
-			Score: score,
-			NetID: netID,
-		})
 	}
 
 	return players

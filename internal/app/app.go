@@ -13,6 +13,7 @@ import (
 	"sandstorm-tracker/internal/logger"
 	"sandstorm-tracker/internal/parser"
 	"sandstorm-tracker/internal/rcon"
+
 	// "sandstorm-tracker/internal/servermgr"
 	"sandstorm-tracker/internal/util"
 	"sandstorm-tracker/internal/watcher"
@@ -28,11 +29,11 @@ type App struct {
 	*pocketbase.PocketBase // Embed PocketBase - all its methods are available
 
 	// Custom application components
-	Config        *config.Config
-	Parser        *parser.LogParser
-	RconPool      *rcon.ClientPool
-	A2SPool       *a2s.ServerPool
-	Watcher       *watcher.Watcher
+	Config   *config.Config
+	Parser   *parser.LogParser
+	RconPool *rcon.ClientPool
+	A2SPool  *a2s.ServerPool
+	Watcher  *watcher.Watcher
 	// ServerManager *servermgr.Plugin  // Server manager plugin
 	logFileWriter *logger.FileWriter // File writer for PocketBase logs
 	customLogger  *slog.Logger       // Logger with TeeHandler (writes to both console and file)
@@ -200,18 +201,11 @@ func (app *App) onServe(e *core.ServeEvent) error {
 	// Register web routes
 	handlers.Register(app, e)
 
-	// Don't register score updater cron immediately - wait for servers to become active
-	// Set callback to register score updater job when server becomes active
-	app.Watcher.OnServerActive(func(serverID string) {
-		app.Logger().Info("Server became active, registering score updater cron job", "component", "WATCHER", "serverID", serverID)
-		jobs.RegisterScoreUpdaterForServer(app, app.Config, serverID)
-	})
-
-	// Set callback to unregister score updater job when server becomes inactive
-	app.Watcher.OnServerInactive(func(serverID string) {
-		app.Logger().Info("Server became inactive, unregistering score updater cron job", "component", "WATCHER", "serverID", serverID)
-		jobs.UnregisterScoreUpdaterForServer(app, serverID)
-	})
+	// Create score debouncer for event-driven score updates
+	// Scores update 10 seconds after any kill/objective/round event
+	scoreDebouncer := jobs.NewScoreDebouncer(app, app.Config, 10*time.Second, 30*time.Second)
+	app.Parser.SetScoreDebouncer(scoreDebouncer)
+	app.Logger().Info("Initialized event-driven score updater", "component", "APP", "debounce", "10s", "maxWait", "30s")
 
 	// Start file watcher
 	for _, serverCfg := range app.Config.Servers {

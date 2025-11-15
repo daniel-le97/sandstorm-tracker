@@ -18,6 +18,11 @@ import (
 	"github.com/pocketbase/pocketbase/core"
 )
 
+// ScoreDebouncer interface for triggering score updates
+type ScoreDebouncer interface {
+	TriggerScoreUpdate(serverID string)
+}
+
 // LogParser handles parsing log lines and writing directly to database
 type LogParser struct {
 	pbApp              core.App
@@ -25,6 +30,7 @@ type LogParser struct {
 	patterns           *logPatterns
 	chatHandler        *ChatCommandHandler
 	lastMapTravelTimes map[string]time.Time // Track last map travel time per server to ignore reconnects
+	scoreDebouncer     ScoreDebouncer       // Debouncer for score updates triggered by game events
 }
 
 // logPatterns contains compiled regex patterns for log parsing
@@ -224,6 +230,11 @@ func (p *LogParser) ExtractLogFileCreationTime(logFilePath string) (time.Time, e
 // SetChatHandler sets the chat command handler (must be called after parser creation)
 func (p *LogParser) SetChatHandler(rconSender RconSender) {
 	p.chatHandler = NewChatCommandHandler(p, rconSender)
+}
+
+// SetScoreDebouncer sets the score debouncer for event-driven score updates
+func (p *LogParser) SetScoreDebouncer(debouncer ScoreDebouncer) {
+	p.scoreDebouncer = debouncer
 }
 
 // ParseAndProcess parses a log line and writes to database if it's a recognized event
@@ -475,6 +486,11 @@ func (p *LogParser) tryProcessKillEvent(ctx context.Context, line string, timest
 		}
 	}
 
+	// Trigger debounced score update - kills indicate active players
+	if p.scoreDebouncer != nil {
+		p.scoreDebouncer.TriggerScoreUpdate(serverID)
+	}
+
 	return true
 }
 
@@ -609,35 +625,40 @@ func (p *LogParser) tryProcessPlayerDisconnect(ctx context.Context, line string,
 
 	// Check if this disconnect occurred shortly after a map travel
 	// If so, it's just the server reconnecting players during map change, not a real disconnect
+	isMapTravelDisconnect := false
 	if lastTravelTime, exists := p.lastMapTravelTimes[serverID]; exists {
 		timeSinceTravel := timestamp.Sub(lastTravelTime)
 		if timeSinceTravel >= 0 && timeSinceTravel < 30*time.Second {
-			// This is a temporary disconnect during map travel, ignore it
+			// This is a temporary disconnect during map travel, ignore it for database updates
+			// but don't return early - we still need to handle it below
 			log.Printf("Ignoring disconnect for player %s during map travel (%.1fs after travel)", steamID, timeSinceTravel.Seconds())
-			return true
+			isMapTravelDisconnect = true
 		}
 	}
 
-	// Find the active match for this server
-	activeMatch, err := database.GetActiveMatch(ctx, p.pbApp, serverID)
-	if err != nil || activeMatch == nil {
-		// No active match, nothing to do
-		return true
-	}
+	// Only update database if this is a real disconnect (not map travel)
+	if !isMapTravelDisconnect {
+		// Find the active match for this server
+		activeMatch, err := database.GetActiveMatch(ctx, p.pbApp, serverID)
+		if err != nil || activeMatch == nil {
+			// No active match, nothing to do
+			return true
+		}
 
-	// Find the player by Steam ID
-	player, err := database.GetPlayerByExternalID(ctx, p.pbApp, steamID)
-	if err != nil || player == nil {
-		// Player not found in database
-		return true
-	}
+		// Find the player by Steam ID
+		player, err := database.GetPlayerByExternalID(ctx, p.pbApp, steamID)
+		if err != nil || player == nil {
+			// Player not found in database
+			return true
+		}
 
-	// Mark player as disconnected from the match
-	err = database.DisconnectPlayerFromMatch(ctx, p.pbApp, activeMatch.ID, player.ID, &timestamp)
-	if err != nil {
-		log.Printf("Failed to disconnect player %s from match %s: %v", player.Name, activeMatch.ID, err)
-	} else {
-		log.Printf("Player %s disconnected from match %s", player.Name, activeMatch.ID)
+		// Mark player as disconnected from the match
+		err = database.DisconnectPlayerFromMatch(ctx, p.pbApp, activeMatch.ID, player.ID, &timestamp)
+		if err != nil {
+			log.Printf("Failed to disconnect player %s from match %s: %v", player.Name, activeMatch.ID, err)
+		} else {
+			log.Printf("Player %s disconnected from match %s", player.Name, activeMatch.ID)
+		}
 	}
 
 	return true
@@ -726,6 +747,11 @@ func (p *LogParser) tryProcessRoundEnd(ctx context.Context, line string, timesta
 		} else {
 			log.Printf("Player team (%s) lost round %d in match %s", *activeMatch.PlayerTeam, activeMatch.Round+1, activeMatch.ID)
 		}
+	}
+
+	// Trigger debounced score update - round end indicates active players
+	if p.scoreDebouncer != nil {
+		p.scoreDebouncer.TriggerScoreUpdate(serverID)
 	}
 
 	return true
@@ -1015,6 +1041,11 @@ func (p *LogParser) tryProcessObjectiveDestroyed(ctx context.Context, line strin
 		log.Printf("Failed to increment round_objective for match %s: %v", activeMatch.ID, err)
 	}
 
+	// Trigger debounced score update - objectives indicate active players
+	if p.scoreDebouncer != nil {
+		p.scoreDebouncer.TriggerScoreUpdate(serverID)
+	}
+
 	return true
 }
 
@@ -1077,6 +1108,11 @@ func (p *LogParser) tryProcessObjectiveCaptured(ctx context.Context, line string
 	// Increment the round_objective counter for the match
 	if err := database.IncrementMatchRoundObjective(ctx, p.pbApp, activeMatch.ID); err != nil {
 		log.Printf("Failed to increment round_objective for match %s: %v", activeMatch.ID, err)
+	}
+
+	// Trigger debounced score update - objectives indicate active players
+	if p.scoreDebouncer != nil {
+		p.scoreDebouncer.TriggerScoreUpdate(serverID)
 	}
 
 	return true
