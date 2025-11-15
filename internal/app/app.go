@@ -13,7 +13,7 @@ import (
 	"sandstorm-tracker/internal/logger"
 	"sandstorm-tracker/internal/parser"
 	"sandstorm-tracker/internal/rcon"
-	"sandstorm-tracker/internal/servermgr"
+	// "sandstorm-tracker/internal/servermgr"
 	"sandstorm-tracker/internal/util"
 	"sandstorm-tracker/internal/watcher"
 
@@ -33,7 +33,7 @@ type App struct {
 	RconPool      *rcon.ClientPool
 	A2SPool       *a2s.ServerPool
 	Watcher       *watcher.Watcher
-	ServerManager *servermgr.Plugin  // Server manager plugin
+	// ServerManager *servermgr.Plugin  // Server manager plugin
 	logFileWriter *logger.FileWriter // File writer for PocketBase logs
 	customLogger  *slog.Logger       // Logger with TeeHandler (writes to both console and file)
 }
@@ -89,9 +89,9 @@ func (app *App) setupPlugins() {
 	})
 
 	// Register server manager plugin
-	app.ServerManager = servermgr.MustRegister(app.PocketBase, app.RootCmd, servermgr.Config{
-		DefaultSAWPath: app.Config.SAWPath,
-	})
+	// app.ServerManager = servermgr.MustRegister(app.PocketBase, app.RootCmd, servermgr.Config{
+	// 	DefaultSAWPath: app.Config.SAWPath,
+	// })
 
 	// Add other plugins here (jsvm, etc.)
 }
@@ -185,7 +185,7 @@ func (app *App) onServe(e *core.ServeEvent) error {
 	}
 
 	// Initialize watcher with configured servers
-	w, err := watcher.NewWatcher(app.PocketBase, app.Parser, app.RconPool, app.A2SPool, app.Config.Servers)
+	w, err := watcher.NewWatcher(app.PocketBase, app.Parser, app.RconPool, app.A2SPool, app.Logger().With("component", "WATCHER"), app.Config.Servers)
 	if err != nil {
 		return fmt.Errorf("failed to create watcher: %w", err)
 	}
@@ -319,9 +319,9 @@ func (app *App) GetA2SPool() *a2s.ServerPool {
 }
 
 // GetServerManager returns the server manager plugin
-func (app *App) GetServerManager() *servermgr.Plugin {
-	return app.ServerManager
-}
+// func (app *App) GetServerManager() *servermgr.Plugin {
+// 	return app.ServerManager
+// }
 
 func (app *App) Logger() *slog.Logger {
 	if app.customLogger != nil {

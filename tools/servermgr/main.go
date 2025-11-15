@@ -11,6 +11,7 @@ import (
 	"sync"
 
 	"github.com/spf13/cobra"
+	"github.com/joho/godotenv"
 )
 
 // SAWServerConfig represents a single server configuration from SAW's server-configs.json
@@ -63,6 +64,7 @@ type ProcessInfo struct {
 }
 
 func main() {
+	godotenv.Load() // Load .env file if present
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
 		Level: slog.LevelInfo,
 	}))

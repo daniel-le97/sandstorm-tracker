@@ -3,9 +3,7 @@ package jobs
 import (
 	"context"
 	"fmt"
-	"io"
-	"log"
-	"os"
+	"log/slog"
 	"sandstorm-tracker/internal/a2s"
 	"sandstorm-tracker/internal/config"
 	"sandstorm-tracker/internal/util"
@@ -15,25 +13,10 @@ import (
 	"github.com/pocketbase/pocketbase/core"
 )
 
-var cronLogger *log.Logger
-
-func init() {
-	// Create or open cron.log file
-	file, err := os.OpenFile("cron.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
-	if err != nil {
-		log.Printf("Failed to open cron.log: %v", err)
-		cronLogger = log.New(os.Stdout, "[CRON] ", log.LstdFlags)
-		return
-	}
-
-	// Write to both file and stdout
-	multiWriter := io.MultiWriter(file, os.Stdout)
-	cronLogger = log.New(multiWriter, "[CRON] ", log.LstdFlags)
-}
-
 // AppInterface defines the methods jobs need from the app
 type AppInterface interface {
 	core.App
+	Logger() *slog.Logger
 	GetA2SPool() *a2s.ServerPool
 	SendRconCommand(serverID string, command string) (string, error)
 }
@@ -41,6 +24,7 @@ type AppInterface interface {
 // RegisterScoreUpdater sets up a cron job that queries all configured servers via RCON
 // and updates current player scores every minute
 func RegisterScoreUpdater(app AppInterface, cfg *config.Config) {
+	logger := app.Logger().With("component", "JOBS")
 	scheduler := app.Cron()
 
 	// Run score queries every minute on all configured servers
@@ -48,15 +32,17 @@ func RegisterScoreUpdater(app AppInterface, cfg *config.Config) {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
-		updatePlayerScoresFromRcon(ctx, app, cfg)
+		updatePlayerScoresFromRcon(ctx, app, logger, cfg)
 	})
 
-	cronLogger.Println("Registered cron job to update player scores every minute")
+	logger.Info("Registered cron job to update player scores every minute")
 }
 
 // RegisterScoreUpdaterForServer sets up a cron job for a specific server
 // This is called when a server becomes active (log rotation detected)
 func RegisterScoreUpdaterForServer(app AppInterface, cfg *config.Config, serverID string) {
+	logger := app.Logger().With("component", "JOBS")
+
 	// Find the server config for this serverID
 	var serverCfg *config.ServerConfig
 	for i, sc := range cfg.Servers {
@@ -77,12 +63,12 @@ func RegisterScoreUpdaterForServer(app AppInterface, cfg *config.Config, serverI
 	}
 
 	if serverCfg == nil {
-		cronLogger.Printf("Could not find server config for serverID %s", serverID)
+		logger.Warn("Could not find server config", "serverID", serverID)
 		return
 	}
 
 	// Run an immediate update when server becomes active
-	cronLogger.Printf("Server %s became active, performing immediate score update", serverCfg.Name)
+	logger.Info("Server became active, performing immediate score update", "server", serverCfg.Name)
 	go func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
@@ -100,16 +86,16 @@ func RegisterScoreUpdaterForServer(app AppInterface, cfg *config.Config, serverI
 		// Query the server immediately
 		status, err := pool.QueryServer(ctx, queryAddr)
 		if err != nil {
-			cronLogger.Printf("Failed immediate query for server %s at %s: %v", serverCfg.Name, queryAddr, err)
+			logger.Error("Failed immediate query", "server", serverCfg.Name, "address", queryAddr, "error", err)
 			return
 		}
 		if !status.Online {
-			cronLogger.Printf("Server %s at %s is offline", serverCfg.Name, queryAddr)
+			logger.Info("Server is offline", "server", serverCfg.Name, "address", queryAddr)
 			return
 		}
 
 		// Process players immediately
-		processServerStatus(ctx, app, *serverCfg, status)
+		processServerStatus(ctx, app, logger, *serverCfg, status)
 	}()
 
 	scheduler := app.Cron()
@@ -136,72 +122,71 @@ func RegisterScoreUpdaterForServer(app AppInterface, cfg *config.Config, serverI
 		// Query just this server
 		status, err := pool.QueryServer(ctx, queryAddr)
 		if err != nil {
-			cronLogger.Printf("Failed to query server %s at %s: %v", serverCfg.Name, queryAddr, err)
+			logger.Error("Failed to query server", "server", serverCfg.Name, "address", queryAddr, "error", err)
 			return
 		}
 		if !status.Online {
-			cronLogger.Printf("Server %s at %s is offline", serverCfg.Name, queryAddr)
+			logger.Info("Server is offline", "server", serverCfg.Name, "address", queryAddr)
 			return
 		}
 
 		// Log server info for debugging
 		if status.Info != nil {
-			cronLogger.Printf("Server %s info: Players=%d/%d, Map=%s",
-				serverCfg.Name, status.Info.Players, status.Info.MaxPlayers, status.Info.Map)
+			logger.Info("Server info", "server", serverCfg.Name, "players", status.Info.Players, "max_players", status.Info.MaxPlayers, "map", status.Info.Map)
 		}
 
 		// Process this server's players using the existing logic
-		processServerStatus(ctx, app, *serverCfg, status)
+		processServerStatus(ctx, app, logger, *serverCfg, status)
 	})
 
-	cronLogger.Printf("Registered cron job for server %s (%s)", serverID, serverCfg.Name)
+	logger.Info("Registered cron job for server", "serverID", serverID, "serverName", serverCfg.Name)
 }
 
 // UnregisterScoreUpdaterForServer removes the cron job for a specific server
 // This is called when a server becomes inactive (no log activity for 10s)
 func UnregisterScoreUpdaterForServer(app AppInterface, serverID string) {
+	logger := app.Logger().With("component", "JOBS")
 	scheduler := app.Cron()
 	jobName := fmt.Sprintf("rcon_player_scores_%s", serverID)
 
 	scheduler.Remove(jobName)
-	cronLogger.Printf("Unregistered cron job for server %s", serverID)
+	logger.Info("Unregistered cron job for server", "serverID", serverID)
 }
 
 // processServerStatus processes a single server's A2S query result
-func processServerStatus(ctx context.Context, app AppInterface, serverCfg config.ServerConfig, status *a2s.ServerStatus) {
+func processServerStatus(ctx context.Context, app AppInterface, logger *slog.Logger, serverCfg config.ServerConfig, status *a2s.ServerStatus) {
 	if !status.Online {
 		return
 	}
 
 	// Only log if there are actually players or if A2S returned player data
 	if status.Info != nil && (status.Info.Players > 0 || len(status.Players) > 0) {
-		cronLogger.Printf("Queried %d players from %s (Info reports %d players)",
-			len(status.Players), serverCfg.Name, status.Info.Players)
+		logger.Info("Queried players from server", "player_count", len(status.Players), "server", serverCfg.Name, "info_reports", status.Info.Players)
 	}
 
 	// Find or create server record
-	serverRecord, err := getOrCreateServerFromConfig(app, serverCfg)
+	serverRecord, err := getOrCreateServerFromConfig(app, logger, serverCfg)
 	if err != nil {
-		cronLogger.Printf("Failed to get server record for %s: %v", serverCfg.Name, err)
+		logger.Error("Failed to get server record", "server", serverCfg.Name, "error", err)
 		return
 	}
 
 	// Extract serverID from logPath for RCON commands
 	serverID, err := util.GetServerIdFromPath(serverCfg.LogPath)
 	if err != nil {
-		cronLogger.Printf("Failed to get serverID from path %s: %v", serverCfg.LogPath, err)
+		logger.Error("Failed to get serverID from path", "path", serverCfg.LogPath, "error", err)
 		return
 	}
 
 	// Find active match for this server
 	activeMatch, err := getActiveMatchForServer(app, serverRecord.Id)
 	if err != nil {
-		cronLogger.Printf("Failed to get active match for server %s: %v", serverCfg.Name, err)
+		logger.Error("Failed to get active match", "server", serverCfg.Name, "error", err)
 		return
 	}
 
 	if activeMatch == nil {
-		cronLogger.Printf("No active match found for server %s, skipping player update", serverCfg.Name)
+		logger.Info("No active match found for server, skipping player update", "server", serverCfg.Name)
 		return
 	}
 
@@ -209,23 +194,23 @@ func processServerStatus(ctx context.Context, app AppInterface, serverCfg config
 	// Note: A2S player count is unreliable, so we always attempt RCON query
 	players, err := queryPlayersViaRcon(app, serverID)
 	if err != nil {
-		cronLogger.Printf("Failed to query players via RCON for %s: %v", serverCfg.Name, err)
+		logger.Error("Failed to query players via RCON", "server", serverCfg.Name, "error", err)
 		return
 	}
 
 	// Only log and update when players are actually found
 	if len(players) > 0 {
-		cronLogger.Printf("Found %d players via RCON for %s", len(players), serverCfg.Name)
-		updatePlayersFromRcon(app, activeMatch.Id, players)
+		logger.Info("Found players via RCON", "count", len(players), "server", serverCfg.Name)
+		updatePlayersFromRcon(app, logger, activeMatch.Id, players)
 	}
 }
 
 // updatePlayerScoresFromRcon queries all configured servers via RCON and updates current player scores
-func updatePlayerScoresFromRcon(ctx context.Context, app AppInterface, cfg *config.Config) {
+func updatePlayerScoresFromRcon(ctx context.Context, app AppInterface, logger *slog.Logger, cfg *config.Config) {
 	// Use the app's A2S pool to query server info (still useful for checking if server is online)
 	pool := app.GetA2SPool()
 	if pool == nil {
-		cronLogger.Println("A2S pool not available")
+		logger.Warn("A2S pool not available")
 		return
 	}
 
@@ -234,7 +219,7 @@ func updatePlayerScoresFromRcon(ctx context.Context, app AppInterface, cfg *conf
 
 	for address, status := range results {
 		if !status.Online || status.Error != nil {
-			cronLogger.Printf("Server %s offline or error: %v", address, status.Error)
+			logger.Info("Server offline or error", "address", address, "error", status.Error)
 			continue
 		}
 
@@ -255,50 +240,50 @@ func updatePlayerScoresFromRcon(ctx context.Context, app AppInterface, cfg *conf
 			continue
 		}
 
-		cronLogger.Printf("Queried %d players from %s", len(status.Players), serverCfg.Name)
+		logger.Info("Queried players from server", "count", len(status.Players), "server", serverCfg.Name)
 
 		// Find or create server record
-		serverRecord, err := getOrCreateServerFromConfig(app, *serverCfg)
+		serverRecord, err := getOrCreateServerFromConfig(app, logger, *serverCfg)
 		if err != nil {
-			cronLogger.Printf("Failed to get server record for %s: %v", serverCfg.Name, err)
+			logger.Error("Failed to get server record", "server", serverCfg.Name, "error", err)
 			continue
 		}
 
 		// Find active match for this server
 		activeMatch, err := getActiveMatchForServer(app, serverRecord.Id)
 		if err != nil {
-			cronLogger.Printf("Failed to get active match for server %s: %v", serverCfg.Name, err)
+			logger.Error("Failed to get active match", "server", serverCfg.Name, "error", err)
 			continue
 		}
 
 		if activeMatch == nil {
-			cronLogger.Printf("No active match found for server %s, skipping player update", serverCfg.Name)
+			logger.Info("No active match found for server, skipping player update", "server", serverCfg.Name)
 			continue
 		}
 
 		// Extract serverID from logPath for RCON commands
 		serverID, err := util.GetServerIdFromPath(serverCfg.LogPath)
 		if err != nil {
-			cronLogger.Printf("Failed to get serverID from path %s: %v", serverCfg.LogPath, err)
+			logger.Error("Failed to get serverID from path", "path", serverCfg.LogPath, "error", err)
 			continue
 		}
 
 		players, err := queryPlayersViaRcon(app, serverID)
 		if err != nil {
-			cronLogger.Printf("Failed to query players via RCON for %s: %v", serverCfg.Name, err)
+			logger.Error("Failed to query players via RCON", "server", serverCfg.Name, "error", err)
 			continue
 		}
 
 		// Only log and update when players are actually found
 		if len(players) > 0 {
-			cronLogger.Printf("Found %d players via RCON for %s", len(players), serverCfg.Name)
-			updatePlayersFromRcon(app, activeMatch.Id, players)
+			logger.Info("Found players via RCON", "count", len(players), "server", serverCfg.Name)
+			updatePlayersFromRcon(app, logger, activeMatch.Id, players)
 		}
 	}
 }
 
 // getOrCreateServerFromConfig finds or creates a server record based on config
-func getOrCreateServerFromConfig(pbApp core.App, cfg config.ServerConfig) (*core.Record, error) {
+func getOrCreateServerFromConfig(pbApp core.App, logger *slog.Logger, cfg config.ServerConfig) (*core.Record, error) {
 	collection, err := pbApp.FindCollectionByNameOrId("servers")
 	if err != nil {
 		return nil, err
@@ -331,7 +316,7 @@ func getOrCreateServerFromConfig(pbApp core.App, cfg config.ServerConfig) (*core
 		return nil, err
 	}
 
-	cronLogger.Printf("Created server record for %s (ID: %s)", cfg.Name, serverID)
+	logger.Info("Created server record", "server", cfg.Name, "serverID", serverID)
 	return record, nil
 }
 
@@ -364,7 +349,7 @@ func findPlayerByName(pbApp core.App, name string) (*core.Record, error) {
 }
 
 // updatePlayerMatchScore updates a player's score in the match_player_stats table
-func updatePlayerMatchScore(pbApp core.App, matchID, playerID string, score int32) error {
+func updatePlayerMatchScore(pbApp core.App, logger *slog.Logger, matchID, playerID string, score int32) error {
 	collection, err := pbApp.FindCollectionByNameOrId("match_player_stats")
 	if err != nil {
 		return fmt.Errorf("failed to find collection: %w", err)
@@ -382,7 +367,7 @@ func updatePlayerMatchScore(pbApp core.App, matchID, playerID string, score int3
 
 	if err != nil {
 		// Create new record if not found
-		cronLogger.Printf("Creating new match_player_stats record: match=%s, player=%s, score=%d", matchID, playerID, score)
+		logger.Info("Creating new match_player_stats record", "match", matchID, "player", playerID, "score", score)
 		record = core.NewRecord(collection)
 		record.Set("match", matchID)
 		record.Set("player", playerID)
@@ -397,8 +382,7 @@ func updatePlayerMatchScore(pbApp core.App, matchID, playerID string, score int3
 		createdTime := record.GetDateTime("created")
 		playTimeSeconds := int(time.Since(createdTime.Time()).Seconds())
 
-		cronLogger.Printf("Updating match_player_stats: match=%s, player=%s, score=%d -> %d, play_time=%ds",
-			matchID, playerID, oldScore, score, playTimeSeconds)
+		logger.Info("Updating match_player_stats", "match", matchID, "player", playerID, "old_score", oldScore, "new_score", score, "play_time_seconds", playTimeSeconds)
 
 		record.Set("score", int(score))
 		record.Set("total_play_time", playTimeSeconds)
@@ -476,7 +460,7 @@ func parseRconListPlayers(response string) []RconPlayer {
 }
 
 // updatePlayersFromRcon updates player scores from RCON data
-func updatePlayersFromRcon(app AppInterface, matchID string, players []RconPlayer) {
+func updatePlayersFromRcon(app AppInterface, logger *slog.Logger, matchID string, players []RconPlayer) {
 	successCount := 0
 	for _, player := range players {
 		// Only find existing players - don't create new ones
@@ -488,16 +472,16 @@ func updatePlayersFromRcon(app AppInterface, matchID string, players []RconPlaye
 		}
 
 		// Update match score
-		err = updatePlayerMatchScore(app, matchID, playerRecord.Id, player.Score)
+		err = updatePlayerMatchScore(app, logger, matchID, playerRecord.Id, player.Score)
 		if err != nil {
-			cronLogger.Printf("Failed to update score for player %s: %v", player.Name, err)
+			logger.Error("Failed to update score for player", "player", player.Name, "error", err)
 		} else {
 			successCount++
 		}
 	}
 
 	if successCount > 0 {
-		cronLogger.Printf("Updated scores for %d players", successCount)
+		logger.Info("Updated scores for players", "count", successCount)
 	}
 }
 

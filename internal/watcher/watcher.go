@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -32,6 +32,7 @@ type Watcher struct {
 	watcher          *fsnotify.Watcher
 	parser           *parser.LogParser
 	pbApp            core.App
+	logger           *slog.Logger
 	ctx              context.Context
 	cancel           context.CancelFunc
 	wg               sync.WaitGroup
@@ -46,8 +47,8 @@ type Watcher struct {
 }
 
 // NewWatcher creates a new file watcher
-// All dependencies are injected: parser, rconPool, and a2sPool
-func NewWatcher(pbApp core.App, logParser *parser.LogParser, rconPool *rcon.ClientPool, a2sPool *a2s.ServerPool, serverConfigs []config.ServerConfig) (*Watcher, error) {
+// All dependencies are injected: parser, rconPool, a2sPool, and logger
+func NewWatcher(pbApp core.App, logParser *parser.LogParser, rconPool *rcon.ClientPool, a2sPool *a2s.ServerPool, logger *slog.Logger, serverConfigs []config.ServerConfig) (*Watcher, error) {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create file watcher: %w", err)
@@ -71,6 +72,7 @@ func NewWatcher(pbApp core.App, logParser *parser.LogParser, rconPool *rcon.Clie
 		watcher:          watcher,
 		parser:           logParser,
 		pbApp:            pbApp,
+		logger:           logger,
 		ctx:              ctx,
 		cancel:           cancel,
 		rconPool:         rconPool,
@@ -133,7 +135,7 @@ func (w *Watcher) AddPath(path string) error {
 		if err != nil {
 			return fmt.Errorf("failed to watch directory %s: %w", absPath, err)
 		}
-		log.Printf("Watching directory: %s", absPath)
+		w.logger.Info("Watching directory", "path", absPath)
 
 		// Process existing log files in directory
 		files, err := os.ReadDir(absPath)
@@ -158,7 +160,7 @@ func (w *Watcher) AddPath(path string) error {
 
 		serverID := w.extractServerIDFromPath(absPath)
 		w.enqueueFileEvent(serverID, absPath)
-		log.Printf("Watching file: %s", absPath)
+		w.logger.Info("Watching file", "path", absPath)
 	}
 	return nil
 }
@@ -178,7 +180,7 @@ func (w *Watcher) Stop() {
 	w.serverQueuesMu.Lock()
 	for serverID, queue := range w.serverQueues {
 		close(queue)
-		log.Printf("Closed queue for server %s", serverID)
+		w.logger.Info("Closed queue for server", "serverID", serverID)
 	}
 	w.serverQueuesMu.Unlock()
 
@@ -204,7 +206,7 @@ func (w *Watcher) watchLoop() {
 			if !ok {
 				return
 			}
-			log.Printf("File watcher error: %v", err)
+			w.logger.Error("File watcher error", "error", err)
 		}
 	}
 }
@@ -239,23 +241,23 @@ func (w *Watcher) enqueueFileEvent(serverID, filePath string) {
 	case queue <- filePath:
 		// Successfully enqueued
 	default:
-		log.Printf("Warning: Queue full for server %s, dropping event for %s", serverID, filePath)
+		w.logger.Warn("Queue full for server, dropping event", "serverID", serverID, "filePath", filePath)
 	}
 }
 
 // serverWorker processes file events sequentially for a single server
 func (w *Watcher) serverWorker(serverID string, queue chan string) {
 	defer w.wg.Done()
-	log.Printf("Started worker for server %s", serverID)
+	w.logger.Info("Started worker for server", "serverID", serverID)
 
 	for {
 		select {
 		case <-w.ctx.Done():
-			log.Printf("Stopping worker for server %s", serverID)
+			w.logger.Info("Stopping worker for server", "serverID", serverID)
 			return
 		case filePath, ok := <-queue:
 			if !ok {
-				log.Printf("Queue closed for server %s", serverID)
+				w.logger.Info("Queue closed for server", "serverID", serverID)
 				return
 			}
 			w.processFile(filePath)
@@ -269,14 +271,14 @@ func (w *Watcher) processFile(filePath string) {
 	// Get server DB ID and load offset from database
 	serverDBID, err := w.getOrCreateServerDBID(serverID, filePath)
 	if err != nil {
-		log.Printf("Failed to get server DB ID: %v", err)
+		w.logger.Error("Failed to get server DB ID", "error", err, "filePath", filePath)
 		return
 	}
 
 	// Load offset from database
 	serverRecord, err := w.pbApp.FindRecordById("servers", serverDBID)
 	if err != nil {
-		log.Printf("Error loading server record: %v", err)
+		w.logger.Error("Error loading server record", "error", err, "serverDBID", serverDBID)
 		return
 	}
 
@@ -291,14 +293,14 @@ func (w *Watcher) processFile(filePath string) {
 			// Save the offset so we start from here
 			serverRecord.Set("offset", offset)
 			if err := w.pbApp.Save(serverRecord); err != nil {
-				log.Printf("Error saving catch-up offset: %v", err)
+				w.logger.Error("Error saving catch-up offset", "error", err, "serverDBID", serverDBID)
 			}
 		}
 	}
 
 	file, err := os.Open(filePath)
 	if err != nil {
-		log.Printf("Error opening file %s: %v", filePath, err)
+		w.logger.Error("Error opening file", "filePath", filePath, "error", err)
 		return
 	}
 	defer file.Close()
@@ -306,7 +308,7 @@ func (w *Watcher) processFile(filePath string) {
 	// Get current file size
 	fileInfo, err := file.Stat()
 	if err != nil {
-		log.Printf("Error getting file info for %s: %v", filePath, err)
+		w.logger.Error("Error getting file info", "filePath", filePath, "error", err)
 		return
 	}
 
@@ -317,7 +319,7 @@ func (w *Watcher) processFile(filePath string) {
 	// Extract current log file creation time for saving
 	currentLogFileTime, err := w.parser.ExtractLogFileCreationTime(filePath)
 	if err != nil {
-		log.Printf("Warning: Could not extract log file creation time for %s: %v", filePath, err)
+		w.logger.Warn("Could not extract log file creation time", "filePath", filePath, "error", err)
 	}
 
 	// Check if we should skip processing
@@ -329,7 +331,7 @@ func (w *Watcher) processFile(filePath string) {
 	}
 
 	if _, err := file.Seek(int64(offset), 0); err != nil {
-		log.Printf("Error seeking to offset %d in %s: %v", offset, filePath, err)
+		w.logger.Error("Error seeking to offset", "offset", offset, "filePath", filePath, "error", err)
 		return
 	}
 
@@ -341,14 +343,14 @@ func (w *Watcher) processFile(filePath string) {
 
 		// Parse and process directly - pass serverID (external_id), not serverDBID
 		if err := w.parser.ParseAndProcess(w.ctx, line, serverID, filePath); err != nil {
-			log.Printf("Error processing line: %v", err)
+			w.logger.Error("Error processing line", "error", err, "serverID", serverID)
 		}
 
 		linesProcessed++
 	}
 
 	if err := scanner.Err(); err != nil {
-		log.Printf("Error scanning file %s: %v", filePath, err)
+		w.logger.Error("Error scanning file", "filePath", filePath, "error", err)
 		return
 	}
 
@@ -361,9 +363,9 @@ func (w *Watcher) processFile(filePath string) {
 			serverRecord.Set("log_file_creation_time", currentLogFileTime.Format(time.RFC3339))
 		}
 		if err := w.pbApp.Save(serverRecord); err != nil {
-			log.Printf("Error saving server offset: %v", err)
+			w.logger.Error("Error saving server offset", "error", err, "serverDBID", serverDBID)
 		} else {
-			log.Printf("Processed %d lines from %s (new offset: %d)", linesProcessed, filePath, newOffset)
+			w.logger.Info("Processed lines from file", "linesProcessed", linesProcessed, "filePath", filePath, "newOffset", newOffset)
 		}
 
 		// Mark server as active and update activity time
@@ -392,7 +394,7 @@ func (w *Watcher) getOrCreateServerDBID(serverID, logPath string) (string, error
 
 	// This should not happen if config is properly set up
 	// But log a warning instead of creating a new server
-	log.Printf("Warning: No server found in database with external_id: %s (from path: %s)", serverID, logPath)
+	w.logger.Warn("No server found in database", "external_id", serverID, "path", logPath)
 	return "", fmt.Errorf("server not found in database for external_id: %s", serverID)
 }
 

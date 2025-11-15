@@ -27,11 +27,12 @@ COMPLETED: Implemented per-server worker queues to ensure sequential event proce
 
 1. ensure an rcon listplayers command is only ran once every 10 seconds per server unless there is a game over event
 
-## internal/logger
+<!-- ## internal/logger
+COMPLETED:
 - this project uses pocketbase as a framework, and pocketbase provides its own logger which uses go's slog. this logger addionally logs everything to a sqlite db
 - i want to also be able to log everything to a single log file
 - if possible i want to also to be able to just use one of the loggers when needed for specific events
-- it may be easiest to use a custom handler wrapper
+- it may be easiest to use a custom handler wrapper -->
 
 
 // IGNORE

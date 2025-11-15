@@ -46,11 +46,20 @@ tasks:
   start:
     desc: Start Insurgency server with default config
     cmds:
-      - task build
       - task stop
-      - ./sandstorm-tracker.exe server start --all
+      - go run ".\tools\servermgr\main.go" start --all
   stop:
     desc: Stop Insurgency servers
     cmds:
-      - ./sandstorm-tracker.exe server stop --all
-
+      - go run ".\tools\servermgr\main.go" stop --all
+  status:
+    desc: check status of Insurgency servers
+    cmds:
+      - go run ".\tools\servermgr\main.go" status
+  update-server:
+    desc: Update Insurgency server to latest version
+    cmds:
+      - task stop
+      - go run ".\tools\servermgr\main.go" update-steamcmd
+      - go run ".\tools\servermgr\main.go" update-game
+      
