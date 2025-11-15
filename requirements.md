@@ -42,6 +42,21 @@ COMPLETED:
 - if possible i want to also to be able to just use one of the loggers when needed for specific events
 - it may be easiest to use a custom handler wrapper -->
 
+
+im thinking of refactoring my app more to use pocketbases built in features such as 
+```
+app.OnRecordCreate("events").BindFunc(func(e *core.RecordEvent) error {
+        // e.App
+        // e.Record
+
+        return e.Next()
+    })
+```
+i can setup an event bus that my app struct holds and have these handlers publish to the event bus
+then other parts of my app can subscribe to these events, ie my parser will publish events when it parses them
+
+
+
 // IGNORE
 commit before changes:
 ef470cc
