@@ -131,57 +131,25 @@ func NewSimplifiedApp() *SimplifiedApp {
 // Each event type gets its own dedicated handler
 func (app *SimplifiedApp) Bootstrap() error {
 	// Player Kill Events
-	app.OnRecordCreate("events").BindFunc(func(e *core.RecordEvent) error {
-		if e.Record.GetString("type") != EventPlayerKill {
-			return e.Next()
-		}
-		return app.handlePlayerKill(e)
-	})
+	app.OnRecordCreate("events").BindFunc(app.handlePlayerKill)
 
 	// Player Join Events
-	app.OnRecordCreate("events").BindFunc(func(e *core.RecordEvent) error {
-		if e.Record.GetString("type") != EventPlayerJoin {
-			return e.Next()
-		}
-		return app.handlePlayerJoin(e)
-	})
+	app.OnRecordCreate("events").BindFunc(app.handlePlayerJoin)
 
 	// Player Leave Events
-	app.OnRecordCreate("events").BindFunc(func(e *core.RecordEvent) error {
-		if e.Record.GetString("type") != EventPlayerLeave {
-			return e.Next()
-		}
-		return app.handlePlayerLeave(e)
-	})
+	app.OnRecordCreate("events").BindFunc(app.handlePlayerLeave)
 
 	// Round End Events
-	app.OnRecordCreate("events").BindFunc(func(e *core.RecordEvent) error {
-		if e.Record.GetString("type") != EventRoundEnd {
-			return e.Next()
-		}
-		return app.handleRoundEnd(e)
-	})
+	app.OnRecordCreate("events").BindFunc(app.handleRoundEnd)
 
 	// Match Start Events
-	app.OnRecordCreate("events").BindFunc(func(e *core.RecordEvent) error {
-		if e.Record.GetString("type") != EventMatchStart {
-			return e.Next()
-		}
-		return app.handleMatchStart(e)
-	})
+	app.OnRecordCreate("events").BindFunc(app.handleMatchStart)
 
 	// Match End Events
-	app.OnRecordCreate("events").BindFunc(func(e *core.RecordEvent) error {
-		if e.Record.GetString("type") != EventMatchEnd {
-			return e.Next()
-		}
-		return app.handleMatchEnd(e)
-	})
+	app.OnRecordCreate("events").BindFunc(app.handleMatchEnd)
 
 	// You can also have hooks for other collections
-	app.OnRecordUpdate("matches").BindFunc(func(e *core.RecordEvent) error {
-		return app.handleMatchUpdate(e)
-	})
+	app.OnRecordUpdate("matches").BindFunc(app.handleMatchUpdate)
 
 	return nil
 }
@@ -193,6 +161,9 @@ func (app *SimplifiedApp) Bootstrap() error {
 // Each handler extracts data and serverID from the event record's JSON data field
 
 func (app *SimplifiedApp) handlePlayerKill(e *core.RecordEvent) error {
+	if e.Record.GetString("type") != EventPlayerKill {
+		return e.Next()
+	}
 	// Parse event data from JSON field
 	var data map[string]interface{}
 	json.Unmarshal([]byte(e.Record.GetString("data")), &data)
@@ -222,6 +193,9 @@ func (app *SimplifiedApp) handlePlayerKill(e *core.RecordEvent) error {
 }
 
 func (app *SimplifiedApp) handlePlayerJoin(e *core.RecordEvent) error {
+	if e.Record.GetString("type") != EventPlayerJoin {
+		return e.Next()
+	}
 	var data map[string]interface{}
 	json.Unmarshal([]byte(e.Record.GetString("data")), &data)
 
@@ -241,6 +215,9 @@ func (app *SimplifiedApp) handlePlayerJoin(e *core.RecordEvent) error {
 }
 
 func (app *SimplifiedApp) handlePlayerLeave(e *core.RecordEvent) error {
+	if e.Record.GetString("type") != EventPlayerLeave {
+		return e.Next()
+	}
 	var data map[string]interface{}
 	json.Unmarshal([]byte(e.Record.GetString("data")), &data)
 
@@ -255,6 +232,9 @@ func (app *SimplifiedApp) handlePlayerLeave(e *core.RecordEvent) error {
 }
 
 func (app *SimplifiedApp) handleRoundEnd(e *core.RecordEvent) error {
+	if e.Record.GetString("type") != EventRoundEnd {
+		return e.Next()
+	}
 	var data map[string]interface{}
 	json.Unmarshal([]byte(e.Record.GetString("data")), &data)
 
@@ -274,6 +254,9 @@ func (app *SimplifiedApp) handleRoundEnd(e *core.RecordEvent) error {
 }
 
 func (app *SimplifiedApp) handleMatchStart(e *core.RecordEvent) error {
+	if e.Record.GetString("type") != EventMatchStart {
+		return e.Next()
+	}
 	var data map[string]interface{}
 	json.Unmarshal([]byte(e.Record.GetString("data")), &data)
 
@@ -293,6 +276,9 @@ func (app *SimplifiedApp) handleMatchStart(e *core.RecordEvent) error {
 }
 
 func (app *SimplifiedApp) handleMatchEnd(e *core.RecordEvent) error {
+	if e.Record.GetString("type") != EventMatchEnd {
+		return e.Next()
+	}
 	var data map[string]interface{}
 	json.Unmarshal([]byte(e.Record.GetString("data")), &data)
 
@@ -308,6 +294,7 @@ func (app *SimplifiedApp) handleMatchEnd(e *core.RecordEvent) error {
 }
 
 func (app *SimplifiedApp) handleMatchUpdate(e *core.RecordEvent) error {
+	
 	matchID := e.Record.Id
 
 	app.Logger().Info("Match updated", "match_id", matchID)

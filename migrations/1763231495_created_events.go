@@ -28,66 +28,12 @@ func init() {
 					"type": "text"
 				},
 				{
-					"hidden": false,
-					"id": "number1493879504",
-					"max": null,
-					"min": null,
-					"name": "offset",
-					"onlyInt": false,
-					"presentable": false,
-					"required": false,
-					"system": false,
-					"type": "number"
-				},
-				{
 					"autogeneratePattern": "",
 					"hidden": false,
-					"id": "text2675300272",
+					"id": "text2363381545",
 					"max": 0,
 					"min": 0,
-					"name": "external_id",
-					"pattern": "",
-					"presentable": false,
-					"primaryKey": false,
-					"required": true,
-					"system": false,
-					"type": "text"
-				},
-				{
-					"autogeneratePattern": "",
-					"hidden": false,
-					"id": "text1579384326",
-					"max": 0,
-					"min": 0,
-					"name": "name",
-					"pattern": "",
-					"presentable": false,
-					"primaryKey": false,
-					"required": true,
-					"system": false,
-					"type": "text"
-				},
-				{
-					"autogeneratePattern": "",
-					"hidden": false,
-					"id": "text190089999",
-					"max": 0,
-					"min": 0,
-					"name": "path",
-					"pattern": "",
-					"presentable": false,
-					"primaryKey": false,
-					"required": true,
-					"system": false,
-					"type": "text"
-				},
-				{
-					"autogeneratePattern": "",
-					"hidden": false,
-					"id": "text730112040",
-					"max": 0,
-					"min": 0,
-					"name": "log_file_creation_time",
+					"name": "type",
 					"pattern": "",
 					"presentable": false,
 					"primaryKey": false,
@@ -97,21 +43,39 @@ func init() {
 				},
 				{
 					"hidden": false,
-					"id": "bool1358543748",
-					"name": "enabled",
+					"id": "json2918445923",
+					"maxSize": 0,
+					"name": "data",
 					"presentable": false,
 					"required": false,
 					"system": false,
-					"type": "bool"
+					"type": "json"
 				},
 				{
+					"cascadeDelete": false,
+					"collectionId": "pbc_3738798621",
 					"hidden": false,
-					"id": "bool3464180533",
-					"name": "is_online",
+					"id": "relation1517147638",
+					"maxSelect": 1,
+					"minSelect": 0,
+					"name": "server",
 					"presentable": false,
 					"required": false,
 					"system": false,
-					"type": "bool"
+					"type": "relation"
+				},
+				{
+					"cascadeDelete": false,
+					"collectionId": "pbc_2936669995",
+					"hidden": false,
+					"id": "relation642663334",
+					"maxSelect": 999,
+					"minSelect": 0,
+					"name": "players",
+					"presentable": false,
+					"required": false,
+					"system": false,
+					"type": "relation"
 				},
 				{
 					"hidden": false,
@@ -134,10 +98,16 @@ func init() {
 					"type": "autodate"
 				}
 			],
-			"id": "pbc_3738798621",
-			"indexes": [],
+			"id": "pbc_1687431684",
+			"indexes": [
+				"CREATE INDEX ` + "`" + `idx_events_type` + "`" + ` ON ` + "`" + `events` + "`" + ` (` + "`" + `type` + "`" + `)",
+				"CREATE INDEX ` + "`" + `idx_events_server` + "`" + ` ON ` + "`" + `events` + "`" + ` (` + "`" + `server` + "`" + `)",
+				"CREATE INDEX ` + "`" + `idx_events_created` + "`" + ` ON ` + "`" + `events` + "`" + ` (` + "`" + `created` + "`" + `)",
+				"CREATE INDEX ` + "`" + `idx_events_players` + "`" + ` ON ` + "`" + `events` + "`" + ` (` + "`" + `players` + "`" + `)",
+				"CREATE INDEX ` + "`" + `idx_events_server_type` + "`" + ` ON ` + "`" + `events` + "`" + ` (\n  ` + "`" + `server` + "`" + `,\n  ` + "`" + `type` + "`" + `\n)"
+			],
 			"listRule": null,
-			"name": "servers",
+			"name": "events",
 			"system": false,
 			"type": "base",
 			"updateRule": null,
@@ -151,7 +121,7 @@ func init() {
 
 		return app.Save(collection)
 	}, func(app core.App) error {
-		collection, err := app.FindCollectionByNameOrId("pbc_3738798621")
+		collection, err := app.FindCollectionByNameOrId("pbc_1687431684")
 		if err != nil {
 			return err
 		}
