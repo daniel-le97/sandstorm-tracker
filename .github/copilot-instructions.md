@@ -4,16 +4,6 @@
 
 - **Purpose:** Tracks player stats, weapon usage, and match history for Insurgency: Sandstorm servers by parsing server logs and storing data in PocketBase.
 - **Backend:** PocketBase v0.31.0 - embedded database with real-time subscriptions and admin dashboard
-- **Major Components:**
-  - `main.go`: PocketBase app initialization, plugin registration, watcher setup in OnServe hook
-  - `pb_migrations/`: JavaScript migrations for database schema (servers, players, matches, stats)
-  - `internal/app/`: Core application logic
-    - `watcher.go`: File watching and log ingestion (uses PocketBase app)
-    - `parser.go`: Log parsing and event processing (uses PocketBase Record API)
-    - `db_helpers.go`: PocketBase database helper functions (GetActiveMatch, CreatePlayer, etc.)
-    - `config.go`: Configuration loading using Viper
-  - `internal/rcon/`: RCON client for server commands and queries
-  - `internal/a2s/`: A2S query protocol implementation
 - **Data Flow:**
   1. PocketBase starts and runs migrations to create collections
   2. Watcher is initialized in OnServe hook with server paths from config
@@ -31,9 +21,6 @@
       logPath: "/opt/sandstorm/Insurgency/Saved/Logs"
       enabled: true
 
-  database:
-    path: "./pb_data" # PocketBase data directory
-
   logging:
     level: "info"
     enableServerLogs: true
@@ -50,7 +37,7 @@
   - Register `jsvm` plugin to run JavaScript migrations in tests
   - Place tests in `*_test.go` files, run with `go test ./...`
 - **Build:** Standard Go build or use PocketBase CLI
-- **Migrations:** Create new migrations using PocketBase admin dashboard or JS migration files
+- **Migrations:** Create new migrations using PocketBase admin dashboard
 
 ## Developer Workflows
 
@@ -75,14 +62,8 @@
   - `IncrementMatchPlayerKills()` - Increment kill count
   - `UpsertMatchWeaponStats()` - Update weapon usage stats
 - **PocketBase Hooks:** Use OnServe, OnTerminate for lifecycle management
-- **Kill Attribution:** Only first player in multi-killer events gets kill credit, others get assists
 
 ## Examples
-
-- To add a new stat field:
-  1. Create migration: Add field to `match_player_stats` collection
-  2. Update parser: Extract value from log line
-  3. Update helper: Add increment/update function in db_helpers.go
 - To query stats: Use PocketBase Record API filters or admin dashboard
 - To test: Use `tests.NewTestApp("./test_pb_data")` and jsvm plugin for migrations
 
