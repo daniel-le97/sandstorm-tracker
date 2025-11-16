@@ -1,4 +1,4 @@
-# Copilot Instructions for sandstorm-trackerv2
+# Copilot Instructions for sandstorm-tracker
 
 ## Project Architecture
 

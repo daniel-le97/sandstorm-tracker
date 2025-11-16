@@ -301,4 +301,4 @@ Before each server start.
 
 ## License
 
-Part of the sandstorm-trackerv2 project.
+Part of the sandstorm-tracker project.

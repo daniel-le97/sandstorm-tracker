@@ -6,7 +6,7 @@
 
 ```bash
 # Navigate to project root
-cd /path/to/sandstorm-trackerv2
+cd /path/to/sandstorm-tracker
 
 # Start the container
 docker-compose up -d

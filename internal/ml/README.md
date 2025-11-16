@@ -356,4 +356,4 @@ go test ./internal/ml/... -v
 
 ## License
 
-MIT License - Part of sandstorm-trackerv2 project
+MIT License - Part of sandstorm-tracker project

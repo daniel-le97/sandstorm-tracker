@@ -123,7 +123,7 @@ release:
   # Note: it can only be one: either github, gitlab or gitea
   github:
     owner: daniel-le97
-    name: sandstorm-trackerv2
+    name: sandstorm-tracker
 
   # If set to true, will not auto-publish the release.
   # Available only for GitHub and Gitea.
@@ -179,7 +179,7 @@ dockers:
       - "--label=org.opencontainers.image.title={{.ProjectName}}"
       - "--label=org.opencontainers.image.revision={{.FullCommit}}"
       - "--label=org.opencontainers.image.version={{.Version}}"
-      - "--label=org.opencontainers.image.source=https://github.com/daniel-le97/sandstorm-trackerv2"
+      - "--label=org.opencontainers.image.source=https://github.com/daniel-le97/sandstorm-tracker"
       - "--platform=linux/amd64"
     goos: linux
     goarch: amd64
@@ -196,7 +196,7 @@ dockers:
       - "--label=org.opencontainers.image.title={{.ProjectName}}"
       - "--label=org.opencontainers.image.revision={{.FullCommit}}"
       - "--label=org.opencontainers.image.version={{.Version}}"
-      - "--label=org.opencontainers.image.source=https://github.com/daniel-le97/sandstorm-trackerv2"
+      - "--label=org.opencontainers.image.source=https://github.com/daniel-le97/sandstorm-tracker"
       - "--platform=linux/arm64"
     goos: linux
     goarch: arm64

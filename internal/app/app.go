@@ -86,7 +86,7 @@ func (app *App) setupPlugins() {
 	// Auto-update from GitHub releases
 	ghupdate.MustRegister(app.PocketBase, app.RootCmd, ghupdate.Config{
 		Owner: "daniel-le97",
-		Repo:  "sandstorm-trackerv2",
+		Repo:  "sandstorm-tracker",
 	})
 
 	// Register server manager plugin

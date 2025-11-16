@@ -22,7 +22,7 @@ Sandstorm Tracker is a Go project that tracks kills, playtime, alive time, weapo
 
 1. **Download the binary:**
 
-   - Get the latest release from [Releases](https://github.com/daniel-le97/sandstorm-trackerv2/releases)
+   - Get the latest release from [Releases](https://github.com/daniel-le97/sandstorm-tracker/releases)
    - Or build from source (see Development section)
 
 2. **Create your configuration file:**
@@ -165,8 +165,8 @@ logging:
 1. **Clone the repository:**
 
    ```sh
-   git clone https://github.com/daniel-le97/sandstorm-trackerv2.git
-   cd sandstorm-trackerv2
+   git clone https://github.com/daniel-le97/sandstorm-tracker.git
+   cd sandstorm-tracker
    ```
 
 2. **Install dependencies:**
