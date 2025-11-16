@@ -221,6 +221,9 @@ func (app *App) onServe(e *core.ServeEvent) error {
 		}
 	}
 
+	// Register archive cron job for data older than 30 days
+	jobs.RegisterArchiveOldData(app.PocketBase, app.Logger().With("component", "ARCHIVE_JOB"))
+
 	// Start watcher with panic recovery
 	go func() {
 		defer func() {

@@ -475,24 +475,34 @@ func parseRconListPlayers(response string) []RconPlayer {
 }
 
 // updatePlayersFromRcon updates player scores from RCON data
+// All updates are wrapped in a transaction for consistency
 func updatePlayersFromRcon(app AppInterface, logger *slog.Logger, matchID string, players []RconPlayer) {
 	successCount := 0
-	for _, player := range players {
-		// Only find existing players - don't create new ones
-		// Players should be created via PlayerLogin events which provide Steam IDs
-		playerRecord, err := findPlayerByName(app, player.Name)
-		if err != nil {
-			// Player not found - likely an AI bot or player who hasn't logged in yet
-			continue
-		}
 
-		// Update match score
-		err = updatePlayerMatchScore(app, logger, matchID, playerRecord.Id, player.Score)
-		if err != nil {
-			logger.Error("Failed to update score for player", "player", player.Name, "error", err)
-		} else {
+	err := app.RunInTransaction(func(txApp core.App) error {
+		for _, player := range players {
+			// Only find existing players - don't create new ones
+			// Players should be created via PlayerLogin events which provide Steam IDs
+			playerRecord, err := findPlayerByName(txApp, player.Name)
+			if err != nil {
+				// Player not found - likely an AI bot or player who hasn't logged in yet
+				continue
+			}
+
+			// Update match score
+			err = updatePlayerMatchScore(txApp, logger, matchID, playerRecord.Id, player.Score)
+			if err != nil {
+				// Return error to rollback all updates in this batch
+				return fmt.Errorf("failed to update score for player %s: %w", player.Name, err)
+			}
 			successCount++
 		}
+		return nil
+	})
+
+	if err != nil {
+		logger.Error("Failed to update player scores (transaction rolled back)", "error", err)
+		return
 	}
 
 	if successCount > 0 {

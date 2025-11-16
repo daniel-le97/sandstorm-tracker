@@ -1,0 +1,47 @@
+# Build artifacts
+.git
+.gitignore
+.github
+.vscode
+.idea
+
+# Dependencies
+vendor/
+node_modules/
+
+# Test files
+*_test.go
+coverage.out
+*.pprof
+
+# IDE files
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs and data
+logs/
+pb_data/
+*.log
+hc.log
+
+# Configuration
+.env
+.env.local
+sandstorm-tracker.yml
+
+# Documentation
+README.md
+*.md
+
+# Build scripts
+Taskfile.yml
+scripts/
+
+# Test data
+tests/
+
+# CI/CD
+.gitlab-ci.yml
+.travis.yml
