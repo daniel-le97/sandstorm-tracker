@@ -102,6 +102,10 @@ func (k *Killevent) VictimName() string {
 	return k.Victim().Name
 }
 
+func (k *Killevent) VictimTeam() int {
+	return k.Victim().Team
+}
+
 func (k *Killevent) Weapon() string {
 	data := k.getDataMap()
 	if data == nil {

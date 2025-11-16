@@ -107,7 +107,7 @@ func (h *GameEventHandlers) handlePlayerLogin(e *core.RecordEvent) error {
 }
 
 // handlePlayerKill processes player kill events
-// Replicates the logic from parser.tryProcessKillEvent
+// Handles regular kills, assists, friendly fire, and suicides
 func (h *GameEventHandlers) handlePlayerKill(e *core.RecordEvent) error {
 	ctx := context.Background()
 
@@ -125,16 +125,11 @@ func (h *GameEventHandlers) handlePlayerKill(e *core.RecordEvent) error {
 	killers := killevent.Killers()
 	victimSteamID := killevent.VictimSteamID()
 	victimName := killevent.VictimName()
+	victimTeam := killevent.VictimTeam()
 	weapon := killevent.Weapon()
 
-	var killerSteamID, killerName string
-	if len(killers) > 0 {
-		killerSteamID = killers[0].SteamID
-		killerName = killers[0].Name
-	}
-
-	log.Printf("[HANDLER] Processing kill event: killer=%s victim=%s weapon=%s server=%s",
-		killerName, victimName, weapon, serverID)
+	log.Printf("[HANDLER] Processing kill event: %d killers, victim=%s weapon=%s server=%s",
+		len(killers), victimName, weapon, serverID)
 
 	// Get active match for this server
 	activeMatch, err := database.GetActiveMatch(ctx, e.App, serverID)
@@ -143,54 +138,132 @@ func (h *GameEventHandlers) handlePlayerKill(e *core.RecordEvent) error {
 		return e.Next()
 	}
 
-	// Use transaction to ensure killer and victim stats are updated atomically
+	// Detect suicide (killer == victim)
+	isSuicide := false
+	if len(killers) > 0 && killers[0].SteamID == victimSteamID && victimSteamID != "" && victimSteamID != "INVALID" {
+		isSuicide = true
+	}
+
+	// Use transaction to ensure all stats are updated atomically
 	if err := e.App.RunInTransaction(func(txApp core.App) error {
-		// Update killer stats (if not empty - could be AI kill)
-		if killerSteamID != "" && killerSteamID != "INVALID" {
-			// Get or create killer player by Steam ID
-			killerPlayer, err := database.GetOrCreatePlayerBySteamID(ctx, txApp, killerSteamID, killerName)
+		// For suicides: only increment victim deaths
+		if isSuicide && killevent.VictimIsPlayer() {
+			victimPlayer, err := database.GetOrCreatePlayerBySteamID(ctx, txApp, victimSteamID, victimName)
 			if err != nil {
-				log.Printf("[HANDLER] Failed to get/create killer player %s: %v", killerName, err)
+				log.Printf("[HANDLER] Failed to get/create suicide victim player %s: %v", victimName, err)
 				return err
 			}
 
-			// Upsert player into match (in case join event was missed)
+			// Upsert player into match
+			if err := database.UpsertMatchPlayerStats(ctx, txApp, activeMatch.ID, victimPlayer.ID, nil, nil); err != nil {
+				log.Printf("[HANDLER] Failed to upsert suicide victim into match: %v", err)
+				return err
+			}
+
+			// Increment deaths (only stat for suicide)
+			if err := database.IncrementMatchPlayerStat(ctx, txApp, activeMatch.ID, victimPlayer.ID, "deaths"); err != nil {
+				log.Printf("[HANDLER] Failed to increment deaths for suicide: %v", err)
+				return err
+			}
+
+			return nil
+		}
+
+		// For non-suicides: process killer(s) and victim
+		for i, killer := range killers {
+			if killer.SteamID == "" || killer.SteamID == "INVALID" {
+				continue
+			}
+
+			killerPlayer, err := database.GetOrCreatePlayerBySteamID(ctx, txApp, killer.SteamID, killer.Name)
+			if err != nil {
+				log.Printf("[HANDLER] Failed to get/create killer player %s: %v", killer.Name, err)
+				return err
+			}
+
+			// Upsert player into match
 			if err := database.UpsertMatchPlayerStats(ctx, txApp, activeMatch.ID, killerPlayer.ID, nil, nil); err != nil {
 				log.Printf("[HANDLER] Failed to upsert killer into match: %v", err)
 				return err
 			}
 
-			// Increment kills
-			if err := database.IncrementMatchPlayerStat(ctx, txApp, activeMatch.ID, killerPlayer.ID, "kills"); err != nil {
-				log.Printf("[HANDLER] Failed to increment kills for killer: %v", err)
-				return err
-			}
+			// Check if this is a friendly fire kill
+			isTeamKill := killer.Team == victimTeam && victimTeam >= 0 && killer.Team >= 0
 
-			// Update weapon stats
-			killCount := int64(1)
-			assistCount := int64(0)
-			if err := database.UpsertMatchWeaponStats(ctx, txApp, activeMatch.ID, killerPlayer.ID, weapon, &killCount, &assistCount); err != nil {
-				log.Printf("[HANDLER] Failed to update weapon stats: %v", err)
-				return err
+			if isTeamKill {
+				// Friendly fire: record incident and increment friendly_fire_kills
+				if killevent.VictimIsPlayer() {
+					if err := database.IncrementMatchPlayerStat(ctx, txApp, activeMatch.ID, killerPlayer.ID, "friendly_fire_kills"); err != nil {
+						log.Printf("[HANDLER] Failed to increment friendly_fire_kills: %v", err)
+						return err
+					}
+
+					// Record friendly fire incident
+					killerTeam := killer.Team
+					ff := &database.FriendlyFireIncident{
+						MatchID:    activeMatch.ID,
+						KillerID:   killerPlayer.ID,
+						VictimID:   "", // Will be fetched if victim is player
+						Weapon:     weapon,
+						Timestamp:  e.Record.GetDateTime("created").Time(),
+						KillerTeam: &killerTeam,
+						VictimTeam: &victimTeam,
+					}
+
+					// Get victim player for FF record
+					if victimPlayer, err := database.GetOrCreatePlayerBySteamID(ctx, txApp, victimSteamID, victimName); err == nil {
+						ff.VictimID = victimPlayer.ID
+						if err := database.RecordFriendlyFireIncident(ctx, txApp, ff); err != nil {
+							log.Printf("[HANDLER] Failed to record friendly fire incident: %v", err)
+						}
+					}
+				}
+			} else if i == 0 {
+				// Regular kill: first killer gets the kill credit
+				if err := database.IncrementMatchPlayerStat(ctx, txApp, activeMatch.ID, killerPlayer.ID, "kills"); err != nil {
+					log.Printf("[HANDLER] Failed to increment kills for killer: %v", err)
+					return err
+				}
+
+				// Update weapon stats (only for primary killer)
+				killCount := int64(1)
+				assistCount := int64(0)
+				if err := database.UpsertMatchWeaponStats(ctx, txApp, activeMatch.ID, killerPlayer.ID, weapon, &killCount, &assistCount); err != nil {
+					log.Printf("[HANDLER] Failed to update weapon stats: %v", err)
+					return err
+				}
+			} else {
+				// Regular assist: non-first killers get assist credit
+				if err := database.IncrementMatchPlayerStat(ctx, txApp, activeMatch.ID, killerPlayer.ID, "assists"); err != nil {
+					log.Printf("[HANDLER] Failed to increment assists: %v", err)
+					return err
+				}
+
+				// Update weapon stats with assist
+				killCount := int64(0)
+				assistCount := int64(1)
+				if err := database.UpsertMatchWeaponStats(ctx, txApp, activeMatch.ID, killerPlayer.ID, weapon, &killCount, &assistCount); err != nil {
+					log.Printf("[HANDLER] Failed to update weapon stats for assist: %v", err)
+					return err
+				}
 			}
 		}
 
 		// Update victim stats (if not empty - could be bot death)
-		if killevent.VictimIsPlayer() {
-			// Get or create victim player by Steam ID
+		if killevent.VictimIsPlayer() && !isSuicide {
 			victimPlayer, err := database.GetOrCreatePlayerBySteamID(ctx, txApp, victimSteamID, victimName)
 			if err != nil {
 				log.Printf("[HANDLER] Failed to get/create victim player %s: %v", victimName, err)
 				return err
 			}
 
-			// Upsert player into match (in case join event was missed)
+			// Upsert player into match
 			if err := database.UpsertMatchPlayerStats(ctx, txApp, activeMatch.ID, victimPlayer.ID, nil, nil); err != nil {
 				log.Printf("[HANDLER] Failed to upsert victim into match: %v", err)
 				return err
 			}
 
-			// Increment deaths
+			// Increment deaths (always incremented except for suicides)
 			if err := database.IncrementMatchPlayerStat(ctx, txApp, activeMatch.ID, victimPlayer.ID, "deaths"); err != nil {
 				log.Printf("[HANDLER] Failed to increment deaths for victim: %v", err)
 				return err
