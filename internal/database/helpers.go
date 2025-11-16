@@ -657,3 +657,58 @@ func IncrementMatchRoundObjective(ctx context.Context, pbApp core.App, matchID s
 func ResetMatchRoundObjective(ctx context.Context, pbApp core.App, matchID string) error {
 	return UpdateMatchField(ctx, pbApp, matchID, "round_objective", "set", 0)
 }
+
+// EndActiveMatchAndCreateNew ends any active match on a server and creates a new one
+// This is called when a map changes (either initial load or travel during gameplay)
+// It handles:
+// - Force-ending the current match with proper timestamps
+// - Disconnecting all players from the ended match
+// - Deleting empty matches
+// - Creating the new match record
+func EndActiveMatchAndCreateNew(ctx context.Context, pbApp core.App, serverID string, mapName, scenario string, timestamp time.Time, playerTeam *string) error {
+	// If there's an active match, force-end it first
+	activeMatch, err := GetActiveMatch(ctx, pbApp, serverID)
+	if err == nil && activeMatch != nil {
+		log.Printf("Found active match %s on server %s, force-ending it before new map",
+			activeMatch.ID, serverID)
+
+		// Determine end time (use last player activity if available)
+		endTime := activeMatch.StartTime
+		if activeMatch.UpdatedAt != nil {
+			endTime = activeMatch.UpdatedAt
+		}
+
+		playersInMatch, err := GetAllPlayersInMatch(ctx, pbApp, activeMatch.ID)
+		if err == nil && len(playersInMatch) > 0 {
+			for _, pl := range playersInMatch {
+				if pl.UpdatedAt != nil && pl.UpdatedAt.After(*endTime) {
+					endTime = pl.UpdatedAt
+				}
+			}
+			log.Printf("Using last player activity as end time: %v", endTime)
+		}
+
+		if err := EndMatch(ctx, pbApp, activeMatch.ID, endTime, nil); err != nil {
+			log.Printf("Failed to force-end match %s: %v", activeMatch.ID, err)
+		}
+
+		if err := DisconnectAllPlayersInMatch(ctx, pbApp, activeMatch.ID, endTime); err != nil {
+			log.Printf("Failed to disconnect players from match %s: %v", activeMatch.ID, err)
+		}
+
+		log.Printf("Successfully closed match %s", activeMatch.ID)
+
+		if err := DeleteMatchIfEmpty(ctx, pbApp, activeMatch.ID); err != nil {
+			log.Printf("Failed to check/delete empty match %s: %v", activeMatch.ID, err)
+		}
+	}
+
+	// Create the new match
+	_, err = CreateMatch(ctx, pbApp, serverID, &mapName, &scenario, &timestamp, playerTeam)
+	if err != nil {
+		return fmt.Errorf("failed to create match for map %s on server %s: %w", mapName, serverID, err)
+	}
+
+	log.Printf("Created new match for map %s on server %s", mapName, serverID)
+	return nil
+}

@@ -217,7 +217,7 @@ func TestParseAllEventsWithUpdatedTimestamps(t *testing.T) {
 
 	// Create a test parser instance (we can't fully test parsing without DB, but we can verify patterns)
 	parser := &LogParser{
-		patterns: newLogPatterns(),
+		patterns: NewLogPatterns(),
 	}
 
 	// Test that each event type can be matched
@@ -249,7 +249,7 @@ func TestLoginRequestEvent(t *testing.T) {
 	line := "[2025.11.10-20.58.50:166][881]LogNet: Login request: ?InitialConnectTimeout=30?Name=ArmoredBear userId: SteamNWI:76561198995742987 platform: SteamNWI"
 
 	parser := &LogParser{
-		patterns: newLogPatterns(),
+		patterns: NewLogPatterns(),
 	}
 
 	if !parser.patterns.PlayerLogin.MatchString(line) {

@@ -65,7 +65,7 @@ func TestChatCommandParsing(t *testing.T) {
 	}
 
 	parser := &LogParser{
-		patterns: newLogPatterns(),
+		patterns: NewLogPatterns(),
 	}
 
 	for _, tt := range tests {
@@ -90,7 +90,7 @@ func TestChatCommandHandler(t *testing.T) {
 	mockRcon := &MockRconSender{}
 
 	parser := &LogParser{
-		patterns: newLogPatterns(),
+		patterns: NewLogPatterns(),
 	}
 
 	handler := NewChatCommandHandler(parser, mockRcon)
@@ -116,7 +116,7 @@ func TestUnsupportedCommandsIgnored(t *testing.T) {
 	}
 
 	parser := &LogParser{
-		patterns: newLogPatterns(),
+		patterns: NewLogPatterns(),
 	}
 
 	for _, cmd := range unsupportedCommands {

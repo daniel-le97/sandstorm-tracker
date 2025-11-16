@@ -83,7 +83,7 @@ func TestWeaponNameStandardization(t *testing.T) {
 		}
 
 		for _, tc := range testCases {
-			result := cleanWeaponName(tc.input)
+			result := CleanWeaponName(tc.input)
 			if result != tc.expected {
 				t.Errorf("cleanWeaponName(%q) = %q, expected %q", tc.input, result, tc.expected)
 			}

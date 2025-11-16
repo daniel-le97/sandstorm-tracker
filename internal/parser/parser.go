@@ -62,7 +62,7 @@ type logPatterns struct {
 	Timestamp          *regexp.Regexp
 }
 
-func newLogPatterns() *logPatterns {
+func NewLogPatterns() *logPatterns {
 	return &logPatterns{
 		// Log file open timestamp (first line of every log file)
 		// Format: "Log file open, 11/10/25 20:58:31"
@@ -72,7 +72,7 @@ func newLogPatterns() *logPatterns {
 		CommandLine: regexp.MustCompile(`LogInit: Command Line:\s+(\w+)\?Scenario=([^?]+)\?MaxPlayers=(\d+)\?Game=([^?]+)\?Lighting=(\w+).*?-Hostname="([^"]+)"`),
 		// Kill events - always provide consistent capture groups for killer/victim/weapon fields
 		// PlayerKill: timestamp, killerSection, victimName, victimSteam, victimTeam, weapon
-		PlayerKill: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\s*\d+\]LogGameplayEvents: Display: (.+?) killed ([^\[]+)\[([^,\]]*), team (\d+)\] with (.+)$`),
+		PlayerKill: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\s*\d+\]LogGameplayEvents: Display: (.+?) killed (.+?) with (.+)$`),
 
 		// Player connection events - three stages:
 		// 1. PlayerLogin: [timestamp][id]LogNet: Login request (earliest connection event with name & Steam ID)
@@ -118,64 +118,6 @@ func newLogPatterns() *logPatterns {
 	}
 }
 
-// endActiveMatchAndCreateNew ends any active match on the server and creates a new match
-// This is used when a map changes (either initial load or travel)
-func (p *LogParser) endActiveMatchAndCreateNew(ctx context.Context, serverID string, mapName, scenario string, timestamp time.Time, playerTeam *string) error {
-	// If there's an active match, force-end it first
-	activeMatch, err := database.GetActiveMatch(ctx, p.pbApp, serverID)
-	if err == nil && activeMatch != nil {
-		log.Printf("Found active match %s on server %s, force-ending it before new map",
-			activeMatch.ID, serverID)
-
-		// Determine end time (use last player activity if available)
-		endTime := activeMatch.StartTime
-		if activeMatch.UpdatedAt != nil {
-			endTime = activeMatch.UpdatedAt
-		}
-
-		playersInMatch, err := database.GetAllPlayersInMatch(ctx, p.pbApp, activeMatch.ID)
-		if err == nil && len(playersInMatch) > 0 {
-			for _, pl := range playersInMatch {
-				if pl.UpdatedAt != nil && pl.UpdatedAt.After(*endTime) {
-					endTime = pl.UpdatedAt
-				}
-			}
-			log.Printf("Using last player activity as end time: %v", endTime)
-		}
-
-		// Create match_end event before ending match
-		if p.eventCreator != nil {
-			err := p.eventCreator.CreateMatchEndEvent(serverID, activeMatch.ID)
-			if err != nil {
-				log.Printf("[PARSER] Failed to create match_end event for force-ended match: %v", err)
-			}
-		}
-
-		if err := database.EndMatch(ctx, p.pbApp, activeMatch.ID, endTime, nil); err != nil {
-			log.Printf("Failed to force-end match %s: %v", activeMatch.ID, err)
-		}
-
-		if err := database.DisconnectAllPlayersInMatch(ctx, p.pbApp, activeMatch.ID, endTime); err != nil {
-			log.Printf("Failed to disconnect players from match %s: %v", activeMatch.ID, err)
-		}
-
-		log.Printf("Successfully closed match %s", activeMatch.ID)
-
-		if err := database.DeleteMatchIfEmpty(ctx, p.pbApp, activeMatch.ID); err != nil {
-			log.Printf("Failed to check/delete empty match %s: %v", activeMatch.ID, err)
-		}
-	}
-
-	// Create the new match
-	_, err = database.CreateMatch(ctx, p.pbApp, serverID, &mapName, &scenario, &timestamp, playerTeam)
-	if err != nil {
-		return fmt.Errorf("failed to create match for map %s on server %s: %w", mapName, serverID, err)
-	}
-
-	log.Printf("Created new match for map %s on server %s", mapName, serverID)
-	return nil
-}
-
 // extractPlayerTeam extracts the player team from a scenario string
 // Returns "Security" or "Insurgents" based on scenario suffix, or empty string if undetermined
 func extractPlayerTeam(scenario string) string {
@@ -213,7 +155,7 @@ func (p *LogParser) tryProcessMapTravel(ctx context.Context, line string, timest
 	}
 
 	// End active match and create new one
-	if err := p.endActiveMatchAndCreateNew(ctx, serverID, mapName, scenario, timestamp, playerTeamPtr); err != nil {
+	if err := database.EndActiveMatchAndCreateNew(ctx, p.pbApp, serverID, mapName, scenario, timestamp, playerTeamPtr); err != nil {
 		log.Printf("Failed to transition to new map: %v", err)
 	}
 
@@ -223,7 +165,7 @@ func (p *LogParser) tryProcessMapTravel(ctx context.Context, line string, timest
 // NewLogParser creates a new log parser with PocketBase app
 func NewLogParser(pbApp core.App, logger *slog.Logger) *LogParser {
 	return &LogParser{
-		patterns:           newLogPatterns(),
+		patterns:           NewLogPatterns(),
 		pbApp:              pbApp,
 		logger:             logger,
 		chatHandler:        nil, // Set later via SetChatHandler
@@ -348,57 +290,62 @@ func (p *LogParser) ParseAndProcess(ctx context.Context, line string, serverID s
 // tryProcessKillEvent parses and processes kill events
 func (p *LogParser) tryProcessKillEvent(ctx context.Context, line string, timestamp time.Time, serverID string, logFilePath string) bool {
 	matches := p.patterns.PlayerKill.FindStringSubmatch(line)
-	if len(matches) < 7 {
+	if len(matches) < 5 {
 		return false
 	}
 
 	killerSection := strings.TrimSpace(matches[2])
-	victimName := strings.TrimSpace(matches[3])
-	victimSteamID := strings.TrimSpace(matches[4])
-	weapon := cleanWeaponName(matches[6])
+	victimSection := strings.TrimSpace(matches[3])
+	weapon := CleanWeaponName(matches[4])
 
 	// Parse killer section
-	killers := parseKillerSection(killerSection)
+	killers := ParseKillerSection(killerSection)
 	if len(killers) == 0 {
 		return true // Parsed but no valid killers (AI suicide)
 	}
 
+	// Parse victim section as a single Killer struct
+	victimParsed := ParseKillerSection(victimSection)
+	var victim killer
+	if len(victimParsed) > 0 {
+		victim = victimParsed[0]
+	} else {
+		victim = killer{Name: victimSection, SteamID: "", Team: -1}
+	}
 	// Determine if this is PvP (player victim) or PvE (bot victim)
-	isPvP := victimSteamID != "INVALID"
+	isPvP := victim.SteamID != "INVALID"
 
 	// EVENT-DRIVEN ARCHITECTURE: Create event records for hook-based processing
 	// Hooks handle all database updates, player creation, scoring, and ML classification
 	if p.eventCreator != nil && len(killers) > 0 {
-		// Create an event for EACH killer (multi-kills are possible)
-		for _, killer := range killers {
-			if killer.SteamID == "INVALID" {
+		// Build killers array for event data as array of killer structs
+		killersArr := make([]killer, 0, len(killers))
+		for _, k := range killers {
+			if k.SteamID == "INVALID" {
 				continue
 			}
+			killersArr = append(killersArr, k)
+		}
 
-			// Create kill event with raw Steam IDs and names (handlers will do player lookups)
-			isHeadshot := false // TODO: Extract from weapon if available
-			err := p.eventCreator.CreatePlayerKillEvent(
-				serverID,
-				killer.SteamID,
-				killer.Name,
-				victimSteamID,
-				victimName,
-				weapon,
-				isHeadshot,
-				isCatchupMode(ctx),
-			)
-			if err != nil {
-				p.logger.Error("Failed to create kill event",
-					"killer", killer.Name,
-					"victim", victimName,
-					"weapon", weapon,
-					"error", err.Error())
-			} else {
-				p.logger.Debug("Created kill event",
-					"killer", killer.Name,
-					"weapon", weapon,
-					"isPvP", isPvP)
-			}
+		// Emit a single event with all killers in the array (as []killer)
+		err := p.eventCreator.CreateEvent(events.TypePlayerKill, serverID, map[string]interface{}{
+			"killers":    killersArr,
+			"victim":     victim,
+			"weapon":     weapon,
+			"is_catchup": isCatchupMode(ctx),
+		})
+		if err != nil {
+			p.logger.Error("Failed to create kill event",
+				"killers", killersArr,
+				"victim", victim,
+				"weapon", weapon,
+				"error", err.Error())
+		} else {
+			p.logger.Debug("Created kill event",
+				"killers", killersArr,
+				"victim", victim,
+				"weapon", weapon,
+				"isPvP", isPvP)
 		}
 	}
 
@@ -617,7 +564,7 @@ func (p *LogParser) tryProcessMapLoad(ctx context.Context, line string, timestam
 
 	if p.eventCreator != nil {
 		// End active match and create new one
-		if err := p.endActiveMatchAndCreateNew(ctx, serverID, mapName, scenario, timestamp, playerTeamPtr); err != nil {
+		if err := database.EndActiveMatchAndCreateNew(ctx, p.pbApp, serverID, mapName, scenario, timestamp, playerTeamPtr); err != nil {
 			p.logger.Error("Failed to end/create match for map load", "error", err.Error())
 			return true
 		}
@@ -644,14 +591,27 @@ type killer struct {
 	Team    int
 }
 
-func parseKillerSection(killerSection string) []killer {
+func ParseKillerSection(killerSection string) []killer {
 	var killers []killer
 
 	if strings.TrimSpace(killerSection) == "?" {
 		return killers
 	}
 
-	playerParts := strings.Split(killerSection, " + ")
+	// Determine separator based on content:
+	// Kills use " + " as separator: Name[SteamID, team X] + Name[SteamID, team X]
+	// Objectives use ", " as separator: Name[SteamID], Name[SteamID]
+	var playerParts []string
+	if strings.Contains(killerSection, " + ") {
+		// Kill events with " + " separator
+		playerParts = strings.Split(killerSection, " + ")
+	} else if strings.Contains(killerSection, ", ") && !strings.Contains(killerSection, "team") {
+		// Objective events with ", " separator (no "team" keyword means it's objective format)
+		playerParts = strings.Split(killerSection, ", ")
+	} else {
+		playerParts = []string{killerSection}
+	}
+
 	// Try full format first: Name[SteamID, team X]
 	playerRegexFull := regexp.MustCompile(`^(.+?)\[([^,\]]*), team (\d+)\]$`)
 	// Fallback format for objective events: Name[SteamID]
@@ -684,7 +644,7 @@ func parseKillerSection(killerSection string) []killer {
 	return killers
 }
 
-func cleanWeaponName(weapon string) string {
+func CleanWeaponName(weapon string) string {
 	weapon = strings.TrimSpace(weapon)
 	weapon = strings.TrimPrefix(weapon, "BP_")
 
@@ -838,33 +798,39 @@ func (p *LogParser) tryProcessObjectiveDestroyed(ctx context.Context, line strin
 	playerSection := strings.TrimSpace(matches[5])
 
 	// Parse player section (can have multiple players)
-	players := parseKillerSection(playerSection)
-	if len(players) == 0 {
+	killers := ParseKillerSection(playerSection)
+	if len(killers) == 0 {
 		return true // Parsed but no valid players
 	}
 
 	if p.eventCreator != nil {
 		team, _ := strconv.Atoi(destroyingTeam)
 
-		// Create event for each player involved
-		for _, player := range players {
-			if player.SteamID == "INVALID" || player.SteamID == "" {
+		// Convert killers to ObjectivePlayer array
+		objectivePlayers := make([]events.ObjectivePlayer, 0)
+		for _, killer := range killers {
+			if killer.SteamID == "INVALID" || killer.SteamID == "" {
 				continue
 			}
+			objectivePlayers = append(objectivePlayers, events.ObjectivePlayer{
+				SteamID:    killer.SteamID,
+				PlayerName: killer.Name,
+			})
+		}
 
-			// Create event with raw Steam ID and name (handler will do player lookup)
+		if len(objectivePlayers) > 0 {
+			// Create single event with all players
 			err := p.eventCreator.CreateObjectiveDestroyedEvent(
 				serverID,
 				"",
-				player.SteamID,
-				player.Name,
 				objectiveNum,
+				objectivePlayers,
 				team,
 				isCatchupMode(ctx),
 			)
 			if err != nil {
 				p.logger.Error("Failed to create objective destroyed event",
-					"player", player.Name, "objective", objectiveNum, "error", err.Error())
+					"objective", objectiveNum, "players", len(objectivePlayers), "error", err.Error())
 			}
 		}
 	}
@@ -884,33 +850,39 @@ func (p *LogParser) tryProcessObjectiveCaptured(ctx context.Context, line string
 	playerSection := strings.TrimSpace(matches[5])
 
 	// Parse player section (can have multiple players)
-	players := parseKillerSection(playerSection)
-	if len(players) == 0 {
+	killers := ParseKillerSection(playerSection)
+	if len(killers) == 0 {
 		return true // Parsed but no valid players
 	}
 
 	if p.eventCreator != nil {
 		team, _ := strconv.Atoi(capturingTeam)
 
-		// Create event for each player involved
-		for _, player := range players {
-			if player.SteamID == "INVALID" || player.SteamID == "" {
+		// Convert killers to ObjectivePlayer array
+		objectivePlayers := make([]events.ObjectivePlayer, 0)
+		for _, killer := range killers {
+			if killer.SteamID == "INVALID" || killer.SteamID == "" {
 				continue
 			}
+			objectivePlayers = append(objectivePlayers, events.ObjectivePlayer{
+				SteamID:    killer.SteamID,
+				PlayerName: killer.Name,
+			})
+		}
 
-			// Create event with raw Steam ID and name (handler will do player lookup)
+		if len(objectivePlayers) > 0 {
+			// Create single event with all players
 			err := p.eventCreator.CreateObjectiveCapturedEvent(
 				serverID,
 				"",
-				player.SteamID,
-				player.Name,
 				objectiveNum,
+				objectivePlayers,
 				team,
 				isCatchupMode(ctx),
 			)
 			if err != nil {
 				p.logger.Error("Failed to create objective captured event",
-					"player", player.Name, "objective", objectiveNum, "error", err.Error())
+					"objective", objectiveNum, "players", len(objectivePlayers), "error", err.Error())
 			}
 		}
 	}

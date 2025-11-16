@@ -59,6 +59,38 @@ COMPLETED:
    - for any other player listed, we are just going to increase their match_player_stats (assists) field
 
 
+// transactions
+To execute multiple queries in a transaction you can use app.RunInTransaction(fn) .
+
+The DB operations are persisted only if the transaction returns nil.
+
+It is safe to nest RunInTransaction calls as long as you use the callback's txApp argument.
+
+Inside the transaction function always use its txApp argument and not the original app instance because we allow only a single writer/transaction at a time and it could result in a deadlock.
+
+To avoid performance issues, try to minimize slow/long running tasks such as sending emails, connecting to external services, etc. as part of the transaction.
+
+err := app.RunInTransaction(func(txApp core.App) error {
+    // update a record
+    record, err := txApp.FindRecordById("articles", "RECORD_ID")
+    if err != nil {
+        return err
+    }
+    record.Set("status", "active")
+    if err := txApp.Save(record); err != nil {
+        return err
+    }
+
+    // run a custom raw query (doesn't fire event hooks)
+    rawQuery := "DELETE FROM articles WHERE status = 'pending'"
+    if _, err := txApp.DB().NewQuery(rawQuery).Execute(); err != nil {
+        return err
+    }
+
+    return nil
+})
+
+
 // IGNORE
 commit before changes:
 ef470cc

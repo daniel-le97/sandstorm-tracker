@@ -86,27 +86,23 @@ func (h *GameEventHandlers) getServerExternalID(ctx context.Context, serverRecor
 func (h *GameEventHandlers) handlePlayerLogin(e *core.RecordEvent) error {
 	ctx := context.Background()
 
-	// Extract data from event
-	var data map[string]interface{}
+	// Extract typed data from event
+	var data events.PlayerLoginData
 	if err := json.Unmarshal([]byte(e.Record.GetString("data")), &data); err != nil {
 		log.Printf("[HANDLER] Failed to parse player login event data: %v", err)
 		return e.Next()
 	}
 
-	playerName, _ := data["player_name"].(string)
-	steamID, _ := data["steam_id"].(string)
-	platform, _ := data["platform"].(string)
-
-	log.Printf("[HANDLER] Processing player login: %s (Steam: %s, Platform: %s)", playerName, steamID, platform)
+	log.Printf("[HANDLER] Processing player login: %s (Steam: %s, Platform: %s)", data.PlayerName, data.SteamID, data.Platform)
 
 	// Create or update player record
-	_, err := database.GetOrCreatePlayerBySteamID(ctx, h.app, steamID, playerName)
+	_, err := database.GetOrCreatePlayerBySteamID(ctx, e.App, data.SteamID, data.PlayerName)
 	if err != nil {
 		log.Printf("[HANDLER] Failed to create/update player: %v", err)
 		return e.Next()
 	}
 
-	log.Printf("[HANDLER] Player record created/updated for %s", playerName)
+	log.Printf("[HANDLER] Player record created/updated for %s", data.PlayerName)
 	return e.Next()
 }
 
@@ -115,12 +111,9 @@ func (h *GameEventHandlers) handlePlayerLogin(e *core.RecordEvent) error {
 func (h *GameEventHandlers) handlePlayerKill(e *core.RecordEvent) error {
 	ctx := context.Background()
 
-	// Extract data from event
-	var data map[string]interface{}
-	if err := json.Unmarshal([]byte(e.Record.GetString("data")), &data); err != nil {
-		log.Printf("[HANDLER] Failed to parse kill event data: %v", err)
-		return e.Next()
-	}
+	// Use Killevent proxy for all data access
+	killevent := &Killevent{}
+	killevent.SetProxyRecord(e.Record)
 
 	serverRecordID := e.Record.GetString("server")
 	serverID, err := h.getServerExternalID(ctx, serverRecordID)
@@ -128,79 +121,91 @@ func (h *GameEventHandlers) handlePlayerKill(e *core.RecordEvent) error {
 		log.Printf("[HANDLER] Failed to get server external_id: %v", err)
 		return e.Next()
 	}
-	killerSteamID, _ := data["killer_steam_id"].(string)
-	killerName, _ := data["killer_name"].(string)
-	victimSteamID, _ := data["victim_steam_id"].(string)
-	victimName, _ := data["victim_name"].(string)
-	weapon, _ := data["weapon"].(string)
-	// isHeadshot, _ := data["is_headshot"].(bool)
+
+	killers := killevent.Killers()
+	victimSteamID := killevent.VictimSteamID()
+	victimName := killevent.VictimName()
+	weapon := killevent.Weapon()
+
+	var killerSteamID, killerName string
+	if len(killers) > 0 {
+		killerSteamID = killers[0].SteamID
+		killerName = killers[0].Name
+	}
 
 	log.Printf("[HANDLER] Processing kill event: killer=%s victim=%s weapon=%s server=%s",
 		killerName, victimName, weapon, serverID)
 
 	// Get active match for this server
-	activeMatch, err := database.GetActiveMatch(ctx, h.app, serverID)
+	activeMatch, err := database.GetActiveMatch(ctx, e.App, serverID)
 	if err != nil || activeMatch == nil {
 		log.Printf("[HANDLER] No active match found for server %s", serverID)
 		return e.Next()
 	}
 
-	// Update killer stats (if not empty - could be AI kill)
-	if killerSteamID != "" && killerSteamID != "INVALID" {
-		// Get or create killer player by Steam ID
-		killerPlayer, err := database.GetOrCreatePlayerBySteamID(ctx, h.app, killerSteamID, killerName)
-		if err != nil {
-			log.Printf("[HANDLER] Failed to get/create killer player %s: %v", killerName, err)
-			return e.Next()
+	// Use transaction to ensure killer and victim stats are updated atomically
+	if err := e.App.RunInTransaction(func(txApp core.App) error {
+		// Update killer stats (if not empty - could be AI kill)
+		if killerSteamID != "" && killerSteamID != "INVALID" {
+			// Get or create killer player by Steam ID
+			killerPlayer, err := database.GetOrCreatePlayerBySteamID(ctx, txApp, killerSteamID, killerName)
+			if err != nil {
+				log.Printf("[HANDLER] Failed to get/create killer player %s: %v", killerName, err)
+				return err
+			}
+
+			// Upsert player into match (in case join event was missed)
+			if err := database.UpsertMatchPlayerStats(ctx, txApp, activeMatch.ID, killerPlayer.ID, nil, nil); err != nil {
+				log.Printf("[HANDLER] Failed to upsert killer into match: %v", err)
+				return err
+			}
+
+			// Increment kills
+			if err := database.IncrementMatchPlayerStat(ctx, txApp, activeMatch.ID, killerPlayer.ID, "kills"); err != nil {
+				log.Printf("[HANDLER] Failed to increment kills for killer: %v", err)
+				return err
+			}
+
+			// Update weapon stats
+			killCount := int64(1)
+			assistCount := int64(0)
+			if err := database.UpsertMatchWeaponStats(ctx, txApp, activeMatch.ID, killerPlayer.ID, weapon, &killCount, &assistCount); err != nil {
+				log.Printf("[HANDLER] Failed to update weapon stats: %v", err)
+				return err
+			}
 		}
 
-		// Upsert player into match (in case join event was missed)
-		err = database.UpsertMatchPlayerStats(ctx, h.app, activeMatch.ID, killerPlayer.ID, nil, nil)
-		if err != nil {
-			log.Printf("[HANDLER] Failed to upsert killer into match: %v", err)
+		// Update victim stats (if not empty - could be bot death)
+		if killevent.VictimIsPlayer() {
+			// Get or create victim player by Steam ID
+			victimPlayer, err := database.GetOrCreatePlayerBySteamID(ctx, txApp, victimSteamID, victimName)
+			if err != nil {
+				log.Printf("[HANDLER] Failed to get/create victim player %s: %v", victimName, err)
+				return err
+			}
+
+			// Upsert player into match (in case join event was missed)
+			if err := database.UpsertMatchPlayerStats(ctx, txApp, activeMatch.ID, victimPlayer.ID, nil, nil); err != nil {
+				log.Printf("[HANDLER] Failed to upsert victim into match: %v", err)
+				return err
+			}
+
+			// Increment deaths
+			if err := database.IncrementMatchPlayerStat(ctx, txApp, activeMatch.ID, victimPlayer.ID, "deaths"); err != nil {
+				log.Printf("[HANDLER] Failed to increment deaths for victim: %v", err)
+				return err
+			}
 		}
 
-		// Increment kills
-		err = database.IncrementMatchPlayerStat(ctx, h.app, activeMatch.ID, killerPlayer.ID, "kills")
-		if err != nil {
-			log.Printf("[HANDLER] Failed to increment kills for killer: %v", err)
-		}
-
-		// Update weapon stats
-		killCount := int64(1)
-		assistCount := int64(0)
-		err = database.UpsertMatchWeaponStats(ctx, h.app, activeMatch.ID, killerPlayer.ID, weapon, &killCount, &assistCount)
-		if err != nil {
-			log.Printf("[HANDLER] Failed to update weapon stats: %v", err)
-		}
+		return nil
+	}); err != nil {
+		log.Printf("[HANDLER] Transaction failed for kill event: %v", err)
+		return e.Next()
 	}
 
-	// Update victim stats (if not empty - could be bot death)
-	if victimSteamID != "" && victimSteamID != "INVALID" {
-		// Get or create victim player by Steam ID
-		victimPlayer, err := database.GetOrCreatePlayerBySteamID(ctx, h.app, victimSteamID, victimName)
-		if err != nil {
-			log.Printf("[HANDLER] Failed to get/create victim player %s: %v", victimName, err)
-			return e.Next()
-		}
-
-		// Upsert player into match (in case join event was missed)
-		err = database.UpsertMatchPlayerStats(ctx, h.app, activeMatch.ID, victimPlayer.ID, nil, nil)
-		if err != nil {
-			log.Printf("[HANDLER] Failed to upsert victim into match: %v", err)
-		}
-
-		// Increment deaths
-		err = database.IncrementMatchPlayerStat(ctx, h.app, activeMatch.ID, victimPlayer.ID, "deaths")
-		if err != nil {
-			log.Printf("[HANDLER] Failed to increment deaths for victim: %v", err)
-		}
-	}
-
-	// Trigger score update (debounced) - skip during catchup
+	// Trigger score update (debounced) - skip during catchup (outside transaction)
 	if h.scoreDebouncer != nil {
-		isCatchup, _ := data["is_catchup"].(bool)
-		if !isCatchup {
+		if !killevent.IsCatchup() {
 			h.scoreDebouncer.TriggerScoreUpdate(serverID)
 		}
 	}
@@ -219,20 +224,18 @@ func (h *GameEventHandlers) handlePlayerJoin(e *core.RecordEvent) error {
 		return e.Next()
 	}
 
-	// Extract data from event
-	var data map[string]interface{}
+	// Extract typed data from event
+	var data events.PlayerJoinData
 	if err := json.Unmarshal([]byte(e.Record.GetString("data")), &data); err != nil {
 		log.Printf("[HANDLER] Failed to parse player join event data: %v", err)
 		return e.Next()
 	}
 
-	playerName, _ := data["player_name"].(string)
-
 	// Get or create player by name (may not have Steam ID yet)
-	player, err := database.GetPlayerByName(ctx, h.app, playerName)
+	player, err := database.GetPlayerByName(ctx, e.App, data.PlayerName)
 	if err != nil {
 		// Create player with name only if doesn't exist
-		player, err = database.CreatePlayer(ctx, h.app, "", playerName)
+		player, err = database.CreatePlayer(ctx, e.App, "", data.PlayerName)
 		if err != nil {
 			log.Printf("[HANDLER] Failed to create player: %v", err)
 			return e.Next()
@@ -244,7 +247,7 @@ func (h *GameEventHandlers) handlePlayerJoin(e *core.RecordEvent) error {
 	log.Printf("[HANDLER] Processing player join: player=%s server=%s", playerID, serverID)
 
 	// Get active match
-	activeMatch, err := database.GetActiveMatch(ctx, h.app, serverID)
+	activeMatch, err := database.GetActiveMatch(ctx, e.App, serverID)
 	if err != nil || activeMatch == nil {
 		log.Printf("[HANDLER] No active match found for player join on server %s", serverID)
 		return e.Next()
@@ -252,7 +255,7 @@ func (h *GameEventHandlers) handlePlayerJoin(e *core.RecordEvent) error {
 
 	// Add player to match (upsert creates row if needed)
 	timestamp := e.Record.GetDateTime("created").Time()
-	err = database.UpsertMatchPlayerStats(ctx, h.app, activeMatch.ID, playerID, nil, &timestamp)
+	err = database.UpsertMatchPlayerStats(ctx, e.App, activeMatch.ID, playerID, nil, &timestamp)
 	if err != nil {
 		log.Printf("[HANDLER] Failed to add player to match: %v", err)
 		return e.Next()
@@ -272,23 +275,22 @@ func (h *GameEventHandlers) handlePlayerLeave(e *core.RecordEvent) error {
 		return e.Next()
 	}
 
-	// Extract data from event
-	var data map[string]interface{}
+	// Extract typed data from event
+	var data events.PlayerLeaveData
 	if err := json.Unmarshal([]byte(e.Record.GetString("data")), &data); err != nil {
 		log.Printf("[HANDLER] Failed to parse player leave event data: %v", err)
 		return e.Next()
 	}
 
-	steamID, _ := data["steam_id"].(string)
-	if steamID == "" || steamID == "INVALID" {
+	if data.SteamID == "" || data.SteamID == "INVALID" {
 		log.Printf("[HANDLER] Player leave event has invalid Steam ID")
 		return e.Next()
 	}
 
 	// Get player by Steam ID
-	player, err := database.GetPlayerByExternalID(ctx, h.app, steamID)
+	player, err := database.GetPlayerByExternalID(ctx, e.App, data.SteamID)
 	if err != nil || player == nil {
-		log.Printf("[HANDLER] Failed to find player with Steam ID %s: %v", steamID, err)
+		log.Printf("[HANDLER] Failed to find player with Steam ID %s: %v", data.SteamID, err)
 		return e.Next()
 	}
 
@@ -296,7 +298,7 @@ func (h *GameEventHandlers) handlePlayerLeave(e *core.RecordEvent) error {
 	log.Printf("[HANDLER] Processing player leave: player=%s server=%s", playerID, serverID)
 
 	// Get active match
-	activeMatch, err := database.GetActiveMatch(ctx, h.app, serverID)
+	activeMatch, err := database.GetActiveMatch(ctx, e.App, serverID)
 	if err != nil || activeMatch == nil {
 		log.Printf("[HANDLER] No active match found for player leave on server %s", serverID)
 		return e.Next()
@@ -306,7 +308,7 @@ func (h *GameEventHandlers) handlePlayerLeave(e *core.RecordEvent) error {
 	timestamp := e.Record.GetDateTime("created").Time()
 
 	// Mark player as disconnected from the match
-	err = database.DisconnectPlayerFromMatch(ctx, h.app, activeMatch.ID, playerID, &timestamp)
+	err = database.DisconnectPlayerFromMatch(ctx, e.App, activeMatch.ID, playerID, &timestamp)
 	if err != nil {
 		log.Printf("[HANDLER] Failed to disconnect player %s from match %s: %v", playerID, activeMatch.ID, err)
 	} else {
@@ -326,33 +328,30 @@ func (h *GameEventHandlers) handleRoundEnd(e *core.RecordEvent) error {
 		return e.Next()
 	}
 
-	// Extract data from event
-	var data map[string]interface{}
+	// Extract typed data from event
+	var data events.RoundEndData
 	if err := json.Unmarshal([]byte(e.Record.GetString("data")), &data); err != nil {
 		log.Printf("[HANDLER] Failed to parse round end event data: %v", err)
 		return e.Next()
 	}
 
-	winningTeam, _ := data["winning_team"].(float64)
-
-	log.Printf("[HANDLER] Processing round end: winningTeam=%d server=%s", int(winningTeam), serverID)
+	log.Printf("[HANDLER] Processing round end: winningTeam=%d server=%s", data.WinningTeam, serverID)
 
 	// Get active match to increment round counter
-	activeMatch, err := database.GetActiveMatch(ctx, h.app, serverID)
+	activeMatch, err := database.GetActiveMatch(ctx, e.App, serverID)
 	if err != nil || activeMatch == nil {
 		log.Printf("[HANDLER] No active match found for round end event on server %s", serverID)
 		return e.Next()
 	}
 
 	// Increment the round counter
-	if err := database.IncrementMatchRound(ctx, h.app, activeMatch.ID); err != nil {
+	if err := database.IncrementMatchRound(ctx, e.App, activeMatch.ID); err != nil {
 		log.Printf("[HANDLER] Failed to increment round for match %s: %v", activeMatch.ID, err)
 	}
 
 	// Trigger immediate score update after round end - skip during catchup
 	if h.scoreDebouncer != nil {
-		isCatchup, _ := data["is_catchup"].(bool)
-		if !isCatchup {
+		if !data.IsCatchup {
 			h.scoreDebouncer.ExecuteImmediately(serverID)
 		}
 	}
@@ -372,17 +371,14 @@ func (h *GameEventHandlers) handleMatchStart(e *core.RecordEvent) error {
 		return e.Next()
 	}
 
-	// Extract data from event
-	var data map[string]interface{}
+	// Extract typed data from event
+	var data events.MatchStartData
 	if err := json.Unmarshal([]byte(e.Record.GetString("data")), &data); err != nil {
 		log.Printf("[HANDLER] Failed to parse match start event data: %v", err)
 		return e.Next()
 	}
 
-	mapName, _ := data["map"].(string)
-	scenario, _ := data["scenario"].(string)
-
-	log.Printf("[HANDLER] Match started on server %s: %s (%s)", serverID, mapName, scenario)
+	log.Printf("[HANDLER] Match started on server %s: %s (%s)", serverID, data.Map, data.Scenario)
 	return e.Next()
 }
 
@@ -396,8 +392,8 @@ func (h *GameEventHandlers) handleMatchEnd(e *core.RecordEvent) error {
 		return e.Next()
 	}
 
-	// Extract data from event
-	var data map[string]interface{}
+	// Extract typed data from event
+	var data events.MatchEndData
 	if err := json.Unmarshal([]byte(e.Record.GetString("data")), &data); err != nil {
 		log.Printf("[HANDLER] Failed to parse match end event data: %v", err)
 		return e.Next()
@@ -405,12 +401,9 @@ func (h *GameEventHandlers) handleMatchEnd(e *core.RecordEvent) error {
 
 	log.Printf("[HANDLER] Match end event processed for server %s", serverID)
 
-	// Trigger immediate score update when match ends - skip during catchup
+	// Trigger immediate score update when match ends
 	if h.scoreDebouncer != nil {
-		isCatchup, _ := data["is_catchup"].(bool)
-		if !isCatchup {
-			h.scoreDebouncer.ExecuteImmediately(serverID)
-		}
+		h.scoreDebouncer.ExecuteImmediately(serverID)
 	}
 
 	return e.Next()
@@ -426,51 +419,70 @@ func (h *GameEventHandlers) handleObjectiveCaptured(e *core.RecordEvent) error {
 		return e.Next()
 	}
 
-	// Extract data from event
-	var data map[string]interface{}
+	// Extract typed data from event
+	var data events.ObjectiveCapturedData
 	if err := json.Unmarshal([]byte(e.Record.GetString("data")), &data); err != nil {
 		log.Printf("[HANDLER] Failed to parse objective captured event data: %v", err)
 		return e.Next()
 	}
 
-	steamID, _ := data["steam_id"].(string)
-	playerName, _ := data["player_name"].(string)
-	capturingTeam := int64(data["capturing_team"].(float64))
-
-	// Get or create player
-	player, err := database.GetOrCreatePlayerBySteamID(ctx, h.app, steamID, playerName)
-	if err != nil {
-		log.Printf("[HANDLER] Failed to get/create player %s: %v", playerName, err)
+	if len(data.Players) == 0 {
+		log.Printf("[HANDLER] No players in objective captured event")
 		return e.Next()
 	}
 
-	playerID := player.ID
-	log.Printf("[HANDLER] Processing objective captured: player=%s team=%d server=%s",
-		playerName, capturingTeam, serverID)
+	log.Printf("[HANDLER] Processing objective captured: %d players, objective=%s, team=%d, server=%s",
+		len(data.Players), data.Objective, data.CapturingTeam, serverID)
 
 	// Get active match
-	activeMatch, err := database.GetActiveMatch(ctx, h.app, serverID)
+	activeMatch, err := database.GetActiveMatch(ctx, e.App, serverID)
 	if err != nil || activeMatch == nil {
 		log.Printf("[HANDLER] No active match found for objective captured on server %s", serverID)
 		return e.Next()
 	}
 
-	// Ensure player is in match and increment objectives_captured
 	timestamp := e.Record.GetDateTime("created").Time()
-	if err := database.UpsertMatchPlayerStats(ctx, h.app, activeMatch.ID, playerID, &capturingTeam, &timestamp); err != nil {
-		log.Printf("[HANDLER] Failed to upsert player into match: %v", err)
+	team := int64(data.CapturingTeam)
+
+	// Use transaction to ensure all player stats are updated atomically
+	if err := e.App.RunInTransaction(func(txApp core.App) error {
+		// Process all players involved in objective
+		for _, p := range data.Players {
+			if p.SteamID == "" || p.SteamID == "INVALID" {
+				continue
+			}
+
+			player, err := database.GetOrCreatePlayerBySteamID(ctx, txApp, p.SteamID, p.PlayerName)
+			if err != nil {
+				log.Printf("[HANDLER] Failed to get/create player %s: %v", p.PlayerName, err)
+				return err
+			}
+
+			// Ensure player is in match and increment objectives_captured
+			if err := database.UpsertMatchPlayerStats(ctx, txApp, activeMatch.ID, player.ID, &team, &timestamp); err != nil {
+				log.Printf("[HANDLER] Failed to upsert player into match: %v", err)
+				return err
+			}
+
+			if err := database.IncrementMatchPlayerStat(ctx, txApp, activeMatch.ID, player.ID, "objectives_captured"); err != nil {
+				log.Printf("[HANDLER] Failed to increment objectives_captured for player %s: %v", p.PlayerName, err)
+				return err
+			}
+		}
+
+		// Increment round_objective counter (once per objective event, not per player)
+		if err := database.IncrementMatchRoundObjective(ctx, txApp, activeMatch.ID); err != nil {
+			log.Printf("[HANDLER] Failed to increment round_objective: %v", err)
+			return err
+		}
+
+		return nil
+	}); err != nil {
+		log.Printf("[HANDLER] Transaction failed for objective captured: %v", err)
+		return e.Next()
 	}
 
-	if err := database.IncrementMatchPlayerStat(ctx, h.app, activeMatch.ID, playerID, "objectives_captured"); err != nil {
-		log.Printf("[HANDLER] Failed to increment objectives_captured: %v", err)
-	}
-
-	// Increment round_objective counter
-	if err := database.IncrementMatchRoundObjective(ctx, h.app, activeMatch.ID); err != nil {
-		log.Printf("[HANDLER] Failed to increment round_objective: %v", err)
-	}
-
-	// Trigger fixed 10s delay score update for objectives
+	// Trigger fixed 10s delay score update for objectives (outside transaction)
 	if h.scoreDebouncer != nil {
 		h.scoreDebouncer.TriggerScoreUpdateFixed(serverID, 10*time.Second)
 	}
@@ -488,51 +500,64 @@ func (h *GameEventHandlers) handleObjectiveDestroyed(e *core.RecordEvent) error 
 		return e.Next()
 	}
 
-	// Extract data from event
-	var data map[string]interface{}
+	// Extract typed data from event
+	var data events.ObjectiveDestroyedData
 	if err := json.Unmarshal([]byte(e.Record.GetString("data")), &data); err != nil {
 		log.Printf("[HANDLER] Failed to parse objective destroyed event data: %v", err)
 		return e.Next()
 	}
 
-	steamID, _ := data["steam_id"].(string)
-	playerName, _ := data["player_name"].(string)
-	destroyingTeam := int64(data["destroying_team"].(float64))
-
-	// Get or create player
-	player, err := database.GetOrCreatePlayerBySteamID(ctx, h.app, steamID, playerName)
-	if err != nil {
-		log.Printf("[HANDLER] Failed to get/create player %s: %v", playerName, err)
+	if len(data.Players) == 0 {
+		log.Printf("[HANDLER] No players in objective destroyed event")
 		return e.Next()
 	}
 
-	playerID := player.ID
-	log.Printf("[HANDLER] Processing objective destroyed: player=%s team=%d server=%s",
-		playerName, destroyingTeam, serverID)
+	log.Printf("[HANDLER] Processing objective destroyed: %d players, objective=%s, team=%d, server=%s",
+		len(data.Players), data.Objective, data.DestroyingTeam, serverID)
 
 	// Get active match
-	activeMatch, err := database.GetActiveMatch(ctx, h.app, serverID)
+	activeMatch, err := database.GetActiveMatch(ctx, e.App, serverID)
 	if err != nil || activeMatch == nil {
 		log.Printf("[HANDLER] No active match found for objective destroyed on server %s", serverID)
 		return e.Next()
 	}
 
-	// Ensure player is in match and increment objectives_destroyed
 	timestamp := e.Record.GetDateTime("created").Time()
-	if err := database.UpsertMatchPlayerStats(ctx, h.app, activeMatch.ID, playerID, &destroyingTeam, &timestamp); err != nil {
-		log.Printf("[HANDLER] Failed to upsert player into match: %v", err)
+	team := int64(data.DestroyingTeam)
+
+	// Use transaction to ensure all player stats are updated atomically
+	if err := e.App.RunInTransaction(func(txApp core.App) error {
+		// Process all players involved in objective
+		for _, p := range data.Players {
+			if p.SteamID == "" || p.SteamID == "INVALID" {
+				continue
+			}
+
+			player, err := database.GetOrCreatePlayerBySteamID(ctx, txApp, p.SteamID, p.PlayerName)
+			if err != nil {
+				log.Printf("[HANDLER] Failed to get/create player %s: %v", p.PlayerName, err)
+				return err
+			}
+
+			// Ensure player is in match and increment objectives_destroyed
+			if err := database.UpsertMatchPlayerStats(ctx, txApp, activeMatch.ID, player.ID, &team, &timestamp); err != nil {
+				log.Printf("[HANDLER] Failed to upsert player into match: %v", err)
+				return err
+			}
+
+			if err := database.IncrementMatchPlayerStat(ctx, txApp, activeMatch.ID, player.ID, "objectives_destroyed"); err != nil {
+				log.Printf("[HANDLER] Failed to increment objectives_destroyed for player %s: %v", p.PlayerName, err)
+				return err
+			}
+		}
+
+		return nil
+	}); err != nil {
+		log.Printf("[HANDLER] Transaction failed for objective destroyed: %v", err)
+		return e.Next()
 	}
 
-	if err := database.IncrementMatchPlayerStat(ctx, h.app, activeMatch.ID, playerID, "objectives_destroyed"); err != nil {
-		log.Printf("[HANDLER] Failed to increment objectives_destroyed: %v", err)
-	}
-
-	// Increment round_objective counter
-	if err := database.IncrementMatchRoundObjective(ctx, h.app, activeMatch.ID); err != nil {
-		log.Printf("[HANDLER] Failed to increment round_objective: %v", err)
-	}
-
-	// Trigger fixed 10s delay score update for objectives
+	// Trigger fixed 10s delay score update for objectives (outside transaction)
 	if h.scoreDebouncer != nil {
 		h.scoreDebouncer.TriggerScoreUpdateFixed(serverID, 10*time.Second)
 	}

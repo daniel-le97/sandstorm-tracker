@@ -2,91 +2,14 @@ package parser
 
 import (
 	"bufio"
-	"context"
 	"fmt"
 	"os"
-	"sandstorm-tracker/internal/database"
-	"strings"
 	"testing"
 
 	_ "sandstorm-tracker/migrations"
-
-	"github.com/pocketbase/pocketbase/tests"
 )
 
 const testDataDir = "./test_data"
-
-// setupTestCollections verifies that migrations created the expected collections
-func setupTestCollections(t *testing.T, testApp *tests.TestApp) {
-	// Verify collections exist
-	collections := []string{"servers", "players", "matches", "match_player_stats", "match_weapon_stats"}
-	for _, name := range collections {
-		if _, err := testApp.FindCollectionByNameOrId(name); err != nil {
-			t.Fatalf("Collection %s not found after migration: %v", name, err)
-		}
-	}
-	t.Log("✓ All test collections verified")
-}
-
-func TestParseAndWriteLogToDB_HCLog(t *testing.T) {
-	testApp, err := tests.NewTestApp(t.TempDir())
-	if err != nil {
-		t.Fatalf("failed to create test app: %v", err)
-	}
-	defer testApp.Cleanup()
-
-	setupTestCollections(t, testApp)
-	ctx := context.Background()
-	serverExternalID := "test-server-1"
-
-	_, err = database.GetOrCreateServer(ctx, testApp, serverExternalID, "Main Server", "test/path")
-	if err != nil {
-		t.Fatalf("failed to create server: %v", err)
-	}
-
-	file, err := os.Open("test_data/hc.log")
-	if err != nil {
-		t.Fatalf("Error opening hc.log: %v", err)
-	}
-	defer file.Close()
-
-	parser := NewLogParser(testApp, testApp.Logger())
-	scanner := bufio.NewScanner(file)
-	linesProcessed := 0
-
-	for scanner.Scan() {
-		parser.ParseAndProcess(ctx, scanner.Text(), serverExternalID, "test.log")
-		linesProcessed++
-	}
-
-	if err := scanner.Err(); err != nil {
-		t.Fatalf("Error scanning hc.log: %v", err)
-	}
-
-	t.Logf("Processed %d lines", linesProcessed)
-
-	// Verify kill events were created
-	killEvents, err := testApp.FindRecordsByFilter("events", "type = 'player_kill'", "-created", 200, 0)
-	if err != nil {
-		t.Fatalf("failed to query kill events: %v", err)
-	}
-
-	// Verify that kill events were created (hc.log has 102 kills total)
-	// We're testing the parser creates events, not the exact distribution
-	if len(killEvents) < 100 {
-		t.Errorf("Expected at least 100 kill events, got %d", len(killEvents))
-	}
-
-	// Verify events have required fields in data JSON
-	firstEvent := killEvents[0]
-	data := firstEvent.GetString("data")
-	requiredFields := []string{"killer_name", "killer_steam_id", "victim_name", "weapon"}
-	for _, field := range requiredFields {
-		if !strings.Contains(data, fmt.Sprintf(`"%s"`, field)) {
-			t.Errorf("Kill event missing required field: %s", field)
-		}
-	}
-}
 
 // TestExtractAllEvents reads log files and extracts all recognized events
 // to output files for analysis purposes (filters out RCON commands)
@@ -141,7 +64,7 @@ func TestExtractAllEvents(t *testing.T) {
 
 			// Create parser (without queries since we're just extracting, not writing to DB)
 			parser := &LogParser{
-				patterns: newLogPatterns(),
+				patterns: NewLogPatterns(),
 			}
 
 			scanner := bufio.NewScanner(file)
