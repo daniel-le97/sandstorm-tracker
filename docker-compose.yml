@@ -20,7 +20,7 @@ services:
       - ./logs:/app/logs
       
       # Config file - mount from host
-      - ./sandstorm-tracker.yml:/app/sandstorm-tracker.yml:ro
+      - ./sandstorm-tracker.docker.yml:/app/sandstorm-tracker.yml:ro
       
       # Optional: Mount server log paths for log watching
       # Adjust paths to match your server setup

@@ -36,15 +36,19 @@ func GetPlayerTotalKD(ctx context.Context, pbApp core.App, playerID string) (kil
 	err = pbApp.DB().
 		NewQuery(`
 			SELECT 
-				COALESCE(SUM(kills), 0) as total_kills,
-				COALESCE(SUM(deaths), 0) as total_deaths
-			FROM match_player_stats
-			WHERE player = {:player}
+				COALESCE(total_kills, 0) as total_kills,
+				COALESCE(total_deaths, 0) as total_deaths
+			FROM player_total_stats
+			WHERE id = {:player}
 		`).
 		Bind(map[string]any{"player": playerID}).
 		One(&row)
 
 	if err != nil {
+		// If player not found in view, return 0 kills and 0 deaths
+		if err.Error() == "sql: no rows in result set" {
+			return 0, 0, nil
+		}
 		return 0, 0, err
 	}
 
@@ -63,10 +67,10 @@ func GetPlayerStats(ctx context.Context, pbApp core.App, playerID string) (*Play
 	err := pbApp.DB().
 		NewQuery(`
 			SELECT 
-				COALESCE(SUM(score), 0) as total_score,
-				COALESCE(SUM(total_play_time), 0) as total_duration_seconds
-			FROM match_player_stats
-			WHERE player = {:player}
+				COALESCE(total_score, 0) as total_score,
+				COALESCE(total_duration_seconds, 0) as total_duration_seconds
+			FROM player_total_stats
+			WHERE id = {:player}
 		`).
 		Bind(map[string]any{"player": playerID}).
 		One(&row)
@@ -83,79 +87,68 @@ func GetPlayerStats(ctx context.Context, pbApp core.App, playerID string) (*Play
 
 // GetPlayerRank returns the player's rank based on score/min and total number of players
 func GetPlayerRank(ctx context.Context, pbApp core.App, playerID string) (rank int, totalPlayers int, err error) {
-	type rankRow struct {
-		Rank         int `db:"rank"`
-		TotalPlayers int `db:"total_players"`
+	type playerRow struct {
+		ScorePerMin float64 `db:"scorePerMin"`
 	}
 
-	var row rankRow
+	var rows []playerRow
 
 	err = pbApp.DB().
 		NewQuery(`
-			WITH player_scores AS (
-				SELECT 
-					player,
-					CASE 
-						WHEN total_duration_seconds > 0 
-						THEN CAST(total_score AS REAL) / (CAST(total_duration_seconds AS REAL) / 60.0)
-						ELSE 0
-					END as score_per_min
-				FROM (
-					SELECT 
-						player,
-						SUM(score) as total_score,
-						SUM(total_play_time) as total_duration_seconds
-					FROM match_player_stats
-					GROUP BY player
-					HAVING total_duration_seconds > 0
-				)
-			),
-			target_player AS (
-				SELECT score_per_min FROM player_scores WHERE player = {:player}
-			)
-			SELECT 
-				(SELECT COUNT(*) + 1 FROM player_scores WHERE score_per_min > (SELECT score_per_min FROM target_player)) as rank,
-				(SELECT COUNT(*) FROM player_scores) as total_players
+			SELECT scorePerMin
+			FROM top_players_by_score_per_min
 		`).
-		Bind(map[string]any{"player": playerID}).
-		One(&row)
+		All(&rows)
 
 	if err != nil {
 		return 0, 0, err
 	}
 
-	return row.Rank, row.TotalPlayers, nil
+	totalPlayers = len(rows)
+
+	// Query player-specific data
+	type playerDataRow struct {
+		ScorePerMin float64 `db:"scorePerMin"`
+	}
+
+	var playerData playerDataRow
+	errPlayerData := pbApp.DB().
+		NewQuery(`
+			SELECT scorePerMin
+			FROM top_players_by_score_per_min
+			WHERE player = {:player}
+		`).
+		Bind(map[string]any{"player": playerID}).
+		One(&playerData)
+
+	if errPlayerData != nil {
+		return 0, totalPlayers, nil // Return 0 rank if player not found
+	}
+
+	// Count how many players have higher score_per_min
+	rankCount := 1
+	for _, row := range rows {
+		if row.ScorePerMin > playerData.ScorePerMin {
+			rankCount++
+		}
+	}
+
+	return rankCount, totalPlayers, nil
 }
 
 // GetTopPlayersByScorePerMin returns top N players by score per minute
 func GetTopPlayersByScorePerMin(ctx context.Context, pbApp core.App, limit int) ([]TopPlayer, error) {
 	type playerRow struct {
 		Name        string  `db:"name"`
-		ScorePerMin float64 `db:"score_per_min"`
+		ScorePerMin float64 `db:"scorePerMin"`
 	}
 
 	var rows []playerRow
 
 	err := pbApp.DB().
 		NewQuery(`
-			SELECT 
-				p.name,
-				CASE 
-					WHEN total_duration_seconds > 0 
-					THEN CAST(total_score AS REAL) / (CAST(total_duration_seconds AS REAL) / 60.0)
-					ELSE 0
-				END as score_per_min
-			FROM players p
-			INNER JOIN (
-				SELECT 
-					player,
-					SUM(score) as total_score,
-					SUM(total_play_time) as total_duration_seconds
-				FROM match_player_stats
-				GROUP BY player
-				HAVING total_duration_seconds >= 60
-			) stats ON p.id = stats.player
-			ORDER BY score_per_min DESC
+			SELECT name, scorePerMin
+			FROM top_players_by_score_per_min
 			LIMIT {:limit}
 		`).
 		Bind(map[string]any{"limit": limit}).
@@ -187,10 +180,9 @@ func GetTopWeapons(ctx context.Context, pbApp core.App, playerID string, limit i
 
 	err := pbApp.DB().
 		NewQuery(`
-			SELECT weapon_name, SUM(kills) as total_kills
-			FROM match_weapon_stats
+			SELECT weapon_name, COALESCE(total_kills, 0) as total_kills
+			FROM player_weapon_stats
 			WHERE player = {:player}
-			GROUP BY weapon_name
 			ORDER BY total_kills DESC
 			LIMIT {:limit}
 		`).
@@ -217,48 +209,77 @@ func GetTopWeapons(ctx context.Context, pbApp core.App, playerID string, limit i
 
 // GetPlayerStatsAndRank returns aggregated stats for a player and their rank (single query)
 func GetPlayerStatsAndRank(ctx context.Context, pbApp core.App, playerID string) (*PlayerStats, int, int, error) {
-	type outRow struct {
+	type playerData struct {
 		TotalScore           int `db:"total_score"`
 		TotalDurationSeconds int `db:"total_duration_seconds"`
-		Rank                 int `db:"rank"`
-		TotalPlayers         int `db:"total_players"`
 	}
 
-	var row outRow
-
+	// Get this player's stats
+	var playerRow playerData
 	err := pbApp.DB().
 		NewQuery(`
-		WITH agg AS (
-			SELECT player, SUM(score) as total_score, SUM(total_play_time) as total_duration_seconds
-			FROM match_player_stats
-			GROUP BY player
-		),
-		player_row AS (
-			SELECT COALESCE(total_score, 0) as total_score, COALESCE(total_duration_seconds, 0) as total_duration_seconds
-			FROM agg WHERE player = {:player}
-		),
-		scores AS (
-			SELECT player,
-			CASE WHEN total_duration_seconds > 0 THEN CAST(total_score AS REAL) / (CAST(total_duration_seconds AS REAL) / 60.0) ELSE 0 END as score_per_min
-			FROM agg
-		)
-		SELECT 
-			COALESCE((SELECT total_score FROM player_row), 0) as total_score,
-			COALESCE((SELECT total_duration_seconds FROM player_row), 0) as total_duration_seconds,
-			(COALESCE((SELECT COUNT(*) + 1 FROM scores WHERE score_per_min > (SELECT score_per_min FROM scores WHERE player = {:player})), 1)) as rank,
-			(COALESCE((SELECT COUNT(*) FROM scores), 0)) as total_players
+		SELECT total_score, total_duration_seconds
+		FROM player_total_stats
+		WHERE id = {:player}
 		`).
 		Bind(map[string]any{"player": playerID}).
-		One(&row)
+		One(&playerRow)
+
+	if err != nil {
+		// If player not found (no stats yet), return empty stats
+		if err.Error() == "sql: no rows in result set" {
+			return &PlayerStats{TotalScore: 0, TotalDurationSeconds: 0}, 0, 0, nil
+		}
+		return nil, 0, 0, err
+	}
+
+	// Get player's score_per_min from view (may not exist if < 60s playtime)
+	type scoreRow struct {
+		ScorePerMin float64 `db:"scorePerMin"`
+	}
+	var playerScore scoreRow
+	err = pbApp.DB().
+		NewQuery(`
+		SELECT scorePerMin
+		FROM top_players_by_score_per_min
+		WHERE player = {:player}
+		`).
+		Bind(map[string]any{"player": playerID}).
+		One(&playerScore)
+
+	if err != nil {
+		// Player not in ranking view (likely < 60s playtime), use 0 for scorePerMin
+		if err.Error() != "sql: no rows in result set" {
+			return nil, 0, 0, err
+		}
+		playerScore.ScorePerMin = 0.0
+	}
+
+	// Get all players' scores to calculate rank
+	var allScores []scoreRow
+	err = pbApp.DB().
+		NewQuery(`
+		SELECT scorePerMin
+		FROM top_players_by_score_per_min
+		`).
+		All(&allScores)
 
 	if err != nil {
 		return nil, 0, 0, err
 	}
 
+	// Count rank
+	rankCount := 1
+	for _, s := range allScores {
+		if s.ScorePerMin > playerScore.ScorePerMin {
+			rankCount++
+		}
+	}
+
 	return &PlayerStats{
-		TotalScore:           row.TotalScore,
-		TotalDurationSeconds: row.TotalDurationSeconds,
-	}, row.Rank, row.TotalPlayers, nil
+		TotalScore:           playerRow.TotalScore,
+		TotalDurationSeconds: playerRow.TotalDurationSeconds,
+	}, rankCount, len(allScores), nil
 }
 
 // GetOrCreatePlayerWithStatsAndRank finds or creates a player by SteamID, then returns aggregated stats and rank

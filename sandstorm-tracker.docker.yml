@@ -1,0 +1,14 @@
+logging:
+  level: "info"
+  enableServerLogs: true
+
+# Database settings
+database:
+  path: "/app/pb_data"
+
+# Optional: Configure servers
+servers: []
+  # Example:
+  # - name: "Main Server"
+  #   logPath: "/mnt/game_logs"
+  #   enabled: false

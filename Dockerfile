@@ -1,7 +1,4 @@
-FROM golang:1.23-alpine AS builder
-
-# Install build dependencies
-RUN apk add --no-cache git ca-certificates tzdata
+FROM golang:1.25-alpine AS builder
 
 WORKDIR /build
 
@@ -17,7 +14,7 @@ COPY . .
 # Build the application
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o sandstorm-tracker .
 
-# Final stage
+# Final stage - use minimal base image
 FROM alpine:latest
 
 # Install runtime dependencies
@@ -31,9 +28,6 @@ WORKDIR /app
 
 # Copy binary from builder
 COPY --from=builder /build/sandstorm-tracker .
-
-# Copy default config (optional)
-COPY sandstorm-tracker.example.yml ./sandstorm-tracker.example.yml
 
 # Create volumes directory
 RUN mkdir -p /app/pb_data /app/logs && \
