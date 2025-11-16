@@ -13,8 +13,8 @@ services:
     
     # Volumes for persistent data
     volumes:
-      # PocketBase data directory (database, files)
-      - pb_data:/app/pb_data
+      # PocketBase data directory - use bind mount for better control
+      - ./pb_data:/app/pb_data
       
       # Application logs
       - ./logs:/app/logs

@@ -1,3 +1,15 @@
+# Multi-stage build optimized for chainguard/static base image
+# Stage 1: Build the Go application (golang:1.25-alpine)
+# Stage 2: Prepare directories and permissions (alpine:latest as intermediate)
+# Stage 3: Final runtime using chainguard/static (3-4MB, minimal, secure)
+#
+# - Produces static Go binary with no runtime dependencies
+# - Uses chainguard/static: minimal (39.4MB), no shell, daily security updates
+# - Nonroot user (uid 65532) pre-configured in chainguard/static
+# - Directories created in alpine intermediate stage to ensure proper permissions
+#
+# Image size: ~39.4MB
+
 FROM golang:1.25-alpine AS builder
 
 WORKDIR /build
@@ -11,37 +23,36 @@ RUN go mod download
 # Copy source code
 COPY . .
 
-# Build the application
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o sandstorm-tracker .
+# Build the application with optimizations for minimal size
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -ldflags="-s -w" -o sandstorm-tracker .
 
-# Final stage - use minimal base image
-FROM alpine:latest
-
-# Install runtime dependencies
-RUN apk add --no-cache ca-certificates tzdata
-
-# Create non-root user
-RUN addgroup -g 1000 tracker && \
-    adduser -D -u 1000 -G tracker tracker
+# Intermediate builder stage - Alpine can do RUN commands
+FROM alpine:latest AS app-prep
 
 WORKDIR /app
 
-# Copy binary from builder
+# Copy binary from Go builder
 COPY --from=builder /build/sandstorm-tracker .
 
-# Create volumes directory
+# Create directories with proper permissions for nonroot (65532)
 RUN mkdir -p /app/pb_data /app/logs && \
-    chown -R tracker:tracker /app
+    chmod 755 /app /app/pb_data /app/logs && \
+    # Ensure the binary is executable
+    chmod +x /app/sandstorm-tracker
 
-# Switch to non-root user
-USER tracker
+# Final stage - use Chainguard static image (smallest, most secure)
+FROM cgr.dev/chainguard/static:latest
+
+WORKDIR /app
+
+# Copy everything from app-prep (binary + directories with correct permissions)
+COPY --from=app-prep /app .
+
+# Use built-in nonroot user (uid 65532)
+USER 65532:65532
 
 # Expose PocketBase admin UI and API port
 EXPOSE 8090
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD wget --quiet --tries=1 --spider http://localhost:8090/api/health || exit 1
 
 # Run the application
 CMD ["./sandstorm-tracker", "serve", "--http", "0.0.0.0:8090"]

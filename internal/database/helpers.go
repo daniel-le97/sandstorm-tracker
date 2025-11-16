@@ -346,6 +346,126 @@ func IncrementMatchPlayerStat(ctx context.Context, pbApp core.App, matchID, play
 	return pbApp.Save(record)
 }
 
+// GetWeaponType returns the weapon category type based on weapon name
+// Categories: Firearm, Sniper, Shotgun, SMG, LMG, Pistol, Grenade, Launcher, Vehicle, Melee, Explosive
+func GetWeaponType(weaponName string) string {
+	// Sniper rifles
+	snipers := map[string]bool{
+		"BP_Firearm_M24":   true,
+		"BP_Firearm_Mosin": true,
+		"BP_Firearm_M110":  true,
+		"BP_Firearm_SVD":   true,
+		"BP_Firearm_L96A1": true,
+	}
+	if snipers[weaponName] {
+		return "Sniper"
+	}
+
+	// Shotguns
+	shotguns := map[string]bool{
+		"BP_Firearm_M590A1": true,
+		"BP_Firearm_TOZ":    true,
+	}
+	if shotguns[weaponName] {
+		return "Shotgun"
+	}
+
+	// SMGs (Submachine guns)
+	smgs := map[string]bool{
+		"BP_Firearm_Sterling": true,
+		"BP_Firearm_UMP45":    true,
+		"BP_Firearm_MP5A2":    true,
+		"BP_Firearm_MP7":      true,
+		"BP_Firearm_Uzi":      true,
+	}
+	if smgs[weaponName] {
+		return "SMG"
+	}
+
+	// LMGs (Light Machine Guns)
+	lmgs := map[string]bool{
+		"BP_Firearm_M249":  true,
+		"BP_Firearm_PKM":   true,
+		"BP_Firearm_M240B": true,
+		"BP_Firearm_MG3":   true,
+	}
+	if lmgs[weaponName] {
+		return "LMG"
+	}
+
+	// Pistols
+	pistols := map[string]bool{
+		"BP_Firearm_M9":      true,
+		"BP_Firearm_Makarov": true,
+		"BP_Firearm_M45":     true,
+		"BP_Firearm_Welrod":  true,
+		"BP_Firearm_PF940":   true,
+	}
+	if pistols[weaponName] {
+		return "Pistol"
+	}
+
+	// Grenades and throwables
+	grenades := map[string]bool{
+		"BP_Projectile_Molotov":       true,
+		"BP_Projectile_Grenade_Frag":  true,
+		"BP_Projectile_Grenade_Smoke": true,
+		"BP_Projectile_IED":           true,
+	}
+	if grenades[weaponName] {
+		return "Grenade"
+	}
+
+	// Launchers and heavy weapons
+	launchers := map[string]bool{
+		"BP_Firearm_M203":      true,
+		"BP_Firearm_GP25":      true,
+		"BP_Firearm_RPG7":      true,
+		"BP_Firearm_AT4":       true,
+		"BP_Firearm_M3MAAWS":   true,
+		"BP_Projectile_Rocket": true,
+		"BP_Projectile_40mm":   true,
+	}
+	if launchers[weaponName] {
+		return "Launcher"
+	}
+
+	// Vehicle and support
+	vehicle := map[string]bool{
+		"BP_Projectile_Rocket_155mm":    true,
+		"BP_Projectile_Rocket_120mm":    true,
+		"BP_Projectile_Mortar_HE":       true,
+		"BP_Projectile_Mortar_Smoke":    true,
+		"BP_Projectile_Artillery_HE":    true,
+		"BP_Projectile_Artillery_Smoke": true,
+		"BP_Vehicle_Helicopter_Gunship": true,
+		"BP_Projectile_Hellfire":        true,
+		"BP_Projectile_Airstrike":       true,
+		"BP_Projectile_Strafe":          true,
+	}
+	if vehicle[weaponName] {
+		return "Vehicle"
+	}
+
+	// Melee
+	melee := map[string]bool{
+		"BP_Melee_Knife":   true,
+		"BP_Melee_Kukri":   true,
+		"BP_Melee_Machete": true,
+	}
+	if melee[weaponName] {
+		return "Melee"
+	}
+
+	// Special cases
+	if weaponName == "BP_Character_Player" {
+		return "Explosive"
+	}
+
+	// Default: assume it's a Firearm (covers rifles like M16A4, AK74, etc.)
+	return "Firearm"
+}
+
 // UpsertMatchWeaponStats creates or updates weapon stats for a player in a match
 func UpsertMatchWeaponStats(ctx context.Context, pbApp core.App, matchID, playerID, weaponName string, kills, assists *int64) error {
 	// Try to find existing record
@@ -370,6 +490,7 @@ func UpsertMatchWeaponStats(ctx context.Context, pbApp core.App, matchID, player
 		record.Set("match", matchID)
 		record.Set("player", playerID)
 		record.Set("weapon_name", weaponName)
+		record.Set("type", GetWeaponType(weaponName))
 		record.Set("kills", 0)
 		record.Set("assists", 0)
 

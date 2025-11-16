@@ -73,7 +73,7 @@ func init() {
 					"id": "text1812504113",
 					"max": 0,
 					"min": 0,
-					"name": "raw_weapon_name",
+					"name": "type",
 					"pattern": "",
 					"presentable": false,
 					"primaryKey": false,

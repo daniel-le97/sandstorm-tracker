@@ -4,30 +4,31 @@ version: 2
 
 project_name: sandstorm-tracker
 
-# before:
-#   hooks:
-    # You may remove this if you don't use go module#     
+before:
+  hooks:
+    - go mod tidy
+    - go mod download
 #     # Repository to push the app manifest to.
 #     repository:
 #       owner: daniel-le97
 #       name: scoop-bucket
 #       branch: main
 #       token: "{{ .Env.SCOOP_TAP_GITHUB_TOKEN }}"
-# 
+#
 #     # Git author used to commit to the repository.
 #     commit_author:
 #       name: goreleaserbot
 #       email: bot@goreleaser.com
-# 
+#
 #     # The project name and current git tag are used in the format string.
 #     commit_msg_template: "Scoop update for {{ .ProjectName }} version {{ .Tag }}"
-# 
+#
 #     # Setting this will prevent goreleaser to actually try to commit the updated
 #     # manifest - instead, the manifest file will be stored on the dist folder
 #     # only, leaving the responsibility of publishing it to the user.
 #     skip_upload: false
-    # you may remove this if you don't need go generate
-    # - task sqlc
+# you may remove this if you don't need go generate
+# - task sqlc
 
 builds:
   - env:
@@ -84,7 +85,7 @@ archives:
       # - ./scripts/install.sh    # Include installer script
 
 checksum:
-  name_template: 'checksums.txt'
+  name_template: "checksums.txt"
 
 snapshot:
   version_template: "{{ incpatch .Version }}-next"
@@ -107,10 +108,10 @@ changelog:
     - title: Features
       regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
       order: 0
-    - title: 'Bug fixes'
+    - title: "Bug fixes"
       regexp: '^.*?fix(\([[:word:]]+\))??!?:.+$'
       order: 1
-    - title: 'Performance improvements'
+    - title: "Performance improvements"
       regexp: '^.*?perf(\([[:word:]]+\))??!?:.+$'
       order: 2
     - title: Others
@@ -157,67 +158,65 @@ release:
   # The filename on the release will be the last part of the path (base).
   # If another file with the same name exists, the last one found will be used.
   # extra_files:
-    # - glob: ./README.md
-    # - glob: ./LICENSE
-    # - glob: ./scripts/install.sh
-    # - glob: ./scripts/install.ps1
-    # - glob: ./scripts/install.bat
-    # - glob: ./banned.db
+  # - glob: ./README.md
+  # - glob: ./LICENSE
+  # - glob: ./scripts/install.sh
+  # - glob: ./scripts/install.ps1
+  # - glob: ./scripts/install.bat
+  # - glob: ./banned.db
 
+# Docker configuration for multi-arch container images
+dockers:
+  - id: sandstorm-tracker-amd64
+    image_templates:
+      - "ghcr.io/daniel-le97/sandstorm-tracker:{{ .Version }}-amd64"
+      - "ghcr.io/daniel-le97/sandstorm-tracker:latest-amd64"
+    dockerfile: Dockerfile
+    use: buildx
+    build_flag_templates:
+      - "--pull"
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.title={{.ProjectName}}"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+      - "--label=org.opencontainers.image.source=https://github.com/daniel-le97/sandstorm-trackerv2"
+      - "--platform=linux/amd64"
+    goos: linux
+    goarch: amd64
 
+  - id: sandstorm-tracker-arm64
+    image_templates:
+      - "ghcr.io/daniel-le97/sandstorm-tracker:{{ .Version }}-arm64"
+      - "ghcr.io/daniel-le97/sandstorm-tracker:latest-arm64"
+    dockerfile: Dockerfile
+    use: buildx
+    build_flag_templates:
+      - "--pull"
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.title={{.ProjectName}}"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+      - "--label=org.opencontainers.image.source=https://github.com/daniel-le97/sandstorm-trackerv2"
+      - "--platform=linux/arm64"
+    goos: linux
+    goarch: arm64
 
-# Docker configuration for multi-arch container images (commented out - no Dockerfile)
-# dockers:
-#   - image_templates:
-#       - "ghcr.io/daniel-le97/banned:{{ .Tag }}-amd64"
-#       - "ghcr.io/daniel-le97/banned:latest-amd64"
-#     dockerfile: Dockerfile
-#     use: buildx
-#     build_flag_templates:
-#       - "--pull"
-#       - "--label=org.opencontainers.image.created={{.Date}}"
-#       - "--label=org.opencontainers.image.title={{.ProjectName}}"
-#       - "--label=org.opencontainers.image.revision={{.FullCommit}}"
-#       - "--label=org.opencontainers.image.version={{.Version}}"
-#       - "--label=org.opencontainers.image.source=https://github.com/daniel-le97/banned-cli"
-#       - "--platform=linux/amd64"
-#     extra_files:
-#       - README.md
-#       - LICENSE
-# 
-#   - image_templates:
-#       - "ghcr.io/daniel-le97/banned:{{ .Tag }}-arm64"
-#       - "ghcr.io/daniel-le97/banned:latest-arm64"
-#     dockerfile: Dockerfile
-#     use: buildx
-#     build_flag_templates:
-#       - "--pull"
-#       - "--label=org.opencontainers.image.created={{.Date}}"
-#       - "--label=org.opencontainers.image.title={{.ProjectName}}"
-#       - "--label=org.opencontainers.image.revision={{.FullCommit}}"
-#       - "--label=org.opencontainers.image.version={{.Version}}"
-#       - "--label=org.opencontainers.image.source=https://github.com/daniel-le97/banned-cli"
-#       - "--platform=linux/arm64"
-#     goarch: arm64
-#     extra_files:
-#       - README.md
-#       - LICENSE
-# 
-# docker_manifests:
-#   - name_template: "ghcr.io/daniel-le97/banned:{{ .Tag }}"
-#     image_templates:
-#       - "ghcr.io/daniel-le97/banned:{{ .Tag }}-amd64"
-#       - "ghcr.io/daniel-le97/banned:{{ .Tag }}-arm64"
-#   - name_template: "ghcr.io/daniel-le97/banned:latest"
-#     image_templates:
-#       - "ghcr.io/daniel-le97/banned:latest-amd64"
-#       - "ghcr.io/daniel-le97/banned:latest-arm64"
+docker_manifests:
+  - name_template: "ghcr.io/daniel-le97/sandstorm-tracker:{{ .Version }}"
+    image_templates:
+      - "ghcr.io/daniel-le97/sandstorm-tracker:{{ .Version }}-amd64"
+      - "ghcr.io/daniel-le97/sandstorm-tracker:{{ .Version }}-arm64"
+
+  - name_template: "ghcr.io/daniel-le97/sandstorm-tracker:latest"
+    image_templates:
+      - "ghcr.io/daniel-le97/sandstorm-tracker:latest-amd64"
+      - "ghcr.io/daniel-le97/sandstorm-tracker:latest-arm64"
 
 # snapcrafts:
 #   - name_template: '{{ .ProjectName }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
 #     summary: CLI tool for downloading from https://banned.video
 #     description: |
-#       A comprehensive command-line tool for downloading and managing content 
+#       A comprehensive command-line tool for downloading and managing content
 #       from banned.video with interactive TUI, database management, and torrent support.
 #     grade: stable
 #     confinement: strict
@@ -263,7 +262,6 @@ publishers:
       - packages
     dir: "{{ dir .ArtifactPath }}"
     cmd: curl -F package=@{{ .ArtifactName }} https://{{ .Env.FURY_TOKEN }}@push.fury.io/{{ .Env.FURY_USER }}/
-
 # The lines beneath this are called `modelines`. See `:help modeline`
 # Feel free to remove those if you don't want/use them.
 # yaml-language-server: $schema=https://goreleaser.com/static/schema.json
