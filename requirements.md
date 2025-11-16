@@ -73,6 +73,15 @@ COMPLETED:
 ✅ TestSuicideKillEvent - Suicides only increment deaths
 ✅ All tests PASSING (integration/parser_handler_test.go) -->
 
-// IGNORE
-commit before changes:
-ef470cc
+## game over map loading verification
+
+## weapon types
+adding a weapon type to match_weapon_stats when creating a record
+ - BP_Projectile_F1_C_2147479037 -> Projectile
+ - BP_Firearm_M16A4_C_2147478730 -> Firearm
+
+## clean this repo for unused files
+
+## clean github repos
+
+
