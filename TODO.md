@@ -92,8 +92,12 @@ COMPLETED:
 
 ## game over map loading verification -->
 
+## player info
+- players IP addresses should be logged incase we need to do an IP ban for future use.
+- an an IP field onto the players collection.
 
 ## insurgency server crashing recovery
+would it be better to have a logfile collection that has a server relation and then my events could have a logfile relation and we can remove the server relation as the server could be found from the logfile?
 - our servers collection has a file_creation_time, the fist line of a log file will be similar to "Log file open, 11/10/25 20:58:31"
 - lets create another parser event for when we hit this
 - the handler should update file_creation_time
@@ -105,8 +109,14 @@ adding a weapon type to match_weapon_stats when creating a record
  - BP_Projectile_F1_C_2147479037 -> Projectile
  - BP_Firearm_M16A4_C_2147478730 -> Firearm
 
-## clean this repo for unused files
 
-## clean github repos
+## chat command parser should be refactored to also use our event architechure
+- business logic should be moved to /handlers
 
+## all parser events should also add a logline field to the data that provides the raw log line that was processed
+
+## clean this repo for unused/out of date files
+
+maybe we also need to have an a2s debouncer that everytime our watcher has an fsnotify watcher event will trigger and if there has been no file activity we send an a2s query for 2 seconds for 20 seconds total
+ we coild this to determine if a server is offline.
 
