@@ -12,7 +12,6 @@ import (
 	"strings"
 	"time"
 
-	"sandstorm-tracker/internal/database"
 	"sandstorm-tracker/internal/events"
 
 	"github.com/pocketbase/pocketbase/core"
@@ -147,16 +146,20 @@ func (p *LogParser) tryProcessMapTravel(ctx context.Context, line string, timest
 	// Track this map travel time so we can ignore immediate disconnects/reconnects
 	p.lastMapTravelTimes[serverID] = timestamp
 
-	// Extract player team from scenario
-	playerTeam := extractPlayerTeam(scenario)
-	var playerTeamPtr *string
-	if playerTeam != "" {
-		playerTeamPtr = &playerTeam
-	}
+	log.Printf("Map travel detected: %s (scenario: %s) on server %s", mapName, scenario, serverID)
 
-	// End active match and create new one
-	if err := database.EndActiveMatchAndCreateNew(ctx, p.pbApp, serverID, mapName, scenario, timestamp, playerTeamPtr); err != nil {
-		log.Printf("Failed to transition to new map: %v", err)
+	// Emit map travel event for handler to process match transition
+	if p.eventCreator != nil {
+		err := p.eventCreator.CreateEvent(events.TypeMapTravel, serverID, map[string]interface{}{
+			"map":        mapName,
+			"scenario":   scenario,
+			"timestamp":  timestamp,
+			"is_catchup": isCatchupMode(ctx),
+		})
+		if err != nil {
+			p.logger.Error("Failed to create map travel event",
+				"map", mapName, "scenario", scenario, "error", err.Error())
+		}
 	}
 
 	return true
@@ -277,6 +280,10 @@ func (p *LogParser) ParseAndProcess(ctx context.Context, line string, serverID s
 		return nil
 	}
 
+	if p.tryProcessLogFileOpen(ctx, line, timestamp, serverID) {
+		return nil
+	}
+
 	if p.tryProcessChatCommand(ctx, line, timestamp, serverID, p.chatHandler) {
 		return nil
 	}
@@ -285,6 +292,34 @@ func (p *LogParser) ParseAndProcess(ctx context.Context, line string, serverID s
 	// For now, we're focusing on the core stat-tracking events
 
 	return nil
+}
+
+// tryProcessLogFileOpen handles the log file creation event (first line of log)
+// This occurs when a new log file is created (server restart or log rotation)
+func (p *LogParser) tryProcessLogFileOpen(ctx context.Context, line string, timestamp time.Time, serverID string) bool {
+	matches := p.patterns.LogFileOpen.FindStringSubmatch(line)
+	if len(matches) < 2 {
+		return false
+	}
+
+	log.Printf("Log file created for server %s at %s", serverID, timestamp)
+
+	// Emit log file created event for handler to process
+	if p.eventCreator != nil {
+		err := p.eventCreator.CreateEvent(events.TypeLogFileCreated, serverID, map[string]interface{}{
+			"timestamp": timestamp,
+		})
+		if err != nil {
+			p.logger.Error("Failed to create log file created event",
+				"server", serverID,
+				"timestamp", timestamp,
+				"error", err,
+			)
+			return true
+		}
+	}
+
+	return true
 }
 
 // tryProcessKillEvent parses and processes kill events
@@ -478,16 +513,13 @@ func (p *LogParser) tryProcessRoundStart(ctx context.Context, line string, times
 
 	log.Printf("Round %d started on server %s", roundNum, serverID)
 
-	// Get active match to reset round_objective counter
-	activeMatch, err := database.GetActiveMatch(ctx, p.pbApp, serverID)
-	if err != nil || activeMatch == nil {
-		log.Printf("No active match found for round start event on server %s", serverID)
-		return true
-	}
-
-	// Reset the round_objective counter to 0 at the start of each round
-	if err := database.ResetMatchRoundObjective(ctx, p.pbApp, activeMatch.ID); err != nil {
-		log.Printf("Failed to reset round_objective for match %s: %v", activeMatch.ID, err)
+	// Emit round start event - handler will reset round objectives
+	if p.eventCreator != nil {
+		err := p.eventCreator.CreateRoundStartEvent(serverID, "", roundNum)
+		if err != nil {
+			p.logger.Error("Failed to create round start event",
+				"round", roundNum, "error", err.Error())
+		}
 	}
 
 	return true
@@ -530,14 +562,14 @@ func (p *LogParser) tryProcessGameOver(ctx context.Context, line string, timesta
 
 	log.Printf("Game over detected for server %s", serverID)
 
-	// Get active match to create end event
+	// Emit game over event - handler will finalize match
 	if p.eventCreator != nil {
-		activeMatch, err := database.GetActiveMatch(ctx, p.pbApp, serverID)
-		if err == nil && activeMatch != nil {
-			err = p.eventCreator.CreateMatchEndEvent(serverID, activeMatch.ID)
-			if err != nil {
-				log.Printf("[PARSER] Failed to create match_end event: %v", err)
-			}
+		err := p.eventCreator.CreateEvent(events.TypeGameOver, serverID, map[string]interface{}{
+			"is_catchup": isCatchupMode(ctx),
+		})
+		if err != nil {
+			p.logger.Error("Failed to create game over event",
+				"serverID", serverID, "error", err.Error())
 		}
 	}
 
@@ -563,20 +595,17 @@ func (p *LogParser) tryProcessMapLoad(ctx context.Context, line string, timestam
 	}
 
 	if p.eventCreator != nil {
-		// End active match and create new one
-		if err := database.EndActiveMatchAndCreateNew(ctx, p.pbApp, serverID, mapName, scenario, timestamp, playerTeamPtr); err != nil {
-			p.logger.Error("Failed to end/create match for map load", "error", err.Error())
-			return true
-		}
-
-		// Get the newly created match to pass its ID in the event
-		activeMatch, err := database.GetActiveMatch(ctx, p.pbApp, serverID)
-		if err == nil && activeMatch != nil {
-			err = p.eventCreator.CreateMatchStartEvent(serverID, activeMatch.ID, mapName, scenario, isCatchupMode(ctx))
-			if err != nil {
-				p.logger.Error("Failed to create match start event",
-					"map", mapName, "scenario", scenario, "error", err.Error())
-			}
+		// Emit map load event - handler will create new match and start event
+		err := p.eventCreator.CreateEvent(events.TypeMapLoad, serverID, map[string]interface{}{
+			"map":         mapName,
+			"scenario":    scenario,
+			"timestamp":   timestamp,
+			"player_team": playerTeamPtr,
+			"is_catchup":  isCatchupMode(ctx),
+		})
+		if err != nil {
+			p.logger.Error("Failed to create map load event",
+				"map", mapName, "scenario", scenario, "error", err.Error())
 		}
 	}
 

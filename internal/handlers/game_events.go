@@ -59,6 +59,14 @@ func (h *GameEventHandlers) handleEvent(e *core.RecordEvent) error {
 		return h.handleMatchStart(e)
 	case events.TypeMatchEnd:
 		return h.handleMatchEnd(e)
+	case events.TypeMapLoad:
+		return h.handleMapLoad(e)
+	case events.TypeMapTravel:
+		return h.handleMapTravel(e)
+	case events.TypeGameOver:
+		return h.handleGameOver(e)
+	case events.TypeLogFileCreated:
+		return h.handleLogFileCreated(e)
 	case events.TypeObjectiveCaptured:
 		return h.handleObjectiveCaptured(e)
 	case events.TypeObjectiveDestroyed:
@@ -612,6 +620,254 @@ func (h *GameEventHandlers) handleObjectiveDestroyed(e *core.RecordEvent) error 
 	// Trigger fixed 10s delay score update for objectives (outside transaction)
 	if h.scoreDebouncer != nil {
 		h.scoreDebouncer.TriggerScoreUpdateFixed(serverID, 10*time.Second)
+	}
+
+	return e.Next()
+}
+
+// handleMapLoad processes map load events and creates a new match
+func (h *GameEventHandlers) handleMapLoad(e *core.RecordEvent) error {
+	ctx := context.Background()
+	serverRecordID := e.Record.GetString("server")
+	serverID, err := h.getServerExternalID(ctx, serverRecordID)
+	if err != nil {
+		log.Printf("[HANDLER] Failed to get server external_id: %v", err)
+		return e.Next()
+	}
+
+	// Extract typed data from event
+	var data events.MapLoadData
+	if err := json.Unmarshal([]byte(e.Record.GetString("data")), &data); err != nil {
+		log.Printf("[HANDLER] Failed to parse map load event data: %v", err)
+		return e.Next()
+	}
+
+	// End any active match and create a new one
+	// EndActiveMatchAndCreateNew expects serverID (external_id), not the record ID
+	if err := database.EndActiveMatchAndCreateNew(ctx, e.App, serverID, data.Map, data.Scenario, data.Timestamp, data.PlayerTeam); err != nil {
+		log.Printf("[HANDLER] Failed to end/create match for map load: %v", err)
+		return e.Next()
+	}
+
+	// Get the newly created match to emit a match_start event
+	// GetActiveMatch expects the serverID (external_id), not the record ID
+	activeMatch, err := database.GetActiveMatch(ctx, e.App, serverID)
+	if err != nil || activeMatch == nil {
+		log.Printf("[HANDLER] Failed to get active match after creation: %v", err)
+		return e.Next()
+	}
+
+	// Emit match_start event with the new match ID
+	eventsCollection, err := e.App.FindCollectionByNameOrId("events")
+	if err != nil {
+		log.Printf("[HANDLER] Failed to find events collection: %v", err)
+		return e.Next()
+	}
+
+	matchStartRecord := core.NewRecord(eventsCollection)
+	matchStartRecord.Set("type", events.TypeMatchStart)
+	matchStartRecord.Set("server", serverRecordID)
+	matchStartRecord.Set("timestamp", time.Now())
+
+	startData := events.MatchStartData{
+		MatchID:   activeMatch.ID,
+		Map:       data.Map,
+		Scenario:  data.Scenario,
+		Timestamp: data.Timestamp,
+		IsCatchup: data.IsCatchup,
+	}
+	dataJSON, _ := json.Marshal(startData)
+	matchStartRecord.Set("data", string(dataJSON))
+
+	if err := e.App.Save(matchStartRecord); err != nil {
+		log.Printf("[HANDLER] Failed to create match_start event: %v", err)
+		return e.Next()
+	}
+
+	log.Printf("[HANDLER] Map load processed: %s (scenario: %s) on server %s, match ID: %s", data.Map, data.Scenario, serverID, activeMatch.ID)
+	return e.Next()
+}
+
+// handleMapTravel processes map travel events and creates a new match
+func (h *GameEventHandlers) handleMapTravel(e *core.RecordEvent) error {
+	ctx := context.Background()
+	serverRecordID := e.Record.GetString("server")
+	serverID, err := h.getServerExternalID(ctx, serverRecordID)
+	if err != nil {
+		log.Printf("[HANDLER] Failed to get server external_id: %v", err)
+		return e.Next()
+	}
+
+	// Extract typed data from event
+	var data events.MapTravelData
+	if err := json.Unmarshal([]byte(e.Record.GetString("data")), &data); err != nil {
+		log.Printf("[HANDLER] Failed to parse map travel event data: %v", err)
+		return e.Next()
+	}
+
+	// End any active match and create a new one
+	// EndActiveMatchAndCreateNew expects serverID (external_id), not the record ID
+	if err := database.EndActiveMatchAndCreateNew(ctx, e.App, serverID, data.Map, data.Scenario, data.Timestamp, data.PlayerTeam); err != nil {
+		log.Printf("[HANDLER] Failed to end/create match for map travel: %v", err)
+		return e.Next()
+	}
+
+	// Get the newly created match
+	// GetActiveMatch expects the serverID (external_id), not the record ID
+	activeMatch, err := database.GetActiveMatch(ctx, e.App, serverID)
+	if err != nil || activeMatch == nil {
+		log.Printf("[HANDLER] Failed to get active match after creation: %v", err)
+		return e.Next()
+	}
+
+	// Emit match_start event with the new match ID
+	eventsCollection, err := e.App.FindCollectionByNameOrId("events")
+	if err != nil {
+		log.Printf("[HANDLER] Failed to find events collection: %v", err)
+		return e.Next()
+	}
+
+	matchStartEvent := core.NewRecord(eventsCollection)
+	matchStartEvent.Set("type", events.TypeMatchStart)
+	matchStartEvent.Set("server", serverRecordID)
+	matchStartEvent.Set("timestamp", time.Now())
+
+	startData := events.MatchStartData{
+		MatchID:   activeMatch.ID,
+		Map:       data.Map,
+		Scenario:  data.Scenario,
+		Timestamp: data.Timestamp,
+		IsCatchup: false,
+	}
+	dataJSON, _ := json.Marshal(startData)
+	matchStartEvent.Set("data", string(dataJSON))
+
+	if err := e.App.Save(matchStartEvent); err != nil {
+		log.Printf("[HANDLER] Failed to create match_start event: %v", err)
+		return e.Next()
+	}
+
+	log.Printf("[HANDLER] Map travel processed: %s (scenario: %s) on server %s", data.Map, data.Scenario, serverID)
+	return e.Next()
+}
+
+// handleGameOver processes game over events and finishes the current match
+// - Ends the current match gracefully
+// - Sets all player match_player_stats to not connected
+// - Triggers score update
+func (h *GameEventHandlers) handleGameOver(e *core.RecordEvent) error {
+	ctx := context.Background()
+	serverRecordID := e.Record.GetString("server")
+	serverID, err := h.getServerExternalID(ctx, serverRecordID)
+	if err != nil {
+		log.Printf("[HANDLER] Failed to get server external_id: %v", err)
+		return e.Next()
+	}
+
+	// Get the active match for this server
+	activeMatch, err := database.GetActiveMatch(ctx, e.App, serverID)
+	if err != nil || activeMatch == nil {
+		log.Printf("[HANDLER] No active match found for server %s", serverID)
+		return e.Next()
+	}
+
+	// End the match using database helper
+	endTime := time.Now()
+	if err := database.EndMatch(ctx, e.App, activeMatch.ID, &endTime, nil, nil); err != nil {
+		log.Printf("[HANDLER] Failed to end match: %v", err)
+		return e.Next()
+	}
+
+	// Disconnect all players from the match
+	if err := database.DisconnectAllPlayersInMatch(ctx, e.App, activeMatch.ID, &endTime); err != nil {
+		log.Printf("[HANDLER] Failed to disconnect players from match: %v", err)
+		return e.Next()
+	}
+
+	// Emit match_end event
+	eventsCollection, err := e.App.FindCollectionByNameOrId("events")
+	if err != nil {
+		log.Printf("[HANDLER] Failed to find events collection: %v", err)
+		return e.Next()
+	}
+
+	matchEndEvent := core.NewRecord(eventsCollection)
+	matchEndEvent.Set("type", events.TypeMatchEnd)
+	matchEndEvent.Set("server", serverRecordID)
+	matchEndEvent.Set("timestamp", time.Now())
+
+	endData := events.MatchEndData{
+		MatchID: activeMatch.ID,
+		EndTime: endTime,
+	}
+	dataJSON, _ := json.Marshal(endData)
+	matchEndEvent.Set("data", string(dataJSON))
+
+	if err := e.App.Save(matchEndEvent); err != nil {
+		log.Printf("[HANDLER] Failed to create match_end event: %v", err)
+		return e.Next()
+	}
+
+	log.Printf("[HANDLER] Game over processed for server %s, match ended gracefully", serverID)
+
+	// Trigger immediate score update when match ends
+	if h.scoreDebouncer != nil {
+		h.scoreDebouncer.ExecuteImmediately(serverID)
+	}
+
+	return e.Next()
+}
+
+// handleLogFileCreated processes log file created events
+// - Updates the server's file_creation_time field
+// - Ensures no active match exists (cleans up stale matches from server crash)
+func (h *GameEventHandlers) handleLogFileCreated(e *core.RecordEvent) error {
+	ctx := context.Background()
+	serverRecordID := e.Record.GetString("server")
+	serverID, err := h.getServerExternalID(ctx, serverRecordID)
+	if err != nil {
+		log.Printf("[HANDLER] Failed to get server external_id: %v", err)
+		return e.Next()
+	}
+
+	// Extract timestamp from event data
+	var data events.LogFileCreatedData
+	if err := json.Unmarshal([]byte(e.Record.GetString("data")), &data); err != nil {
+		log.Printf("[HANDLER] Failed to parse log file created event data: %v", err)
+		return e.Next()
+	}
+
+	// Update the server's file_creation_time
+	serverRecord, err := e.App.FindRecordById("servers", serverRecordID)
+	if err != nil {
+		log.Printf("[HANDLER] Failed to find server record: %v", err)
+		return e.Next()
+	}
+
+	serverRecord.Set("log_file_creation_time", data.Timestamp.Format("2006-01-02 15:04:05.000Z"))
+	if err := e.App.Save(serverRecord); err != nil {
+		log.Printf("[HANDLER] Failed to update server file_creation_time: %v", err)
+		return e.Next()
+	}
+
+	log.Printf("[HANDLER] Updated log file creation time for server %s to %s", serverID, data.Timestamp)
+
+	// Check if there's an active match and end it gracefully
+	// (This handles the case where the server crashed mid-match)
+	activeMatch, err := database.GetActiveMatch(ctx, e.App, serverID)
+	if err == nil && activeMatch != nil {
+		log.Printf("[HANDLER] Found stale active match %s for server %s after log file creation, marking as crashed", activeMatch.ID, serverID)
+
+		endTime := data.Timestamp
+		crashed := "crashed"
+
+		if err := database.EndMatch(ctx, e.App, activeMatch.ID, &endTime, nil, &crashed); err != nil {
+			log.Printf("[HANDLER] Failed to end stale match: %v", err)
+		}
+
+		if err := database.DisconnectAllPlayersInMatch(ctx, e.App, activeMatch.ID, &endTime); err != nil {
+			log.Printf("[HANDLER] Failed to disconnect players from stale match: %v", err)
+		}
 	}
 
 	return e.Next()

@@ -73,7 +73,32 @@ COMPLETED:
 ✅ TestSuicideKillEvent - Suicides only increment deaths
 ✅ All tests PASSING (integration/parser_handler_test.go) -->
 
-## game over map loading verification
+
+<!-- ## Game state
+COMPLETED:
+```
+[ROUND_END] [2025.11.10-21.12.05:370][627]LogGameplayEvents: Display: Round 2 Over: Team 0 won (win reason: Objective)
+[GAME_OVER] [2025.11.10-21.12.25:385][831]LogSession: Display: AINSGameSession::HandleMatchHasEnded
+[MAP_VOTE] [2025.11.10-21.12.45:415][ 38]LogMapVoteManager: Display: New Vote Options:
+[MAP_TRAVEL] [2025.11.10-21.12.58:822][846]LogGameMode: ProcessServerTravel: Oilfield?Scenario=Scenario_Refinery_Push_Insurgents?Game=?
+[DISCONNECT] [2025.11.10-21.12.58:872][848]LogEOSAntiCheat: Display: ServerUnregisterClient: UserId (76561198995742987), Result: (EOS_Success)
+[REGISTER] [2025.11.10-21.13.01:102][918]LogEOSAntiCheat: Display: ServerRegisterClient: Client: (76561198995742987) Result: (EOS_Success)
+[DISCONNECT] [2025.11.10-21.13.19:601][ 23]LogEOSAntiCheat: Display: ServerUnregisterClient: UserId (76561198995742987), Result: (EOS_Success)
+```
+* note after a map_travel event is will disconnect each player and then rejoin them
+* the second disconnect was actually the player leaving
+- on GAME_OVER lets make sure the current match is ended gracefully, we will also want to make sure a players match_player_stats status is set to finished and is_currently_connected should be false
+- on map_travel and map_load events we are creating a match
+
+## game over map loading verification -->
+
+
+## insurgency server crashing recovery
+- our servers collection has a file_creation_time, the fist line of a log file will be similar to "Log file open, 11/10/25 20:58:31"
+- lets create another parser event for when we hit this
+- the handler should update file_creation_time
+- after this the event the next one that would be hit is a mapload event
+- in either of these handlers we need to ensure there is not already an active match for the server, if there is we need to end it
 
 ## weapon types
 adding a weapon type to match_weapon_stats when creating a record

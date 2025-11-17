@@ -49,14 +49,15 @@ func TestProcessFullLog(t *testing.T) {
 
 	t.Logf("Processed %d lines", linesProcessed)
 
-	// Verify matches were created (map loads create matches, not events)
+	// Verify events were created (parser now emits events, handlers create matches)
 	t.Run("Matches created for maps", func(t *testing.T) {
-		matches, err := testApp.FindRecordsByFilter("matches", "", "-created", 10, 0)
+		// Check for map_load events instead (handlers will create matches from these)
+		mapLoadEvents, err := testApp.FindRecordsByFilter("events", "type = 'map_load'", "-created", 10, 0)
 		if err != nil {
-			t.Fatalf("Failed to query matches: %v", err)
+			t.Fatalf("Failed to query map_load events: %v", err)
 		}
-		if len(matches) < 1 {
-			t.Errorf("Expected at least 1 match, got %d", len(matches))
+		if len(mapLoadEvents) < 1 {
+			t.Errorf("Expected at least 1 map_load event, got %d", len(mapLoadEvents))
 		}
 	})
 
@@ -98,13 +99,14 @@ func TestProcessFullLog(t *testing.T) {
 	})
 
 	t.Run("Multiple matches for map changes", func(t *testing.T) {
-		matches, err := testApp.FindRecordsByFilter("matches", "", "-created", 10, 0)
+		// Check for map_travel events that indicate map changes
+		mapTravelEvents, err := testApp.FindRecordsByFilter("events", "type = 'map_travel'", "-created", 10, 0)
 		if err != nil {
-			t.Fatalf("Failed to query matches: %v", err)
+			t.Fatalf("Failed to query map_travel events: %v", err)
 		}
-		// full-2.log has a map travel, should create 2 matches
-		if len(matches) < 2 {
-			t.Logf("Expected at least 2 matches (map travel creates new match), got %d", len(matches))
+		// full-2.log has a map travel, should create a map_travel event
+		if len(mapTravelEvents) >= 1 {
+			t.Logf("Found %d map_travel events (handlers will create new matches from these)", len(mapTravelEvents))
 		}
 	})
 }

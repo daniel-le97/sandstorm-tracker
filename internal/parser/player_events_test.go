@@ -301,13 +301,13 @@ func TestRoundTransitions(t *testing.T) {
 			t.Fatalf("Failed to process game over: %v", err)
 		}
 
-		// Verify match_end event was created
-		events, err := testApp.FindRecordsByFilter("events", "type = 'match_end'", "-created", 10, 0)
+		// Verify game_over event was created (handler will create match_end and new match from this)
+		events, err := testApp.FindRecordsByFilter("events", "type = 'game_over'", "-created", 10, 0)
 		if err != nil {
-			t.Fatalf("Failed to query match_end events: %v", err)
+			t.Fatalf("Failed to query game_over events: %v", err)
 		}
 		if len(events) < 1 {
-			t.Errorf("Expected at least 1 match_end event, got %d", len(events))
+			t.Errorf("Expected at least 1 game_over event, got %d", len(events))
 		}
 	})
 }

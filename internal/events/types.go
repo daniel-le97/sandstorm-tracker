@@ -1,5 +1,7 @@
 package events
 
+import "time"
+
 // Event type constants for the events collection
 const (
 	// Player events
@@ -9,8 +11,12 @@ const (
 	TypePlayerLeave = "player_leave"
 
 	// Match events
-	TypeMatchStart = "match_start"
-	TypeMatchEnd   = "match_end"
+	TypeMatchStart     = "match_start"
+	TypeMatchEnd       = "match_end"
+	TypeMapLoad        = "map_load"
+	TypeMapTravel      = "map_travel"
+	TypeGameOver       = "game_over"
+	TypeLogFileCreated = "log_file_created"
 
 	// Round events
 	TypeRoundStart = "round_start"
@@ -72,15 +78,45 @@ type PlayerLeaveData struct {
 
 // MatchStartData represents data for a match_start event
 type MatchStartData struct {
-	MatchID   string `json:"match_id"`
-	Map       string `json:"map"`
-	Scenario  string `json:"scenario"`
-	IsCatchup bool   `json:"is_catchup"`
+	MatchID   string    `json:"match_id"`
+	Map       string    `json:"map"`
+	Scenario  string    `json:"scenario"`
+	Timestamp time.Time `json:"timestamp"`
+	IsCatchup bool      `json:"is_catchup"`
 }
 
 // MatchEndData represents data for a match_end event
 type MatchEndData struct {
-	MatchID string `json:"match_id"`
+	MatchID string    `json:"match_id"`
+	EndTime time.Time `json:"end_time"`
+}
+
+// MapLoadData represents data for a map_load event
+type MapLoadData struct {
+	Map        string    `json:"map"`
+	Scenario   string    `json:"scenario"`
+	Timestamp  time.Time `json:"timestamp"`
+	PlayerTeam *string   `json:"player_team"`
+	IsCatchup  bool      `json:"is_catchup"`
+}
+
+// MapTravelData represents data for a map_travel event
+type MapTravelData struct {
+	Map        string    `json:"map"`
+	Scenario   string    `json:"scenario"`
+	Timestamp  time.Time `json:"timestamp"`
+	PlayerTeam *string   `json:"player_team"`
+	IsCatchup  bool      `json:"is_catchup"`
+}
+
+// GameOverData represents data for a game_over event
+type GameOverData struct {
+	Timestamp time.Time `json:"timestamp"`
+}
+
+// LogFileCreatedData represents data for a log_file_created event
+type LogFileCreatedData struct {
+	Timestamp time.Time `json:"timestamp"`
 }
 
 // RoundStartData represents data for a round_start event

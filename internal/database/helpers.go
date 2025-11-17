@@ -595,7 +595,7 @@ func GetAllPlayersInMatch(ctx context.Context, pbApp core.App, matchID string) (
 }
 
 // EndMatch updates a match with end time and winner team
-func EndMatch(ctx context.Context, pbApp core.App, matchID string, endTime *time.Time, winnerTeam *int64) error {
+func EndMatch(ctx context.Context, pbApp core.App, matchID string, endTime *time.Time, winnerTeam *int64, status *string) error {
 	record, err := pbApp.FindRecordById("matches", matchID)
 	if err != nil {
 		return err
@@ -609,11 +609,18 @@ func EndMatch(ctx context.Context, pbApp core.App, matchID string, endTime *time
 		record.Set("winner_team", *winnerTeam)
 	}
 
+	// Set match status (default to "finished" if not specified)
+	matchStatus := "finished"
+	if status != nil {
+		matchStatus = *status
+	}
+	record.Set("status", matchStatus)
+
 	if err := pbApp.Save(record); err != nil {
 		return err
 	}
 
-	// Update all player stats for this match to "finished" status
+	// Update all player stats for this match with the same status
 	playerRecords, err := pbApp.FindRecordsByFilter(
 		"match_player_stats",
 		"match = {:match}",
@@ -625,9 +632,9 @@ func EndMatch(ctx context.Context, pbApp core.App, matchID string, endTime *time
 
 	if err == nil {
 		for _, playerRecord := range playerRecords {
-			playerRecord.Set("status", "finished")
+			playerRecord.Set("status", matchStatus)
 			if err := pbApp.Save(playerRecord); err != nil {
-				log.Printf("Failed to update player status to finished: %v", err)
+				log.Printf("Failed to update player status to %s: %v", matchStatus, err)
 			}
 		}
 	}
@@ -655,6 +662,7 @@ func DisconnectAllPlayersInMatch(ctx context.Context, pbApp core.App, matchID st
 			record.Set("left_at", lastLeftAt.Format("2006-01-02 15:04:05.000Z"))
 		}
 		record.Set("status", "disconnected")
+		record.Set("is_currently_connected", false)
 		if err := pbApp.Save(record); err != nil {
 			log.Printf("Failed to disconnect player %s: %v", record.Id, err)
 		}
@@ -809,7 +817,7 @@ func EndActiveMatchAndCreateNew(ctx context.Context, pbApp core.App, serverID st
 			log.Printf("Using last player activity as end time: %v", endTime)
 		}
 
-		if err := EndMatch(ctx, pbApp, activeMatch.ID, endTime, nil); err != nil {
+		if err := EndMatch(ctx, pbApp, activeMatch.ID, endTime, nil, nil); err != nil {
 			log.Printf("Failed to force-end match %s: %v", activeMatch.ID, err)
 		}
 

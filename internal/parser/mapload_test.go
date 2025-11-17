@@ -34,21 +34,21 @@ func TestMapLoadEvents(t *testing.T) {
 			t.Fatalf("failed to process log line: %v", err)
 		}
 
-		// Verify match was created with correct data (map loads create matches, not events)
-		matches, err := testApp.FindRecordsByFilter("matches", "", "-created", 1, 0)
-		if err != nil || len(matches) == 0 {
-			t.Fatalf("failed to find match: %v", err)
+		// Verify MAP_LOAD event was created (matches are now created by handlers in response to events)
+		events, err := testApp.FindRecordsByFilter("events", "", "-created", 1, 0)
+		if err != nil || len(events) == 0 {
+			t.Fatalf("failed to find event: %v", err)
 		}
 
-		match := matches[0]
-		if match.GetString("map") != "Town" {
-			t.Errorf("Expected map 'Town', got %s", match.GetString("map"))
+		event := events[0]
+		if event.GetString("type") != "map_load" {
+			t.Errorf("Expected event type 'map_load', got %s", event.GetString("type"))
 		}
-		if match.GetString("mode") != "Scenario_Hideout_Checkpoint_Security" {
-			t.Errorf("Expected mode 'Scenario_Hideout_Checkpoint_Security', got %s", match.GetString("mode"))
-		}
-		if match.GetString("player_team") != "Security" {
-			t.Errorf("Expected player_team 'Security', got %s", match.GetString("player_team"))
+
+		// Verify event data contains the correct map info
+		eventData := event.GetString("data")
+		if eventData == "" {
+			t.Error("Event data is empty")
 		}
 	})
 
@@ -63,17 +63,14 @@ func TestMapLoadEvents(t *testing.T) {
 		logLine := `[2025.11.08-13.59.15:803][  0]LogLoad: LoadMap: /Game/Maps/Ministry/Ministry?Name=Player?Scenario=Scenario_Ministry_Checkpoint_Security?MaxPlayers=8?Lighting=Day`
 		parser.ParseAndProcess(ctx, logLine, serverExternalID, "test.log")
 
-		matches, err := testApp.FindRecordsByFilter("matches", "", "-created", 1, 0)
-		if err != nil || len(matches) == 0 {
-			t.Fatalf("failed to find match")
+		events, err := testApp.FindRecordsByFilter("events", "", "-created", 1, 0)
+		if err != nil || len(events) == 0 {
+			t.Fatalf("failed to find event")
 		}
 
-		match := matches[0]
-		if match.GetString("map") != "Ministry" {
-			t.Errorf("Expected map 'Ministry', got %s", match.GetString("map"))
-		}
-		if match.GetString("player_team") != "Security" {
-			t.Errorf("Expected player_team 'Security', got %s", match.GetString("player_team"))
+		event := events[0]
+		if event.GetString("type") != "map_load" {
+			t.Errorf("Expected event type 'map_load', got %s", event.GetString("type"))
 		}
 	})
 
@@ -88,17 +85,14 @@ func TestMapLoadEvents(t *testing.T) {
 		logLine := `[2025.11.08-14.00.00:000][  0]LogLoad: LoadMap: /Game/Maps/Ministry/Ministry?Name=Player?Scenario=Scenario_Ministry_Checkpoint_Insurgents?MaxPlayers=8?Lighting=Day`
 		parser.ParseAndProcess(ctx, logLine, serverExternalID, "test.log")
 
-		matches, err := testApp.FindRecordsByFilter("matches", "", "-created", 1, 0)
-		if err != nil || len(matches) == 0 {
-			t.Fatalf("failed to find match")
+		events, err := testApp.FindRecordsByFilter("events", "", "-created", 1, 0)
+		if err != nil || len(events) == 0 {
+			t.Fatalf("failed to find event")
 		}
 
-		match := matches[0]
-		if match.GetString("map") != "Ministry" {
-			t.Errorf("Expected map 'Ministry', got %s", match.GetString("map"))
-		}
-		if match.GetString("player_team") != "Insurgents" {
-			t.Errorf("Expected player_team 'Insurgents', got %s", match.GetString("player_team"))
+		event := events[0]
+		if event.GetString("type") != "map_load" {
+			t.Errorf("Expected event type 'map_load', got %s", event.GetString("type"))
 		}
 	})
 }

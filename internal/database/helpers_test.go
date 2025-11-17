@@ -299,7 +299,7 @@ func TestEndMatch(t *testing.T) {
 
 	// End the match
 	endTime := time.Now()
-	err := EndMatch(ctx, testApp, match.ID, timePtr(endTime), int64Ptr(1))
+	err := EndMatch(ctx, testApp, match.ID, timePtr(endTime), int64Ptr(1), nil)
 	if err != nil {
 		t.Fatalf("EndMatch() error = %v", err)
 	}

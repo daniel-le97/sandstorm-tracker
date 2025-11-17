@@ -56,6 +56,21 @@ func init() {
 				},
 				{
 					"hidden": false,
+					"id": "select2063623452",
+					"maxSelect": 1,
+					"name": "status",
+					"presentable": false,
+					"required": false,
+					"system": false,
+					"type": "select",
+					"values": [
+						"ongoing",
+						"finished",
+						"crashed"
+					]
+				},
+				{
+					"hidden": false,
 					"id": "number3320769076",
 					"max": null,
 					"min": null,
