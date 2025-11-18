@@ -31,7 +31,8 @@ func TestMapLoadEvent(t *testing.T) {
 	_, err = database.GetOrCreateServer(ctx, testApp, serverID, "Test Server", "/path")
 	require.NoError(t, err)
 
-	gameHandlers := handlers.NewGameEventHandlers(testApp, nil)
+	appWrapper := NewTestAppWrapper(testApp)
+	gameHandlers := handlers.NewGameEventHandlers(appWrapper, nil)
 	gameHandlers.RegisterHooks()
 
 	// Create a map_load event
@@ -94,7 +95,8 @@ func TestMapTravelEvent(t *testing.T) {
 	_, err = database.GetOrCreateServer(ctx, testApp, serverID, "Test Server", "/path")
 	require.NoError(t, err)
 
-	gameHandlers := handlers.NewGameEventHandlers(testApp, nil)
+	appWrapper := NewTestAppWrapper(testApp)
+	gameHandlers := handlers.NewGameEventHandlers(appWrapper, nil)
 	gameHandlers.RegisterHooks()
 
 	// Create first match via map_load
@@ -184,7 +186,8 @@ func TestGameOverEvent(t *testing.T) {
 	_, err = database.GetOrCreateServer(ctx, testApp, serverID, "Test Server", "/path")
 	require.NoError(t, err)
 
-	gameHandlers := handlers.NewGameEventHandlers(testApp, nil)
+	appWrapper := NewTestAppWrapper(testApp)
+	gameHandlers := handlers.NewGameEventHandlers(appWrapper, nil)
 	gameHandlers.RegisterHooks()
 
 	// Create map_load event first
@@ -279,7 +282,8 @@ func TestGameOverWithMultiplePlayers(t *testing.T) {
 	_, err = database.GetOrCreateServer(ctx, testApp, serverID, "Test Server", "/path")
 	require.NoError(t, err)
 
-	gameHandlers := handlers.NewGameEventHandlers(testApp, nil)
+	appWrapper := NewTestAppWrapper(testApp)
+	gameHandlers := handlers.NewGameEventHandlers(appWrapper, nil)
 	gameHandlers.RegisterHooks()
 
 	// Create match
@@ -369,7 +373,8 @@ func TestLogFileCreatedEvent(t *testing.T) {
 	_, err = database.GetOrCreateServer(ctx, testApp, serverID, "Test Server", "/path")
 	require.NoError(t, err)
 
-	gameHandlers := handlers.NewGameEventHandlers(testApp, nil)
+	appWrapper := NewTestAppWrapper(testApp)
+	gameHandlers := handlers.NewGameEventHandlers(appWrapper, nil)
 	gameHandlers.RegisterHooks()
 
 	// Create a match via map_load

@@ -15,7 +15,7 @@ import (
 
 // GameEventHandlers handles game event processing via PocketBase hooks
 type GameEventHandlers struct {
-	app            core.App
+	app            AppInterface
 	scoreDebouncer ScoreDebouncer
 }
 
@@ -27,13 +27,12 @@ type ScoreDebouncer interface {
 }
 
 // NewGameEventHandlers creates a new game event handler
-func NewGameEventHandlers(app core.App, scoreDebouncer ScoreDebouncer) *GameEventHandlers {
+func NewGameEventHandlers(app AppInterface, scoreDebouncer ScoreDebouncer) *GameEventHandlers {
 	return &GameEventHandlers{
 		app:            app,
 		scoreDebouncer: scoreDebouncer,
 	}
 }
-
 // RegisterHooks registers all event handlers with PocketBase hooks
 func (h *GameEventHandlers) RegisterHooks() {
 	// Register handler for all event types
@@ -71,6 +70,8 @@ func (h *GameEventHandlers) handleEvent(e *core.RecordEvent) error {
 		return h.handleObjectiveCaptured(e)
 	case events.TypeObjectiveDestroyed:
 		return h.handleObjectiveDestroyed(e)
+	case events.TypeChatCommand:
+		return h.handleChatCommand(e)
 	}
 
 	// Not a game event we handle, continue
@@ -871,4 +872,10 @@ func (h *GameEventHandlers) handleLogFileCreated(e *core.RecordEvent) error {
 	}
 
 	return e.Next()
+}
+
+// handleChatCommand processes chat command events
+// Uses the functional HandleChatCommand to process the event
+func (h *GameEventHandlers) handleChatCommand(e *core.RecordEvent) error {
+	return HandleChatCommand(h.app.SendRconCommand)(e)
 }

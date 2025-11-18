@@ -16,7 +16,7 @@ import (
 type AppInterface interface {
 	core.App
 	// Add any custom app methods here as needed
-	// SendRconCommand(serverID string, command string) (string, error)
+	SendRconCommand(serverID string, command string) (string, error)
 }
 
 // Register registers all HTTP routes for the web UI

@@ -33,7 +33,6 @@ type LogParser struct {
 	pbApp              core.App
 	logger             *slog.Logger
 	patterns           *logPatterns
-	chatHandler        *ChatCommandHandler
 	lastMapTravelTimes map[string]time.Time // Track last map travel time per server to ignore reconnects
 	eventCreator       *events.Creator      // Creates event records for hook-based processing
 }
@@ -171,7 +170,6 @@ func NewLogParser(pbApp core.App, logger *slog.Logger) *LogParser {
 		patterns:           NewLogPatterns(),
 		pbApp:              pbApp,
 		logger:             logger,
-		chatHandler:        nil, // Set later via SetChatHandler
 		lastMapTravelTimes: make(map[string]time.Time),
 		eventCreator:       events.NewCreator(pbApp), // Initialize event creator for dual-write phase
 	}
@@ -204,11 +202,6 @@ func (p *LogParser) ExtractLogFileCreationTime(logFilePath string) (time.Time, e
 	}
 
 	return timestamp, nil
-}
-
-// SetChatHandler sets the chat command handler (must be called after parser creation)
-func (p *LogParser) SetChatHandler(rconSender RconSender) {
-	p.chatHandler = NewChatCommandHandler(p, rconSender)
 }
 
 // ParseAndProcess parses a log line and writes to database if it's a recognized event
@@ -284,7 +277,7 @@ func (p *LogParser) ParseAndProcess(ctx context.Context, line string, serverID s
 		return nil
 	}
 
-	if p.tryProcessChatCommand(ctx, line, timestamp, serverID, p.chatHandler) {
+	if p.tryProcessChatCommand(ctx, line, timestamp, serverID) {
 		return nil
 	}
 
@@ -913,6 +906,42 @@ func (p *LogParser) tryProcessObjectiveCaptured(ctx context.Context, line string
 				p.logger.Error("Failed to create objective captured event",
 					"objective", objectiveNum, "players", len(objectivePlayers), "error", err.Error())
 			}
+		}
+	}
+
+	return true
+}
+
+// tryProcessChatCommand parses chat commands and emits events for handling
+func (p *LogParser) tryProcessChatCommand(ctx context.Context, line string, timestamp time.Time, serverID string) bool {
+	matches := p.patterns.ChatCommand.FindStringSubmatch(line)
+	if len(matches) < 5 {
+		return false
+	}
+
+	playerName := strings.TrimSpace(matches[2])
+	steamID := strings.TrimSpace(matches[3])
+	command := strings.TrimSpace(matches[4])
+
+	log.Printf("[CHAT] %s (%s): %s", playerName, steamID, command)
+
+	// Emit chat command event for handler to process
+	if p.eventCreator != nil {
+		err := p.eventCreator.CreateChatCommandEvent(
+			serverID,
+			steamID,
+			playerName,
+			command,
+			[]string{}, // Args can be parsed from command if needed in future
+			isCatchupMode(ctx),
+		)
+		if err != nil {
+			p.logger.Error("Failed to create chat command event",
+				"player", playerName,
+				"steam_id", steamID,
+				"command", command,
+				"error", err.Error(),
+			)
 		}
 	}
 

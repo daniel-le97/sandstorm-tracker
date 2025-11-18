@@ -31,8 +31,9 @@ func TestFullGameSession(t *testing.T) {
 	_, err = database.GetOrCreateServer(ctx, testApp, serverID, "Test Server", "/path")
 	require.NoError(t, err)
 
-	p := parser.NewLogParser(testApp, testApp.Logger())
-	gameHandlers := handlers.NewGameEventHandlers(testApp, nil)
+	appWrapper := NewTestAppWrapper(testApp)
+	p := parser.NewLogParser(appWrapper, testApp.Logger())
+	gameHandlers := handlers.NewGameEventHandlers(appWrapper, nil)
 	gameHandlers.RegisterHooks()
 
 	// Process log file
@@ -107,8 +108,9 @@ func TestMultiPlayerGame(t *testing.T) {
 	_, err = database.GetOrCreateServer(ctx, testApp, serverID, "Test Server", "/path")
 	require.NoError(t, err)
 
-	p := parser.NewLogParser(testApp, testApp.Logger())
-	gameHandlers := handlers.NewGameEventHandlers(testApp, nil)
+	appWrapper := NewTestAppWrapper(testApp)
+	p := parser.NewLogParser(appWrapper, testApp.Logger())
+	gameHandlers := handlers.NewGameEventHandlers(appWrapper, nil)
 	gameHandlers.RegisterHooks()
 
 	// Process HC log (has multiple players)
@@ -153,8 +155,9 @@ func TestWeaponStatsAggregation(t *testing.T) {
 	_, err = database.GetOrCreateServer(ctx, testApp, serverID, "Test Server", "/path")
 	require.NoError(t, err)
 
-	p := parser.NewLogParser(testApp, testApp.Logger())
-	gameHandlers := handlers.NewGameEventHandlers(testApp, nil)
+	appWrapper := NewTestAppWrapper(testApp)
+	p := parser.NewLogParser(appWrapper, testApp.Logger())
+	gameHandlers := handlers.NewGameEventHandlers(appWrapper, nil)
 	gameHandlers.RegisterHooks()
 
 	// Create match

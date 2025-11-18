@@ -16,6 +16,21 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// TestAppWrapper wraps tests.TestApp to implement handlers.AppInterface for testing
+type TestAppWrapper struct {
+	*tests.TestApp
+}
+
+func (w *TestAppWrapper) SendRconCommand(serverID string, command string) (string, error) {
+	// Mock implementation - just return empty response for testing
+	return "", nil
+}
+
+// NewTestAppWrapper creates a new wrapped test app
+func NewTestAppWrapper(app *tests.TestApp) *TestAppWrapper {
+	return &TestAppWrapper{TestApp: app}
+}
+
 // TestKillEventFlow tests the complete flow from parsing a kill to database updates
 func TestKillEventFlow(t *testing.T) {
 	testApp, err := tests.NewTestApp(t.TempDir())
@@ -29,9 +44,10 @@ func TestKillEventFlow(t *testing.T) {
 	_, err = database.GetOrCreateServer(ctx, testApp, serverID, "Test Server", "/path")
 	require.NoError(t, err)
 
-	p := parser.NewLogParser(testApp, testApp.Logger())
+	appWrapper := NewTestAppWrapper(testApp)
+	p := parser.NewLogParser(appWrapper, testApp.Logger())
 	// Note: We pass nil for score debouncer in these unit tests as we're testing parser+handler logic only
-	gameHandlers := handlers.NewGameEventHandlers(testApp, nil)
+	gameHandlers := handlers.NewGameEventHandlers(appWrapper, nil)
 	gameHandlers.RegisterHooks()
 
 	// Parse map load to create match
@@ -54,16 +70,16 @@ func TestKillEventFlow(t *testing.T) {
 	time.Sleep(50 * time.Millisecond)
 
 	// Verify player was created
-	player, err := database.GetPlayerByExternalID(ctx, testApp, "76561198995742987")
+	player, err := database.GetPlayerByExternalID(ctx, appWrapper, "76561198995742987")
 	require.NoError(t, err)
 	assert.Equal(t, "TestPlayer", player.Name)
 
 	// Verify match exists and has stats
-	match, err := database.GetActiveMatch(ctx, testApp, serverID)
+	match, err := database.GetActiveMatch(ctx, appWrapper, serverID)
 	require.NoError(t, err)
 
 	// Verify kill was recorded
-	stats, err := testApp.FindFirstRecordByFilter(
+	stats, err := appWrapper.FindFirstRecordByFilter(
 		"match_player_stats",
 		"match = {:match} && player = {:player}",
 		map[string]any{"match": match.ID, "player": player.ID},
@@ -72,7 +88,7 @@ func TestKillEventFlow(t *testing.T) {
 	assert.Equal(t, 1, stats.GetInt("kills"))
 
 	// Verify weapon stats
-	weaponStats, err := testApp.FindFirstRecordByFilter(
+	weaponStats, err := appWrapper.FindFirstRecordByFilter(
 		"match_weapon_stats",
 		"match = {:match} && player = {:player}",
 		map[string]any{"match": match.ID, "player": player.ID},
@@ -95,8 +111,9 @@ func TestObjectiveEventFlow(t *testing.T) {
 	_, err = database.GetOrCreateServer(ctx, testApp, serverID, "Test Server", "/path")
 	require.NoError(t, err)
 
-	p := parser.NewLogParser(testApp, testApp.Logger())
-	gameHandlers := handlers.NewGameEventHandlers(testApp, nil)
+	appWrapper := NewTestAppWrapper(testApp)
+	p := parser.NewLogParser(appWrapper, testApp.Logger())
+	gameHandlers := handlers.NewGameEventHandlers(appWrapper, nil)
 	gameHandlers.RegisterHooks()
 
 	// Create match
@@ -110,13 +127,13 @@ func TestObjectiveEventFlow(t *testing.T) {
 	time.Sleep(50 * time.Millisecond)
 
 	// Verify player created and objective stat recorded
-	player, err := database.GetPlayerByExternalID(ctx, testApp, "76561198995742987")
+	player, err := database.GetPlayerByExternalID(ctx, appWrapper, "76561198995742987")
 	require.NoError(t, err)
 
-	match, err := database.GetActiveMatch(ctx, testApp, serverID)
+	match, err := database.GetActiveMatch(ctx, appWrapper, serverID)
 	require.NoError(t, err)
 
-	stats, err := testApp.FindFirstRecordByFilter(
+	stats, err := appWrapper.FindFirstRecordByFilter(
 		"match_player_stats",
 		"match = {:match} && player = {:player}",
 		map[string]any{"match": match.ID, "player": player.ID},
@@ -137,8 +154,9 @@ func TestRoundEndFlow(t *testing.T) {
 	_, err = database.GetOrCreateServer(ctx, testApp, serverID, "Test Server", "/path")
 	require.NoError(t, err)
 
-	p := parser.NewLogParser(testApp, testApp.Logger())
-	gameHandlers := handlers.NewGameEventHandlers(testApp, nil)
+	appWrapper := NewTestAppWrapper(testApp)
+	p := parser.NewLogParser(appWrapper, testApp.Logger())
+	gameHandlers := handlers.NewGameEventHandlers(appWrapper, nil)
 	gameHandlers.RegisterHooks()
 
 	// Create match
@@ -152,7 +170,7 @@ func TestRoundEndFlow(t *testing.T) {
 	time.Sleep(50 * time.Millisecond)
 
 	// Verify round_end event was created
-	events, err := testApp.FindRecordsByFilter("events", "type = 'round_end'", "-created", 10, 0)
+	events, err := appWrapper.FindRecordsByFilter("events", "type = 'round_end'", "-created", 10, 0)
 	require.NoError(t, err)
 	require.Len(t, events, 1)
 
@@ -173,8 +191,9 @@ func TestPlayerLeaveFlow(t *testing.T) {
 	_, err = database.GetOrCreateServer(ctx, testApp, serverID, "Test Server", "/path")
 	require.NoError(t, err)
 
-	p := parser.NewLogParser(testApp, testApp.Logger())
-	gameHandlers := handlers.NewGameEventHandlers(testApp, nil)
+	appWrapper := NewTestAppWrapper(testApp)
+	p := parser.NewLogParser(appWrapper, testApp.Logger())
+	gameHandlers := handlers.NewGameEventHandlers(appWrapper, nil)
 	gameHandlers.RegisterHooks()
 
 	// Create match and add player
@@ -196,13 +215,13 @@ func TestPlayerLeaveFlow(t *testing.T) {
 	time.Sleep(50 * time.Millisecond)
 
 	// Verify player was disconnected from match
-	match, err := database.GetActiveMatch(ctx, testApp, serverID)
+	match, err := database.GetActiveMatch(ctx, appWrapper, serverID)
 	require.NoError(t, err)
 
-	player, err := database.GetPlayerByExternalID(ctx, testApp, "76561198995742987")
+	player, err := database.GetPlayerByExternalID(ctx, appWrapper, "76561198995742987")
 	require.NoError(t, err)
 
-	stats, err := testApp.FindFirstRecordByFilter(
+	stats, err := appWrapper.FindFirstRecordByFilter(
 		"match_player_stats",
 		"match = {:match} && player = {:player}",
 		map[string]any{"match": match.ID, "player": player.ID},
@@ -224,8 +243,9 @@ func TestFriendlyFireKillEvent(t *testing.T) {
 	_, err = database.GetOrCreateServer(ctx, testApp, serverID, "Test Server", "/path")
 	require.NoError(t, err)
 
-	p := parser.NewLogParser(testApp, testApp.Logger())
-	gameHandlers := handlers.NewGameEventHandlers(testApp, nil)
+	appWrapper := NewTestAppWrapper(testApp)
+	p := parser.NewLogParser(appWrapper, testApp.Logger())
+	gameHandlers := handlers.NewGameEventHandlers(appWrapper, nil)
 	gameHandlers.RegisterHooks()
 
 	// Parse map load
@@ -252,17 +272,17 @@ func TestFriendlyFireKillEvent(t *testing.T) {
 	time.Sleep(50 * time.Millisecond)
 
 	// Get match
-	match, err := database.GetActiveMatch(ctx, testApp, serverID)
+	match, err := database.GetActiveMatch(ctx, appWrapper, serverID)
 	require.NoError(t, err)
 
 	// Get killer and victim players
-	killer, err := database.GetPlayerByExternalID(ctx, testApp, "76561198000000001")
+	killer, err := database.GetPlayerByExternalID(ctx, appWrapper, "76561198000000001")
 	require.NoError(t, err)
-	victim, err := database.GetPlayerByExternalID(ctx, testApp, "76561198000000002")
+	victim, err := database.GetPlayerByExternalID(ctx, appWrapper, "76561198000000002")
 	require.NoError(t, err)
 
 	// Verify killer has friendly_fire_kills (NOT regular kills)
-	killerStats, err := testApp.FindFirstRecordByFilter(
+	killerStats, err := appWrapper.FindFirstRecordByFilter(
 		"match_player_stats",
 		"match = {:match} && player = {:player}",
 		map[string]any{"match": match.ID, "player": killer.ID},
@@ -272,7 +292,7 @@ func TestFriendlyFireKillEvent(t *testing.T) {
 	assert.Equal(t, 1, killerStats.GetInt("friendly_fire_kills"), "Teamkiller should have 1 friendly fire kill")
 
 	// Verify victim gets death
-	victimStats, err := testApp.FindFirstRecordByFilter(
+	victimStats, err := appWrapper.FindFirstRecordByFilter(
 		"match_player_stats",
 		"match = {:match} && player = {:player}",
 		map[string]any{"match": match.ID, "player": victim.ID},
@@ -298,8 +318,9 @@ func TestMultiPlayerKillEvent(t *testing.T) {
 	_, err = database.GetOrCreateServer(ctx, testApp, serverID, "Test Server", "/path")
 	require.NoError(t, err)
 
-	p := parser.NewLogParser(testApp, testApp.Logger())
-	gameHandlers := handlers.NewGameEventHandlers(testApp, nil)
+	appWrapper := NewTestAppWrapper(testApp)
+	p := parser.NewLogParser(appWrapper, testApp.Logger())
+	gameHandlers := handlers.NewGameEventHandlers(appWrapper, nil)
 	gameHandlers.RegisterHooks()
 
 	// Parse map load
@@ -322,16 +343,16 @@ func TestMultiPlayerKillEvent(t *testing.T) {
 	time.Sleep(50 * time.Millisecond)
 
 	// Get match
-	match, err := database.GetActiveMatch(ctx, testApp, serverID)
+	match, err := database.GetActiveMatch(ctx, appWrapper, serverID)
 	require.NoError(t, err)
 
-	killer1, err := database.GetPlayerByExternalID(ctx, testApp, "76561198000000001")
+	killer1, err := database.GetPlayerByExternalID(ctx, appWrapper, "76561198000000001")
 	require.NoError(t, err)
-	killer2, err := database.GetPlayerByExternalID(ctx, testApp, "76561198000000002")
+	killer2, err := database.GetPlayerByExternalID(ctx, appWrapper, "76561198000000002")
 	require.NoError(t, err)
 
 	// Verify first killer gets kill credit
-	killer1Stats, err := testApp.FindFirstRecordByFilter(
+	killer1Stats, err := appWrapper.FindFirstRecordByFilter(
 		"match_player_stats",
 		"match = {:match} && player = {:player}",
 		map[string]any{"match": match.ID, "player": killer1.ID},
@@ -341,7 +362,7 @@ func TestMultiPlayerKillEvent(t *testing.T) {
 	assert.Equal(t, 0, killer1Stats.GetInt("assists"), "First killer should have 0 assists")
 
 	// Verify second killer gets assist
-	killer2Stats, err := testApp.FindFirstRecordByFilter(
+	killer2Stats, err := appWrapper.FindFirstRecordByFilter(
 		"match_player_stats",
 		"match = {:match} && player = {:player}",
 		map[string]any{"match": match.ID, "player": killer2.ID},
@@ -364,8 +385,9 @@ func TestSuicideKillEvent(t *testing.T) {
 	_, err = database.GetOrCreateServer(ctx, testApp, serverID, "Test Server", "/path")
 	require.NoError(t, err)
 
-	p := parser.NewLogParser(testApp, testApp.Logger())
-	gameHandlers := handlers.NewGameEventHandlers(testApp, nil)
+	appWrapper := NewTestAppWrapper(testApp)
+	p := parser.NewLogParser(appWrapper, testApp.Logger())
+	gameHandlers := handlers.NewGameEventHandlers(appWrapper, nil)
 	gameHandlers.RegisterHooks()
 
 	// Parse map load
@@ -386,13 +408,13 @@ func TestSuicideKillEvent(t *testing.T) {
 	time.Sleep(50 * time.Millisecond)
 
 	// Get match and player
-	match, err := database.GetActiveMatch(ctx, testApp, serverID)
+	match, err := database.GetActiveMatch(ctx, appWrapper, serverID)
 	require.NoError(t, err)
-	player, err := database.GetPlayerByExternalID(ctx, testApp, "76561198000000001")
+	player, err := database.GetPlayerByExternalID(ctx, appWrapper, "76561198000000001")
 	require.NoError(t, err)
 
 	// Verify suicide: only deaths, no kills/assists
-	stats, err := testApp.FindFirstRecordByFilter(
+	stats, err := appWrapper.FindFirstRecordByFilter(
 		"match_player_stats",
 		"match = {:match} && player = {:player}",
 		map[string]any{"match": match.ID, "player": player.ID},
@@ -403,7 +425,7 @@ func TestSuicideKillEvent(t *testing.T) {
 	assert.Equal(t, 1, stats.GetInt("deaths"), "Suicide should increment deaths")
 
 	// Verify no weapon stats were created for suicide
-	weaponStats, err := testApp.FindFirstRecordByFilter(
+	weaponStats, err := appWrapper.FindFirstRecordByFilter(
 		"match_weapon_stats",
 		"match = {:match} && player = {:player}",
 		map[string]any{"match": match.ID, "player": player.ID},
@@ -425,8 +447,9 @@ func TestMultipleKillsStatAccumulation(t *testing.T) {
 	_, err = database.GetOrCreateServer(ctx, testApp, serverID, "Test Server", "/path")
 	require.NoError(t, err)
 
-	p := parser.NewLogParser(testApp, testApp.Logger())
-	gameHandlers := handlers.NewGameEventHandlers(testApp, nil)
+	appWrapper := NewTestAppWrapper(testApp)
+	p := parser.NewLogParser(appWrapper, testApp.Logger())
+	gameHandlers := handlers.NewGameEventHandlers(appWrapper, nil)
 	gameHandlers.RegisterHooks()
 
 	// Parse map load
@@ -456,13 +479,13 @@ func TestMultipleKillsStatAccumulation(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 
 	// Get match and killer
-	match, err := database.GetActiveMatch(ctx, testApp, serverID)
+	match, err := database.GetActiveMatch(ctx, appWrapper, serverID)
 	require.NoError(t, err)
-	killer, err := database.GetPlayerByExternalID(ctx, testApp, "76561198000000001")
+	killer, err := database.GetPlayerByExternalID(ctx, appWrapper, "76561198000000001")
 	require.NoError(t, err)
 
 	// Verify total kills accumulated
-	stats, err := testApp.FindFirstRecordByFilter(
+	stats, err := appWrapper.FindFirstRecordByFilter(
 		"match_player_stats",
 		"match = {:match} && player = {:player}",
 		map[string]any{"match": match.ID, "player": killer.ID},
@@ -471,7 +494,7 @@ func TestMultipleKillsStatAccumulation(t *testing.T) {
 	assert.Equal(t, 3, stats.GetInt("kills"), "Killer should have 3 total kills")
 
 	// Verify separate weapon stats were tracked
-	weaponStats, err := testApp.FindRecordsByFilter(
+	weaponStats, err := appWrapper.FindRecordsByFilter(
 		"match_weapon_stats",
 		"match = {:match} && player = {:player}",
 		"weapon_name",

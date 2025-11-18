@@ -1,20 +1,10 @@
 package parser
 
 import (
+	"context"
 	"testing"
+	"time"
 )
-
-// MockRconSender for testing
-type MockRconSender struct {
-	lastCommand  string
-	lastServerID string
-}
-
-func (m *MockRconSender) SendRconCommand(serverID string, command string) (string, error) {
-	m.lastServerID = serverID
-	m.lastCommand = command
-	return "", nil
-}
 
 func TestChatCommandParsing(t *testing.T) {
 	tests := []struct {
@@ -84,23 +74,54 @@ func TestChatCommandParsing(t *testing.T) {
 	}
 }
 
-func TestChatCommandHandler(t *testing.T) {
-	// This would require setting up a test database
-	// For now, we just test that the parser recognizes the commands
-	mockRcon := &MockRconSender{}
+func TestChatCommandEventEmission(t *testing.T) {
+	// Test that chat commands emit events instead of being handled directly
+	logLine := "[2025.10.21-20.09.21:472][427]LogChat: Display: ArmoredBear(76561198995742987) Global Chat: !stats"
 
 	parser := &LogParser{
 		patterns: NewLogPatterns(),
 	}
 
-	handler := NewChatCommandHandler(parser, mockRcon)
+	// Parse the timestamp from the log line
+	timestamp := time.Date(2025, 10, 21, 20, 9, 21, 472000000, time.UTC)
 
-	if handler == nil {
-		t.Fatal("Failed to create chat command handler")
+	// Test that the pattern matches and can extract command info
+	matches := parser.patterns.ChatCommand.FindStringSubmatch(logLine)
+	if len(matches) < 5 {
+		t.Fatal("Chat command pattern should match")
 	}
 
-	if handler.rconSender != mockRcon {
-		t.Error("RCON sender not properly set")
+	// Verify extracted fields
+	playerName := matches[2]
+	steamID := matches[3]
+	command := matches[4]
+
+	expectedPlayerName := "ArmoredBear"
+	expectedSteamID := "76561198995742987"
+	expectedCommand := "!stats"
+
+	if playerName != expectedPlayerName {
+		t.Errorf("Player name = %v, want %v", playerName, expectedPlayerName)
+	}
+	if steamID != expectedSteamID {
+		t.Errorf("Steam ID = %v, want %v", steamID, expectedSteamID)
+	}
+	if command != expectedCommand {
+		t.Errorf("Command = %v, want %v", command, expectedCommand)
+	}
+
+	// Test with context (non-catchup mode)
+	ctx := context.Background()
+	processed := parser.tryProcessChatCommand(ctx, logLine, timestamp, "server-1")
+	if !processed {
+		t.Error("Chat command should have been processed")
+	}
+
+	// Test with catchup mode context
+	catchupCtx := context.WithValue(ctx, isCatchupModeKey, true)
+	processed = parser.tryProcessChatCommand(catchupCtx, logLine, timestamp, "server-1")
+	if !processed {
+		t.Error("Chat command should have been processed even in catchup mode (event still emitted)")
 	}
 }
 
@@ -137,7 +158,7 @@ func TestUnsupportedCommandsIgnored(t *testing.T) {
 			}
 
 			// Note: The actual handler will ignore these commands (no case in switch statement)
-			// This test just verifies the pattern matches so we can log them
+			// This test just verifies the pattern matches so we can emit them as events
 			t.Logf("Command %s correctly detected (will be ignored by handler)", cmd)
 		})
 	}

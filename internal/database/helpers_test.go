@@ -368,3 +368,56 @@ func TestUpsertMatchWeaponStats(t *testing.T) {
 		t.Errorf("Weapon kills = %d, want 2 after upsert", weaponRecord.GetInt("kills"))
 	}
 }
+
+func TestWeaponTypeClassification(t *testing.T) {
+	testApp, cleanup := setupTestApp(t)
+	defer cleanup()
+
+	ctx := context.Background()
+
+	// Setup
+	_, _ = GetOrCreateServer(ctx, testApp, "test-server-1", "Test Server", "/test/path")
+	match, _ := CreateMatch(ctx, testApp, "test-server-1", stringPtr("Crossing"), stringPtr("Push"), nil)
+	player, _ := CreatePlayer(ctx, testApp, "76561198012345678", "TestPlayer")
+
+	testCases := []struct {
+		weaponName   string
+		expectedType string
+	}{
+		// Firearms
+		{"BP_Firearm_M4A1_C_2147480587", "Firearm"},
+		{"BP_Firearm_AKM_C_2147480339", "Firearm"},
+		{"BP_Firearm_M16A4_C_2147481419", "Firearm"},
+
+		// Projectiles
+		{"BP_Projectile_Molotov_C_2147480055", "Projectile"},
+		{"BP_Projectile_F1_C_2147467410", "Projectile"},
+		{"BP_Projectile_GAU8_C_2147477120", "Projectile"},
+
+		// Melee
+		{"BP_Melee_Knife", "Melee"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.weaponName, func(t *testing.T) {
+			err := UpsertMatchWeaponStats(ctx, testApp, match.ID, player.ID, tc.weaponName, int64Ptr(1), nil)
+			if err != nil {
+				t.Fatalf("UpsertMatchWeaponStats() error = %v", err)
+			}
+
+			weaponRecord, err := testApp.FindFirstRecordByFilter(
+				"match_weapon_stats",
+				"match = {:match} && player = {:player} && weapon_name = {:weapon}",
+				map[string]any{"match": match.ID, "player": player.ID, "weapon": tc.weaponName},
+			)
+			if err != nil {
+				t.Fatalf("Weapon stats record not found: %v", err)
+			}
+
+			actualType := weaponRecord.GetString("type")
+			if actualType != tc.expectedType {
+				t.Errorf("Weapon %s: type = %s, want %s", tc.weaponName, actualType, tc.expectedType)
+			}
+		})
+	}
+}
