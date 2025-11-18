@@ -29,6 +29,9 @@ const (
 	// Chat events
 	TypeChatCommand = "chat_command"
 
+	// Connection events (no game event)
+	TypePlayerConnection = "player_connection"
+
 	// System events (no server relation)
 	TypeAppStarted  = "app_started"
 	TypeAppShutdown = "app_shutdown"
@@ -164,6 +167,13 @@ type ChatCommandData struct {
 	Command    string   `json:"command"`
 	Args       []string `json:"args"`
 	IsCatchup  bool     `json:"is_catchup"`
+}
+
+// PlayerConnectionData represents data for a player_connection event
+type PlayerConnectionData struct {
+	IP        string    `json:"ip"`
+	Platform  string    `json:"platform"`
+	Timestamp time.Time `json:"timestamp"`
 }
 
 // AppStartedData represents data for an app_started event

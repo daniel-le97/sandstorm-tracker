@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"slices"
 	"time"
 
 	"sandstorm-tracker/internal/database"
@@ -33,6 +34,7 @@ func NewGameEventHandlers(app AppInterface, scoreDebouncer ScoreDebouncer) *Game
 		scoreDebouncer: scoreDebouncer,
 	}
 }
+
 // RegisterHooks registers all event handlers with PocketBase hooks
 func (h *GameEventHandlers) RegisterHooks() {
 	// Register handler for all event types
@@ -102,13 +104,81 @@ func (h *GameEventHandlers) handlePlayerLogin(e *core.RecordEvent) error {
 		return e.Next()
 	}
 
+	// Get server external ID for store key lookup
+	serverRecordID := e.Record.GetString("server")
+	serverRecord, err := e.App.FindRecordById("servers", serverRecordID)
+	if err != nil {
+		log.Printf("[HANDLER] Failed to get server record: %v", err)
+		return e.Next()
+	}
+	serverID := serverRecord.GetString("external_id")
+
 	log.Printf("[HANDLER] Processing player login: %s (Steam: %s, Platform: %s)", data.PlayerName, data.SteamID, data.Platform)
 
 	// Create or update player record
-	_, err := database.GetOrCreatePlayerBySteamID(ctx, e.App, data.SteamID, data.PlayerName)
+	_, err = database.GetOrCreatePlayerBySteamID(ctx, e.App, data.SteamID, data.PlayerName)
 	if err != nil {
 		log.Printf("[HANDLER] Failed to create/update player: %v", err)
 		return e.Next()
+	}
+
+	// Try to get stored IP from connection event and update player metadata
+	storeKey := fmt.Sprintf("%s:lastIP", serverID)
+	storedIP := e.App.Store().Get(storeKey)
+	if storedIP != nil {
+		ipStr, ok := storedIP.(string)
+		if ok && ipStr != "" {
+			// Find the player record to update it with IP in metadata
+			playerRecord, err := e.App.FindFirstRecordByFilter(
+				"players",
+				"external_id = {:externalID}",
+				map[string]any{"externalID": data.SteamID},
+			)
+			if err == nil && playerRecord != nil {
+				// Get existing known IPs list or create new one
+				existingMetadataStr := playerRecord.GetString("metadata")
+				var knownIPs []string
+
+				if existingMetadataStr != "" {
+					var metadata map[string]interface{}
+					if err := json.Unmarshal([]byte(existingMetadataStr), &metadata); err == nil {
+						if ipsInterface, exists := metadata["knownIPs"]; exists {
+							if ips, ok := ipsInterface.([]interface{}); ok {
+								for _, ip := range ips {
+									if ipStr, ok := ip.(string); ok {
+										knownIPs = append(knownIPs, ipStr)
+									}
+								}
+							}
+						}
+					}
+				}
+
+				// Add IP if not already in list
+				if !slices.Contains(knownIPs, ipStr) {
+					knownIPs = append(knownIPs, ipStr)
+
+					// Build new metadata with updated knownIPs
+					newMetadata := map[string]interface{}{
+						"knownIPs": knownIPs,
+					}
+					metadataJSON, err := json.Marshal(newMetadata)
+					if err != nil {
+						log.Printf("[HANDLER] Failed to marshal metadata: %v", err)
+					} else {
+						playerRecord.Set("metadata", string(metadataJSON))
+						if err := e.App.Save(playerRecord); err != nil {
+							log.Printf("[HANDLER] Failed to update player metadata: %v", err)
+						} else {
+							log.Printf("[HANDLER] Added IP %s to player %s (total known IPs: %d)", ipStr, data.PlayerName, len(knownIPs))
+						}
+					}
+				}
+			}
+
+			// Remove the stored IP key so it's not used again
+			e.App.Store().Set(storeKey, nil)
+		}
 	}
 
 	log.Printf("[HANDLER] Player record created/updated for %s", data.PlayerName)

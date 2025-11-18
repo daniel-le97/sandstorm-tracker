@@ -75,6 +75,20 @@ func init() {
 					"type": "bool"
 				},
 				{
+					"autogeneratePattern": "",
+					"hidden": false,
+					"id": "json9284756123",
+					"max": 0,
+					"min": 0,
+					"name": "metadata",
+					"pattern": "",
+					"presentable": false,
+					"primaryKey": false,
+					"required": false,
+					"system": false,
+					"type": "json"
+				},
+				{
 					"hidden": false,
 					"id": "autodate3332085495",
 					"name": "updated",

@@ -45,6 +45,7 @@ type logPatterns struct {
 	PlayerLogin      *regexp.Regexp // Login request (earliest connection event)
 	PlayerRegister   *regexp.Regexp // ServerRegisterClient (pre-match)
 	PlayerJoin       *regexp.Regexp // Join succeeded (in-match)
+	PlayerConnection *regexp.Regexp // Connection event (accepts post-challenge connection)
 	PlayerDisconnect *regexp.Regexp
 	RoundStart       *regexp.Regexp
 	RoundEnd         *regexp.Regexp
@@ -79,6 +80,9 @@ func NewLogPatterns() *logPatterns {
 		PlayerLogin:    regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\s*\d+\]LogNet: Login request:.*\?Name=(.+?) userId: \w+:(\d+) platform: (\w+)`),
 		PlayerRegister: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\s*\d+\]LogEOSAntiCheat: Display: ServerRegisterClient: Client: \((\d+)\) Result: \(EOS_Success\)`),
 		PlayerJoin:     regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\s*\d+\]LogNet: Join succeeded: ([^\r\n]+)`),
+		// Player connection event - accepts post-challenge connection (IP capture)
+		// Format: [timestamp][id]LogNet: Server accepting post-challenge connection from: IP:PORT
+		PlayerConnection: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\s*\d+\]LogNet: Server accepting post-challenge connection from: ([0-9.]+):`),
 
 		PlayerDisconnect: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\s*\d+\]LogEOSAntiCheat: Display: ServerUnregisterClient: UserId \((\d+)\), Result: \(EOS_Success\)`),
 
@@ -249,6 +253,10 @@ func (p *LogParser) ParseAndProcess(ctx context.Context, line string, serverID s
 		return nil
 	}
 
+	if p.tryProcessPlayerConnection(ctx, line, timestamp, serverID) {
+		return nil
+	}
+
 	if p.tryProcessPlayerRegister(ctx, line, timestamp, serverID) {
 		return nil
 	}
@@ -311,6 +319,38 @@ func (p *LogParser) tryProcessLogFileOpen(ctx context.Context, line string, time
 			return true
 		}
 	}
+
+	return true
+}
+
+// tryProcessPlayerConnection handles player connection events (accepts post-challenge connection)
+// This captures the IP address of connecting players before they fully login
+func (p *LogParser) tryProcessPlayerConnection(ctx context.Context, line string, timestamp time.Time, serverID string) bool {
+	matches := p.patterns.PlayerConnection.FindStringSubmatch(line)
+	if len(matches) < 3 {
+		return false
+	}
+
+	ip := matches[2]
+
+	log.Printf("Player connection from IP %s to server %s", ip, serverID)
+
+	// Store IP in app store with key format: "serverID:lastIP"
+	// This will be used when the next player_login event occurs
+	storeKey := fmt.Sprintf("%s:lastIP", serverID)
+
+	// Check if there's already a pending IP (multiple connections before login)
+	existingIP := p.pbApp.Store().Get(storeKey)
+	if existingIP != nil {
+		// Another connection came in before the previous one logged in
+		// Discard both to avoid confusion about which IP connects to which player
+		log.Printf("Discarding duplicate connection IP for server %s - unable to match with player", serverID)
+		p.pbApp.Store().Set(storeKey, nil)
+		return true
+	}
+
+	// Store the IP for use on the next player_login event
+	p.pbApp.Store().Set(storeKey, ip)
 
 	return true
 }
