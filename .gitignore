@@ -69,3 +69,6 @@ data/
 pb_data
 
 sandstorm-admin-wrapper/
+
+*.exe
+*.old

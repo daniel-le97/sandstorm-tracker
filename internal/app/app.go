@@ -22,8 +22,9 @@ import (
 
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/core"
-	"github.com/pocketbase/pocketbase/plugins/migratecmd"
 	"github.com/pocketbase/pocketbase/plugins/ghupdate"
+	"github.com/pocketbase/pocketbase/plugins/migratecmd"
+	"github.com/spf13/cobra"
 )
 
 // App wraps PocketBase with application-specific components and methods
@@ -96,14 +97,23 @@ func (app *App) setupPlugins() {
 		Automigrate: true,
 	})
 
-
 	ghupdate.MustRegister(app.PocketBase, app.RootCmd, ghupdate.Config{
-		Owner:          "daniel-le97",
-		Repo:           "sandstorm-tracker",
+		Owner:             "daniel-le97",
+		Repo:              "sandstorm-tracker",
 		ArchiveExecutable: "sandstorm-tracker",
 	})
 
-	// Register custom updater with check-updates, update, and version commands
+	// Register version command
+	app.RootCmd.AddCommand(&cobra.Command{
+		Use:   "version",
+		Short: "Show version information",
+		Run: func(cmd *cobra.Command, args []string) {
+			fmt.Printf("sandstorm-tracker version %s\n", app.Version)
+			fmt.Printf("Commit: %s\n", app.Commit)
+			fmt.Printf("Date: %s\n", app.Date)
+		},
+	})
+
 	// app.updater = updater.RegisterCommands(app.PocketBase, app.RootCmd, updater.Config{
 	// 	Owner:          "daniel-le97",
 	// 	Repo:           "sandstorm-tracker",
