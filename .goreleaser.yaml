@@ -7,7 +7,6 @@ project_name: sandstorm-tracker
 before:
   hooks:
     - go mod tidy
-    - go mod download
 #     # Repository to push the app manifest to.
 #     repository:
 #       owner: daniel-le97
@@ -31,37 +30,41 @@ before:
 # - task sqlc
 
 builds:
-  - env:
+  - id: build_noncgo
+    main: ./
+    binary: sandstorm-tracker
+    ldflags:
+      - -s -w
+      - -X main.Version={{ .Version }}
+      - -X main.Commit={{ .Commit }}
+      - -X main.Date={{ .Date }}
+    env:
       - CGO_ENABLED=0
     goos:
       - linux
       - windows
       - darwin
     goarch:
-      - "386"
       - amd64
-      - arm
       - arm64
+      - arm
+      - s390x
+      - ppc64le
     goarm:
-      - "6"
       - "7"
     ignore:
-      - goos: darwin
-        goarch: "386"
-      - goos: darwin
-        goarch: arm
       - goos: windows
         goarch: arm
       - goos: windows
-        goarch: arm64
-    main: ./main.go
-    binary: sandstorm-tracker
-    ldflags:
-      - -s -w
-      # - -X github.com/daniel-le97/banned-cli/cmd.version={{.Version}}
-      # - -X github.com/daniel-le97/banned-cli/cmd.commit={{.Commit}}
-      # - -X github.com/daniel-le97/banned-cli/cmd.date={{.Date}}
-      # - -X github.com/daniel-le97/banned-cli/cmd.builtBy=goreleaser
+        goarch: s390x
+      - goos: windows
+        goarch: ppc64le
+      - goos: darwin
+        goarch: arm
+      - goos: darwin
+        goarch: s390x
+      - goos: darwin
+        goarch: ppc64le
 
 archives:
   - formats: tar.gz
@@ -154,63 +157,24 @@ release:
   # changelog, but won't upload anything to it.
   skip_upload: false
 
-  # You can add extra pre-existing files to the release.
-  # The filename on the release will be the last part of the path (base).
-  # If another file with the same name exists, the last one found will be used.
-  # extra_files:
-  # - glob: ./README.md
-  # - glob: ./LICENSE
-  # - glob: ./scripts/install.sh
-  # - glob: ./scripts/install.ps1
-  # - glob: ./scripts/install.bat
-  # - glob: ./banned.db
-
-# Docker configuration for multi-arch container images
-dockers:
-  - id: sandstorm-tracker-amd64
-    image_templates:
-      - "ghcr.io/daniel-le97/sandstorm-tracker:{{ .Version }}-amd64"
-      - "ghcr.io/daniel-le97/sandstorm-tracker:latest-amd64"
+# Docker configuration for multi-arch container images (v2 format)
+dockers_v2:
+  - images:
+      - "ghcr.io/daniel-le97/sandstorm-tracker"
+    tags:
+      - "v{{ .Version }}"
+      - "{{ if not .IsNightly }}latest{{ end }}"
     dockerfile: Dockerfile
-    use: buildx
-    build_flag_templates:
-      - "--pull"
-      - "--label=org.opencontainers.image.created={{.Date}}"
-      - "--label=org.opencontainers.image.title={{.ProjectName}}"
-      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
-      - "--label=org.opencontainers.image.version={{.Version}}"
-      - "--label=org.opencontainers.image.source=https://github.com/daniel-le97/sandstorm-tracker"
-      - "--platform=linux/amd64"
-    goos: linux
-    goarch: amd64
-
-  - id: sandstorm-tracker-arm64
-    image_templates:
-      - "ghcr.io/daniel-le97/sandstorm-tracker:{{ .Version }}-arm64"
-      - "ghcr.io/daniel-le97/sandstorm-tracker:latest-arm64"
-    dockerfile: Dockerfile
-    use: buildx
-    build_flag_templates:
-      - "--pull"
-      - "--label=org.opencontainers.image.created={{.Date}}"
-      - "--label=org.opencontainers.image.title={{.ProjectName}}"
-      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
-      - "--label=org.opencontainers.image.version={{.Version}}"
-      - "--label=org.opencontainers.image.source=https://github.com/daniel-le97/sandstorm-tracker"
-      - "--platform=linux/arm64"
-    goos: linux
-    goarch: arm64
-
-docker_manifests:
-  - name_template: "ghcr.io/daniel-le97/sandstorm-tracker:{{ .Version }}"
-    image_templates:
-      - "ghcr.io/daniel-le97/sandstorm-tracker:{{ .Version }}-amd64"
-      - "ghcr.io/daniel-le97/sandstorm-tracker:{{ .Version }}-arm64"
-
-  - name_template: "ghcr.io/daniel-le97/sandstorm-tracker:latest"
-    image_templates:
-      - "ghcr.io/daniel-le97/sandstorm-tracker:latest-amd64"
-      - "ghcr.io/daniel-le97/sandstorm-tracker:latest-arm64"
+    platforms:
+      - linux/amd64
+      - linux/arm64
+    labels:
+      "org.opencontainers.image.description": "Insurgency: Sandstorm server stats tracker"
+      "org.opencontainers.image.created": "{{.Date}}"
+      "org.opencontainers.image.title": "{{.ProjectName}}"
+      "org.opencontainers.image.revision": "{{.FullCommit}}"
+      "org.opencontainers.image.version": "{{.Version}}"
+      "org.opencontainers.image.source": "https://github.com/daniel-le97/sandstorm-tracker"
 
 # snapcrafts:
 #   - name_template: '{{ .ProjectName }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'

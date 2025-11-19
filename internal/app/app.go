@@ -3,6 +3,7 @@ package app
 import (
 	"fmt"
 	"log/slog"
+	"os"
 	"path/filepath"
 	"time"
 
@@ -128,10 +129,16 @@ func (app *App) Bootstrap() error {
 
 	// Register lifecycle hooks
 	app.OnServe().BindFunc(func(e *core.ServeEvent) error {
+		// Write PID file for graceful shutdown/update coordination
+		pidData := []byte(fmt.Sprintf("%d", os.Getpid()))
+		if err := os.WriteFile("sandstorm-tracker.pid", pidData, 0644); err != nil {
+			app.Logger().Warn("Failed to write PID file", "error", err)
+		}
 		return app.onServe(e)
 	})
 
 	app.OnTerminate().BindFunc(func(e *core.TerminateEvent) error {
+		os.Remove("sandstorm-tracker.pid")
 		return app.onTerminate(e)
 	})
 

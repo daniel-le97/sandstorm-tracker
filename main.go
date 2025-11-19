@@ -6,6 +6,13 @@ import (
 	_ "sandstorm-tracker/migrations"
 )
 
+// Build-time variables injected by GoReleaser via ldflags
+var (
+	Version = "dev"
+	Commit  = "unknown"
+	Date    = "unknown"
+)
+
 func main() {
 	// Create application (wraps PocketBase + your components)
 	application, err := app.New()
