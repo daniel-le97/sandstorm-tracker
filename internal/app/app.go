@@ -363,6 +363,35 @@ func (app *App) setupLogFileWriter() error {
 		return e.Next()
 	})
 
+	// app.OnBootstrap().BindFunc(func(e *core.BootstrapEvent) error {
+	// 	if err := e.Next(); err != nil {
+	// 		return err
+	// 	}
+
+	// 	e.App.OnModelCreate(core.LogsTableName).BindFunc(func(e *core.ModelEvent) error {
+	// 		// get or create global file writer instance if not already created
+	// 		writer := e.App.Store().GetOrSet("logger:filewriter", func() any {
+	// 			fw, err := logger.NewFileWriter(logger.FileWriterConfig{
+	// 				FilePath:   logFilePath,
+	// 				MaxSize:    10 * 1024 * 1024, // 10MB max file size
+	// 				MaxBackups: maxBackups,
+	// 				BufferSize: 8192,                   // 8KB buffer
+	// 				FlushEvery: 500 * time.Millisecond, // Flush every 500ms (more responsive for development)
+	// 			})
+	// 			if err != nil {
+	// 				panic(fmt.Sprintf("failed to create file writer: %v", err))
+	// 			}
+
+	// 			return fw
+	// 		}).(*logger.FileWriter)
+	// 		l := e.Model.(*core.Log)
+	// 		writer.WriteLog(l)
+	// 		return e.Next()
+	// 	})
+
+	// 	return nil
+	// })
+
 	app.OnModelCreate(core.LogsTableName).BindFunc(func(e *core.ModelEvent) error {
 		// get or create global file writer instance if not already created
 		writer := e.App.Store().GetOrSet("logger:filewriter", func() any {
