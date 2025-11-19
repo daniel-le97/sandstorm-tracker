@@ -11,7 +11,8 @@ $latestTag = git describe --tags --abbrev=0 2>$null
 if (-not $latestTag) {
     Write-Host "No tags found. Starting with v0.0.1" -ForegroundColor Yellow
     $newTag = "v0.0.1"
-} else {
+}
+else {
     Write-Host "Latest tag: $latestTag" -ForegroundColor Cyan
     
     # Parse version (remove 'v' prefix)
