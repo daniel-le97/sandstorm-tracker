@@ -15,8 +15,6 @@ import (
 	"sandstorm-tracker/internal/parser"
 	"sandstorm-tracker/internal/rcon"
 	"sandstorm-tracker/internal/updater"
-
-	// "sandstorm-tracker/internal/servermgr"
 	"sandstorm-tracker/internal/util"
 	"sandstorm-tracker/internal/watcher"
 
@@ -24,6 +22,7 @@ import (
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/plugins/ghupdate"
 	"github.com/pocketbase/pocketbase/plugins/migratecmd"
+
 	"github.com/spf13/cobra"
 )
 
@@ -38,9 +37,9 @@ type App struct {
 	A2SPool  *a2s.ServerPool
 	Watcher  *watcher.Watcher
 	// ServerManager *servermgr.Plugin  // Server manager plugin
-	logFileWriter *logger.FileWriter // File writer for PocketBase logs
-	customLogger  *slog.Logger       // Logger with TeeHandler (writes to both console and file)
-	updater       *updater.Updater
+	// logFileWriter *logger.FileWriter // File writer for PocketBase logs
+	customLogger *slog.Logger // Logger with TeeHandler (writes to both console and file)
+	updater      *updater.Updater
 
 	// Version information (injected at build time via ldflags)
 	Version string
@@ -258,12 +257,6 @@ func (app *App) onTerminate(e *core.TerminateEvent) error {
 		app.RconPool.CloseAll()
 	}
 
-	if app.logFileWriter != nil {
-		if err := app.logFileWriter.Close(); err != nil {
-			app.Logger().Error("Failed to close log file writer", "component", "APP", "error", err)
-		}
-	}
-
 	// Note: ServerManager plugin handles its own cleanup via OnTerminate hook
 
 	return e.Next()
@@ -359,36 +352,36 @@ func (app *App) setupLogFileWriter() error {
 		maxBackups = 5
 	}
 
-	// Create file writer with buffering and rotation
-	fw, err := logger.NewFileWriter(logger.FileWriterConfig{
-		FilePath:   logFilePath,
-		MaxSize:    10 * 1024 * 1024, // 10MB max file size
-		MaxBackups: maxBackups,
-		BufferSize: 8192,                   // 8KB buffer
-		FlushEvery: 500 * time.Millisecond, // Flush every 500ms (more responsive for development)
+	app.OnTerminate().BindFunc(func(e *core.TerminateEvent) error {
+		writer := app.Store().Get("logger:filewriter")
+		if writer != nil {
+			fw := writer.(*logger.FileWriter)
+			if err := fw.Close(); err != nil {
+				app.Logger().Error("Failed to close log file writer", "component", "APP", "error", err)
+			}
+		}
+		return e.Next()
 	})
-	if err != nil {
-		return fmt.Errorf("failed to create file writer: %w", err)
-	}
 
-	app.logFileWriter = fw
+	app.OnModelCreate(core.LogsTableName).BindFunc(func(e *core.ModelEvent) error {
+		// get or create global file writer instance if not already created
+		writer := e.App.Store().GetOrSet("logger:filewriter", func() any {
+			fw, err := logger.NewFileWriter(logger.FileWriterConfig{
+				FilePath:   logFilePath,
+				MaxSize:    10 * 1024 * 1024, // 10MB max file size
+				MaxBackups: maxBackups,
+				BufferSize: 8192,                   // 8KB buffer
+				FlushEvery: 500 * time.Millisecond, // Flush every 500ms (more responsive for development)
+			})
+			if err != nil {
+				panic(fmt.Sprintf("failed to create file writer: %v", err))
+			}
 
-	// app.OnModelCreate(core.LogsTableName).BindFunc(func(e *core.ModelEvent) error {
-	// 	l := e.Model.(*core.Log)
-	// 	// Write to file
-	// 	if app.logFileWriter != nil {
-	// 		if err := app.logFileWriter.WriteLog(l); err != nil {
-	// 			// Don't fail the hook on write errors
-	// 			fmt.Printf("Warning: Failed to write log to file: %v\n", err)
-	// 		}
-	// 	}
-
-	// 	return e.Next()
-	// })
-
-	// Use TeeHandler for centralized logging to both console and file
-	teeHandler := logger.NewTeeHandler(app.PocketBase.Logger().Handler(), fw)
-	app.customLogger = slog.New(teeHandler)
-
+			return fw
+		}).(*logger.FileWriter)
+		l := e.Model.(*core.Log)
+		writer.WriteLog(l)
+		return e.Next()
+	})
 	return nil
 }

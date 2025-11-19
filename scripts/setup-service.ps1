@@ -72,7 +72,7 @@ $settings = New-ScheduledTaskSettingsSet `
     -MultipleInstances Queue `
     -StartWhenAvailable `
     -RestartCount 5 `
-    -RestartInterval (New-TimeSpan -Minutes 1) `
+    -RestartInterval (New-TimeSpan -Seconds 2) `
     -RunOnlyIfNetworkAvailable `
     -ExecutionTimeLimit (New-TimeSpan -Hours 0)
 
