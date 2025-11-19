@@ -3,7 +3,7 @@ tasks:
   tags:
     desc: create git tag for current version
     cmds:
-      - .\scripts\create-release-tag.ps1
+      - powershell -ExecutionPolicy Bypass -File ./scripts/create-release-tag.ps1
   goreleaser-dev:
     desc: Run goreleaser in snapshot (dev) mode
     cmds:
@@ -11,6 +11,7 @@ tasks:
   goreleaser-release:
     desc: Run goreleaser for a full release
     cmds:
+      - powershell -ExecutionPolicy Bypass -File ./scripts/load-env.ps1
       - goreleaser release --clean
   build:
     desc: Build all Go binaries
