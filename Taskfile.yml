@@ -7,12 +7,11 @@ tasks:
   goreleaser-dev:
     desc: Run goreleaser in snapshot (dev) mode
     cmds:
-      - goreleaser release --snapshot --clean
+      - powershell -ExecutionPolicy Bypass -Command ". ./scripts/load-env.ps1; goreleaser release --snapshot --clean"
   goreleaser-release:
     desc: Run goreleaser for a full release
     cmds:
-      - powershell -ExecutionPolicy Bypass -File ./scripts/load-env.ps1
-      - goreleaser release --clean
+      - powershell -ExecutionPolicy Bypass -Command ". ./scripts/load-env.ps1; goreleaser release --clean"
   build:
     desc: Build all Go binaries
     cmds:
