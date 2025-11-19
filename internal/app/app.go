@@ -23,6 +23,7 @@ import (
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/plugins/migratecmd"
+	"github.com/pocketbase/pocketbase/plugins/ghupdate"
 )
 
 // App wraps PocketBase with application-specific components and methods
@@ -95,15 +96,22 @@ func (app *App) setupPlugins() {
 		Automigrate: true,
 	})
 
-	// Register custom updater with check-updates, update, and version commands
-	app.updater = updater.RegisterCommands(app.PocketBase, app.RootCmd, updater.Config{
+
+	ghupdate.MustRegister(app.PocketBase, app.RootCmd, ghupdate.Config{
 		Owner:          "daniel-le97",
 		Repo:           "sandstorm-tracker",
-		CurrentVersion: app.Version,
-		BinaryName:     "sandstorm-tracker",
-		SkipPrerelease: false,
-		SkipDraft:      true,
-	}, app.Logger().With("component", "UPDATER"))
+		ArchiveExecutable: "sandstorm-tracker",
+	})
+
+	// Register custom updater with check-updates, update, and version commands
+	// app.updater = updater.RegisterCommands(app.PocketBase, app.RootCmd, updater.Config{
+	// 	Owner:          "daniel-le97",
+	// 	Repo:           "sandstorm-tracker",
+	// 	CurrentVersion: app.Version,
+	// 	BinaryName:     "sandstorm-tracker",
+	// 	SkipPrerelease: false,
+	// 	SkipDraft:      true,
+	// }, app.Logger().With("component", "UPDATER"))
 
 	// Register server manager plugin
 	// app.ServerManager = servermgr.MustRegister(app.PocketBase, app.RootCmd, servermgr.Config{

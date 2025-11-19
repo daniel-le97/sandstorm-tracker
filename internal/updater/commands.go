@@ -3,7 +3,6 @@ package updater
 import (
 	"fmt"
 	"log/slog"
-	"os"
 
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/spf13/cobra"
@@ -73,10 +72,16 @@ func RegisterCommands(app core.App, rootCmd *cobra.Command, config Config, logge
 			if err := updater.DownloadAsset(*asset, tmpFile); err != nil {
 				return fmt.Errorf("failed to download asset: %w", err)
 			}
-			defer os.Remove(tmpFile)
 
 			logger.Info("Download complete", "file", tmpFile)
-			fmt.Println("Download complete. Update will be applied on restart.")
+			fmt.Println("Download complete. Extracting and applying update...")
+
+			if err := updater.ExtractAndApplyUpdate(tmpFile); err != nil {
+				return fmt.Errorf("failed to apply update: %w", err)
+			}
+
+			logger.Info("Update applied successfully", "version", newVersion)
+			fmt.Printf("Update complete! Please restart the application to use version %s\n", newVersion)
 
 			return nil
 		},
