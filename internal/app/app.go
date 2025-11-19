@@ -14,6 +14,7 @@ import (
 	"sandstorm-tracker/internal/logger"
 	"sandstorm-tracker/internal/parser"
 	"sandstorm-tracker/internal/rcon"
+	"sandstorm-tracker/internal/updater"
 
 	// "sandstorm-tracker/internal/servermgr"
 	"sandstorm-tracker/internal/util"
@@ -21,7 +22,6 @@ import (
 
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/core"
-	"github.com/pocketbase/pocketbase/plugins/ghupdate"
 	"github.com/pocketbase/pocketbase/plugins/migratecmd"
 )
 
@@ -38,12 +38,26 @@ type App struct {
 	// ServerManager *servermgr.Plugin  // Server manager plugin
 	logFileWriter *logger.FileWriter // File writer for PocketBase logs
 	customLogger  *slog.Logger       // Logger with TeeHandler (writes to both console and file)
+	updater       *updater.Updater
+
+	// Version information (injected at build time via ldflags)
+	Version string
+	Commit  string
+	Date    string
 }
 
 // New creates and initializes the sandstorm-tracker application
 func New() (*App, error) {
+	return NewWithVersion("dev", "unknown", "unknown")
+}
+
+// NewWithVersion creates a new app with version information
+func NewWithVersion(version, commit, date string) (*App, error) {
 	app := &App{
 		PocketBase: pocketbase.New(),
+		Version:    version,
+		Commit:     commit,
+		Date:       date,
 	}
 
 	// Load configuration (lightweight - no validation yet)
@@ -81,11 +95,15 @@ func (app *App) setupPlugins() {
 		Automigrate: true,
 	})
 
-	// Auto-update from GitHub releases
-	ghupdate.MustRegister(app.PocketBase, app.RootCmd, ghupdate.Config{
-		Owner: "daniel-le97",
-		Repo:  "sandstorm-tracker",
-	})
+	// Register custom updater with check-updates, update, and version commands
+	app.updater = updater.RegisterCommands(app.PocketBase, app.RootCmd, updater.Config{
+		Owner:          "daniel-le97",
+		Repo:           "sandstorm-tracker",
+		CurrentVersion: app.Version,
+		BinaryName:     "sandstorm-tracker",
+		SkipPrerelease: false,
+		SkipDraft:      true,
+	}, app.Logger().With("component", "UPDATER"))
 
 	// Register server manager plugin
 	// app.ServerManager = servermgr.MustRegister(app.PocketBase, app.RootCmd, servermgr.Config{
@@ -97,36 +115,6 @@ func (app *App) setupPlugins() {
 
 // Bootstrap initializes all application components and registers hooks
 func (app *App) Bootstrap() error {
-	// Setup log file writer after bootstrap
-	// app.OnBootstrap().BindFunc(func(e *core.BootstrapEvent) error {
-	// 	// Wait for bootstrap to complete first
-	// 	if err := e.Next(); err != nil {
-	// 		return err
-	// 	}
-
-	// 	// Setup file writer
-	// 	if err := app.setupLogFileWriter(); err != nil {
-	// 		return fmt.Errorf("failed to setup log file writer: %w", err)
-	// 	}
-
-	// 	// Intercept logs via model hook and write to file
-	// 	app.OnModelCreate(core.LogsTableName).BindFunc(func(e *core.ModelEvent) error {
-	// 		l := e.Model.(*core.Log)
-
-	// 		// Write to file
-	// 		if app.logFileWriter != nil {
-	// 			if err := app.logFileWriter.WriteLog(l); err != nil {
-	// 				// Don't fail the hook on write errors
-	// 				fmt.Printf("Warning: Failed to write log to file: %v\n", err)
-	// 			}
-	// 		}
-
-	// 		return e.Next()
-	// 	})
-
-	// 	return nil
-	// })
-
 	// Register lifecycle hooks
 	app.OnServe().BindFunc(func(e *core.ServeEvent) error {
 		// Write PID file for graceful shutdown/update coordination
@@ -334,6 +322,11 @@ func (app *App) Logger() *slog.Logger {
 		return app.customLogger
 	}
 	return app.PocketBase.Logger()
+}
+
+// GetUpdater returns the updater instance for use in hooks
+func (app *App) GetUpdater() *updater.Updater {
+	return app.updater
 }
 
 // setupLogFileWriter initializes the file writer.

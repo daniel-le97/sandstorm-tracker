@@ -14,8 +14,8 @@ var (
 )
 
 func main() {
-	// Create application (wraps PocketBase + your components)
-	application, err := app.New()
+	// Create application with version information injected at build time
+	application, err := app.NewWithVersion(Version, Commit, Date)
 	if err != nil {
 		log.Fatalf("Failed to initialize app: %v", err)
 	}
