@@ -10,8 +10,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/spf13/cobra"
 	"github.com/joho/godotenv"
+	"github.com/spf13/cobra"
 )
 
 // SAWServerConfig represents a single server configuration from SAW's server-configs.json

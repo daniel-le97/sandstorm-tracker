@@ -13,7 +13,6 @@ import (
 	"github.com/pocketbase/pocketbase/tests"
 )
 
-
 func TestHandleChatCommandKDR(t *testing.T) {
 	testApp, err := tests.NewTestApp(t.TempDir())
 	if err != nil {
@@ -34,8 +33,7 @@ func TestHandleChatCommandKDR(t *testing.T) {
 		t.Fatalf("Failed to find server record: %v", err)
 	}
 
-
-	mockRcon := func (serverID string, command string) (string, error) {
+	mockRcon := func(serverID string, command string) (string, error) {
 		t.Logf("Mock RCON Command Sent to %s: %s", serverID, command)
 		return "", nil
 	}

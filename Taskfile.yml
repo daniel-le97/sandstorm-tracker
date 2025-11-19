@@ -1,5 +1,9 @@
 version: "3"
 tasks:
+  tags:
+    desc: create git tag for current version
+    cmds:
+      - .\scripts\create-release-tag.ps1
   goreleaser-dev:
     desc: Run goreleaser in snapshot (dev) mode
     cmds:

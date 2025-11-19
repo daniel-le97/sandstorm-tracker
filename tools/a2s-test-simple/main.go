@@ -350,7 +350,6 @@ func testWithChallenge(address string) string {
 	return result.String()
 }
 
-
 func testWithMinusOne(address string) string {
 	var result bytes.Buffer
 
