@@ -158,23 +158,32 @@ release:
   skip_upload: false
 
 # Docker configuration for multi-arch container images (v2 format)
-dockers_v2:
-  - images:
-      - "ghcr.io/daniel-le97/sandstorm-tracker"
-    tags:
-      - "v{{ .Version }}"
-      - "{{ if not .IsNightly }}latest{{ end }}"
-    dockerfile: Dockerfile
-    platforms:
-      - linux/amd64
-      - linux/arm64
-    labels:
-      "org.opencontainers.image.description": "Insurgency: Sandstorm server stats tracker"
-      "org.opencontainers.image.created": "{{.Date}}"
-      "org.opencontainers.image.title": "{{.ProjectName}}"
-      "org.opencontainers.image.revision": "{{.FullCommit}}"
-      "org.opencontainers.image.version": "{{.Version}}"
-      "org.opencontainers.image.source": "https://github.com/daniel-le97/sandstorm-tracker"
+# Disabled: Attestation not supported with default Docker driver
+# To enable: Install containerd image store or use different builder
+# dockers_v2:
+#   - images:
+#       - "ghcr.io/daniel-le97/sandstorm-tracker"
+#     tags:
+#       - "v{{ .Version }}"
+#       - "{{ if not .IsNightly }}latest{{ end }}"
+#     dockerfile: Dockerfile
+#     build_flag_templates:
+#       - "--label=org.opencontainers.image.created={{.Date}}"
+#       - "--label=org.opencontainers.image.title={{.ProjectName}}"
+#       - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+#       - "--label=org.opencontainers.image.version={{.Version}}"
+#       - "--label=org.opencontainers.image.source=https://github.com/daniel-le97/sandstorm-tracker"
+#       - "--label=org.opencontainers.image.description=Insurgency: Sandstorm server stats tracker"
+#     labels:
+#       "org.opencontainers.image.description": "Insurgency: Sandstorm server stats tracker"
+#       "org.opencontainers.image.created": "{{.Date}}"
+#       "org.opencontainers.image.title": "{{.ProjectName}}"
+#       "org.opencontainers.image.revision": "{{.FullCommit}}"
+#       "org.opencontainers.image.version": "{{.Version}}"
+#       "org.opencontainers.image.source": "https://github.com/daniel-le97/sandstorm-tracker"
+#     platforms:
+#       - linux/amd64
+#       - linux/arm64
 
 # snapcrafts:
 #   - name_template: '{{ .ProjectName }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
