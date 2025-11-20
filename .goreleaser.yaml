@@ -67,25 +67,18 @@ builds:
         goarch: ppc64le
 
 archives:
-  - formats: tar.gz
-    # this name template makes the OS and Arch compatible with the results of `uname`.
-    # name_template: >-
-    #   {{ .ProjectName }}_
-    #   {{- title .Os }}_
-    #   {{- if eq .Arch "amd64" }}x86_64
-    #   {{- else if eq .Arch "386" }}i386
-    #   {{- else }}{{ .Arch }}{{ end }}
-    #   {{- if .Arm }}v{{ .Arm }}{{ end }}
-    # use zip for windows archives
-    format_overrides:
+  - format_overrides:
       - goos: windows
-        formats: zip
-    # include additional files in the archive
+        formats: ["zip"]
     files:
       - README.md
       - LICENSE
-      # - banned.db     # Include SQLite database with releases
-      # - ./scripts/install.sh    # Include installer script
+      - src: scripts/setup-*
+        dst: scripts
+      - src: scripts/run-with-update.*
+        dst: scripts
+      # - src: sandstorm-tracker.example.yml
+      #   dst: .
 
 checksum:
   name_template: "checksums.txt"
@@ -227,14 +220,14 @@ release:
 #         - statically-linked-binary
 #         - changelog-file-missing-in-native-package
 
-publishers:
-  - name: fury.io
-    # by specifying `packages` id here goreleaser will only use this publisher
-    # with artifacts identified by this id
-    ids:
-      - packages
-    dir: "{{ dir .ArtifactPath }}"
-    cmd: curl -F package=@{{ .ArtifactName }} https://{{ .Env.FURY_TOKEN }}@push.fury.io/{{ .Env.FURY_USER }}/
+# publishers:
+#   - name: fury.io
+#     # by specifying `packages` id here goreleaser will only use this publisher
+#     # with artifacts identified by this id
+#     ids:
+#       - packages
+#     dir: "{{ dir .ArtifactPath }}"
+#     cmd: curl -F package=@{{ .ArtifactName }} https://{{ .Env.FURY_TOKEN }}@push.fury.io/{{ .Env.FURY_USER }}/
 # The lines beneath this are called `modelines`. See `:help modeline`
 # Feel free to remove those if you don't want/use them.
 # yaml-language-server: $schema=https://goreleaser.com/static/schema.json

@@ -54,7 +54,8 @@ func New() (*App, error) {
 	return NewWithVersion("dev", "unknown", "unknown")
 }
 
-func (app *App) bindConfig() {
+// Setup configuration, logger, pools, parser, etc.
+func (app *App) setupServices() {
 	app.Config = app.Store().GetOrSet("config", func() any {
 		cfg, err := config.Load()
 		if err != nil {
@@ -62,15 +63,13 @@ func (app *App) bindConfig() {
 		}
 		return cfg
 	}).(*config.Config)
-}
-func (app *App) bindPoolers() {
-	rconPool := app.Store().GetOrSet("rconpool", func() any {
+
+	app.setupLogger()
+
+	app.RconPool = app.Store().GetOrSet("rconpool", func() any {
 		return rcon.NewClientPool(app.Logger().WithGroup("RCON"))
 	}).(*rcon.ClientPool)
-	app.RconPool = rconPool
-}
 
-func (app *App) setupParser() {
 	app.Parser = app.Store().GetOrSet("parser", func() any {
 		return parser.NewLogParser(app, app.Logger().With("component", "PARSER"))
 	}).(*parser.LogParser)
@@ -78,6 +77,14 @@ func (app *App) setupParser() {
 	app.A2SPool = app.Store().GetOrSet("a2spool", func() any {
 		return a2s.NewServerPool()
 	}).(*a2s.ServerPool)
+
+	app.OnTerminate().BindFunc(func(e *core.TerminateEvent) error {
+		// remove our services
+		app.A2SPool = nil
+		app.Parser = nil
+		return e.Next()
+	})
+
 }
 
 // NewWithVersion creates a new app with version information
@@ -89,22 +96,9 @@ func NewWithVersion(version, commit, date string) (*App, error) {
 		Date:       date,
 	}
 
-	app.bindConfig()
+	app.setupServices()
 
-	app.setupLogger()
-
-	app.bindPoolers()
-
-	// Note: Logger setup happens in OnBootstrap hook (after PocketBase is fully initialized)
-
-	// Initialize parser with logger
-	app.setupParser()
-
-	// Initialize RCON pool (servers added in onServe)
-
-	// Initialize A2S pool (servers added in onServe)
-
-	// Setup default plugins (includes server manager)
+	// Setup default plugins (typically adds more cli commands)
 	app.setupPlugins()
 
 	return app, nil

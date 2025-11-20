@@ -91,15 +91,15 @@ COMPLETED:
 
 ## game over map loading verification -->
 
-## player info
+<!-- ## player info
 - players IP addresses should be tracked incase we need to do an IP ban for future use.
 - an an IP field onto the players collection.
 - [2025.11.08-17.35.54:333][663]LogNet: Server accepting post-challenge connection from: 127.0.0.1:52405
 - the above is what a log for this looks like, we need to extract their ip
 - this will be kept in memory using app.store()
 - on the next player_login event, if there is a key for app.Store().Get("serverextid:lastIP") then we will use it to create the player. after it is used we will remove the key
-- if we hit another connection event before it is used, we should discard both, because we cant be sure which client will actually connect first, and we will hopefully get it the next time they connect
-\
+- if we hit another connection event before it is used, we should discard both, because we cant be sure which client will actually connect first, and we will hopefully get it the next time they connect -->
+
 
 <!-- ## insurgency server crashing recovery
 COMPLETED:
@@ -122,5 +122,3 @@ COMPLETED:
 
 ## clean this repo for unused/out of date files
 
-maybe we also need to have an a2s debouncer that everytime our watcher has an fsnotify watcher event will trigger and if there has been no file activity we send an a2s query for 2 seconds for 20 seconds total
-we coild this to determine if a server is offline.

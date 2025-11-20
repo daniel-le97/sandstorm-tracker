@@ -6,17 +6,18 @@ param(
     [string]$LogFile = "logs\update-serve.log"
 )
 
-# Get the directory where this script is located
+# Get the directory where this script is located (scripts folder)
+# Then go up one level to the app directory
 $scriptDir = Split-Path -Parent $PSCommandPath
-$appPath = Join-Path $scriptDir "$AppName.exe"
-$logDir = Join-Path $scriptDir "logs"
+$appPath = Join-Path (Split-Path -Parent $scriptDir) "$AppName.exe"
+$logDir = Join-Path (Split-Path -Parent $scriptDir) "logs"
 
 # Ensure logs directory exists
 if (-not (Test-Path $logDir)) {
     New-Item -ItemType Directory -Path $logDir -Force | Out-Null
 }
 
-$logPath = Join-Path $scriptDir $LogFile
+$logPath = Join-Path $logDir $LogFile
 
 # Helper function to log messages
 function Write-Log {

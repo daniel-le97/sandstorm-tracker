@@ -1,11 +1,21 @@
 # setup-service.ps1
 # Sets up sandstorm-tracker as a Windows Task Scheduler service
-# Run as Administrator
+# Run as Administrator from the sandstorm-tracker directory
+#
+# Usage:
+#   cd C:\opt\sandstorm-tracker
+#   .\scripts\setup-service.ps1
+#
+# Or with custom task name:
+#   .\scripts\setup-service.ps1 -TaskName "SandstormTrackerMain"
 
 param(
-    [string]$AppPath = "C:\path\to\sandstorm-tracker",
     [string]$TaskName = "SandstormTracker"
 )
+
+# Get the app directory (parent of scripts directory)
+$scriptDir = Split-Path -Parent $PSCommandPath
+$AppPath = Split-Path -Parent $scriptDir
 
 # Check if running as administrator
 $isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")
@@ -20,35 +30,17 @@ if (-not (Test-Path "$AppPath\sandstorm-tracker.exe")) {
     exit 1
 }
 
-$scriptPath = Join-Path $AppPath "scripts\run-app.ps1"
+$scriptPath = Join-Path $AppPath "run-with-update.ps1"
 $exePath = Join-Path $AppPath "sandstorm-tracker.exe"
 
 Write-Host "Setting up $TaskName service..." -ForegroundColor Cyan
 Write-Host "App Path: $AppPath"
 Write-Host "Script: $scriptPath"
 
-# Create run-app.ps1 if it doesn't exist
+# Verify run-with-update.ps1 exists
 if (-not (Test-Path $scriptPath)) {
-    Write-Host "Creating $scriptPath..." -ForegroundColor Yellow
-    
-    $runScript = @"
-# run-app.ps1
-# Runs sandstorm-tracker and restarts it if it exits
-
-`$appPath = Split-Path -Parent `$PSCommandPath | Split-Path -Parent
-`$exePath = Join-Path `$appPath "sandstorm-tracker.exe"
-
-# Run the app in serve mode
-Write-Host "Starting sandstorm-tracker..."
-& `$exePath serve
-
-# When app exits, this script exits and Task Scheduler will restart it
-Write-Host "sandstorm-tracker exited. Waiting for Task Scheduler to restart..."
-Start-Sleep -Seconds 2
-"@
-    
-    Set-Content -Path $scriptPath -Value $runScript -Encoding UTF8
-    Write-Host "Created $scriptPath" -ForegroundColor Green
+    Write-Error "run-with-update.ps1 not found at $scriptPath"
+    exit 1
 }
 
 # Remove existing task if it exists
@@ -62,7 +54,8 @@ if ($existingTask) {
 # Create task action
 $action = New-ScheduledTaskAction `
     -Execute "powershell.exe" `
-    -Argument "-NoProfile -ExecutionPolicy Bypass -File `"$scriptPath`""
+    -Argument "-NoProfile -ExecutionPolicy Bypass -File `"$scriptPath`"" `
+    -WorkingDirectory "$AppPath"
 
 # Create task trigger - At startup
 $triggerAtStartup = New-ScheduledTaskTrigger -AtStartup
@@ -72,9 +65,8 @@ $settings = New-ScheduledTaskSettingsSet `
     -MultipleInstances Queue `
     -StartWhenAvailable `
     -RestartCount 5 `
-    -RestartInterval (New-TimeSpan -Seconds 2) `
-    -RunOnlyIfNetworkAvailable `
-    -ExecutionTimeLimit (New-TimeSpan -Hours 0)
+    -RestartInterval (New-TimeSpan -Seconds 60) `
+    -RunOnlyIfNetworkAvailable
 
 # Create the task
 $principal = New-ScheduledTaskPrincipal `
@@ -111,7 +103,7 @@ Write-Host "`nSetup complete!" -ForegroundColor Green
 Write-Host "The service will:"
 Write-Host "  - Start automatically on Windows startup"
 Write-Host "  - Restart automatically if it crashes"
-Write-Host "  - Restart every 1 minute if it exits"
+Write-Host "  - Restart every 2 seconds if it exits"
 Write-Host "`nManagement commands:"
 Write-Host "  Start:   Start-ScheduledTask -TaskName $TaskName"
 Write-Host "  Stop:    Stop-ScheduledTask -TaskName $TaskName"
