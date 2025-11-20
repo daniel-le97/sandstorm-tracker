@@ -77,8 +77,8 @@ archives:
         dst: scripts
       - src: scripts/run-with-update.*
         dst: scripts
-      # - src: sandstorm-tracker.example.yml
-      #   dst: .
+      - src: assets/configs/sandstorm-tracker-saw.example.yml
+        dst: sandstorm-tracker.yml
 
 checksum:
   name_template: "checksums.txt"
