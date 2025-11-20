@@ -4,6 +4,8 @@ import (
 	"log"
 	"sandstorm-tracker/internal/app"
 	_ "sandstorm-tracker/migrations"
+
+	"github.com/joho/godotenv"
 )
 
 // Build-time variables injected by GoReleaser via ldflags
@@ -14,6 +16,9 @@ var (
 )
 
 func main() {
+	// Load .env file if present (for environment variables)
+	godotenv.Load()
+
 	// Create application with version information injected at build time
 	application, err := app.NewWithVersion(Version, Commit, Date)
 	if err != nil {

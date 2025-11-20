@@ -7,7 +7,7 @@ database:
   path: "/app/pb_data"
 
 # Optional: Configure servers
-servers: []
+servers: 
   # Example:
   # - name: "Main Server"
   #   logPath: "/mnt/game_logs"

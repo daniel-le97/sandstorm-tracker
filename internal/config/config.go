@@ -38,10 +38,7 @@ func Load() (*Config, error) {
 
 	// Enable automatic environment variable reading
 	viper.AutomaticEnv()
-	viper.SetEnvPrefix("SANDSTORM") // Optional: all env vars must start with SANDSTORM_
-
-	// Bind SAW_PATH environment variable
-	viper.BindEnv("sawPath", "SAW_PATH")
+	// viper.SetEnvPrefix("SANDSTORM") // Optional: all env vars must start with SANDSTORM_
 
 	// Try YAML first, then TOML
 	viper.SetConfigType("yml")
@@ -66,8 +63,22 @@ func Load() (*Config, error) {
 		return nil, err
 	}
 
-	// If SAW path is provided, load from SAW and merge with manual config
+	// Environment variables take precedence - check SAW_PATH env var AFTER unmarshaling
+	// This ensures env var overrides config file value
+	if sawPathEnv := os.Getenv("SAW_PATH"); sawPathEnv != "" {
+		config.SAWPath = sawPathEnv
+	}
+
+	// If SAW path is provided, validate it exists and load from SAW
 	if config.SAWPath != "" {
+
+		// Check if the SAW config file exists
+		sawConfigPath := filepath.Join(config.SAWPath, "admin-interface", "config", "server-configs.json")
+
+		if _, err := os.Stat(sawConfigPath); err != nil {
+			return nil, fmt.Errorf("SAW config file not found at %s: %w (check SAW_PATH environment variable or sawPath in config file)", sawConfigPath, err)
+		}
+
 		sawConfig, err := LoadFromSAW(config.SAWPath)
 		if err != nil {
 			return nil, fmt.Errorf("failed to load from SAW: %w", err)

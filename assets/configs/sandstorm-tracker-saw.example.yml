@@ -12,6 +12,8 @@
 # Or set as environment variable:
 #   $env:SAW_PATH = "C:\path\to\sandstorm-admin-wrapper"
 #   .\sandstorm-tracker.exe
+# or you can specify it directly in this config file as seen below.
+
 
 # SAW Path Configuration
 # Provide the root directory where Sandstorm Admin Wrapper is installed
