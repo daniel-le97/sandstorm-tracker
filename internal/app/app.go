@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"os"
@@ -9,6 +10,7 @@ import (
 
 	"sandstorm-tracker/internal/a2s"
 	"sandstorm-tracker/internal/config"
+	"sandstorm-tracker/internal/ghupdate"
 	"sandstorm-tracker/internal/handlers"
 	"sandstorm-tracker/internal/jobs"
 	"sandstorm-tracker/internal/logger"
@@ -20,7 +22,7 @@ import (
 
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/core"
-	"github.com/pocketbase/pocketbase/plugins/ghupdate"
+
 	"github.com/pocketbase/pocketbase/plugins/migratecmd"
 
 	"github.com/spf13/cobra"
@@ -52,6 +54,32 @@ func New() (*App, error) {
 	return NewWithVersion("dev", "unknown", "unknown")
 }
 
+func (app *App) bindConfig() {
+	app.Config = app.Store().GetOrSet("config", func() any {
+		cfg, err := config.Load()
+		if err != nil {
+			panic(fmt.Sprintf("failed to load config: %v", err))
+		}
+		return cfg
+	}).(*config.Config)
+}
+func (app *App) bindPoolers() {
+	rconPool := app.Store().GetOrSet("rconpool", func() any {
+		return rcon.NewClientPool(app.Logger().WithGroup("RCON"))
+	}).(*rcon.ClientPool)
+	app.RconPool = rconPool
+}
+
+func (app *App) setupParser() {
+	app.Parser = app.Store().GetOrSet("parser", func() any {
+		return parser.NewLogParser(app, app.Logger().With("component", "PARSER"))
+	}).(*parser.LogParser)
+
+	app.A2SPool = app.Store().GetOrSet("a2spool", func() any {
+		return a2s.NewServerPool()
+	}).(*a2s.ServerPool)
+}
+
 // NewWithVersion creates a new app with version information
 func NewWithVersion(version, commit, date string) (*App, error) {
 	app := &App{
@@ -61,27 +89,20 @@ func NewWithVersion(version, commit, date string) (*App, error) {
 		Date:       date,
 	}
 
-	// Load configuration (lightweight - no validation yet)
-	cfg, err := config.Load()
-	if err != nil {
-		return nil, fmt.Errorf("failed to load config: %w", err)
-	}
-	app.Config = cfg
+	app.bindConfig()
 
-	err = app.setupLogFileWriter()
-	if err != nil {
-		return nil, fmt.Errorf("failed to setup log file writer: %w", err)
-	}
+	app.setupLogger()
+
+	app.bindPoolers()
+
 	// Note: Logger setup happens in OnBootstrap hook (after PocketBase is fully initialized)
 
 	// Initialize parser with logger
-	app.Parser = parser.NewLogParser(app.PocketBase, app.Logger().With("component", "PARSER"))
+	app.setupParser()
 
 	// Initialize RCON pool (servers added in onServe)
-	app.RconPool = rcon.NewClientPool(app.Logger().WithGroup("RCON"))
 
 	// Initialize A2S pool (servers added in onServe)
-	app.A2SPool = a2s.NewServerPool()
 
 	// Setup default plugins (includes server manager)
 	app.setupPlugins()
@@ -96,7 +117,7 @@ func (app *App) setupPlugins() {
 		Automigrate: true,
 	})
 
-	ghupdate.MustRegister(app.PocketBase, app.RootCmd, ghupdate.Config{
+	updater := ghupdate.MustRegister(app.PocketBase, app.RootCmd, ghupdate.Config{
 		Owner:             "daniel-le97",
 		Repo:              "sandstorm-tracker",
 		ArchiveExecutable: "sandstorm-tracker",
@@ -110,22 +131,18 @@ func (app *App) setupPlugins() {
 			fmt.Printf("sandstorm-tracker version %s\n", app.Version)
 			fmt.Printf("Commit: %s\n", app.Commit)
 			fmt.Printf("Date: %s\n", app.Date)
+			hasUpdates, err := updater.CheckForUpdate(context.Background())
+			if err != nil {
+				fmt.Printf("Update check failed: %v\n", err)
+				return
+			}
+			if hasUpdates != "" {
+				fmt.Println("A new update is available! Run 'sandstorm-tracker update' to update.")
+			} else {
+				fmt.Println("You are running the latest version.")
+			}
 		},
 	})
-
-	// app.updater = updater.RegisterCommands(app.PocketBase, app.RootCmd, updater.Config{
-	// 	Owner:          "daniel-le97",
-	// 	Repo:           "sandstorm-tracker",
-	// 	CurrentVersion: app.Version,
-	// 	BinaryName:     "sandstorm-tracker",
-	// 	SkipPrerelease: false,
-	// 	SkipDraft:      true,
-	// }, app.Logger().With("component", "UPDATER"))
-
-	// Register server manager plugin
-	// app.ServerManager = servermgr.MustRegister(app.PocketBase, app.RootCmd, servermgr.Config{
-	// 	DefaultSAWPath: app.Config.SAWPath,
-	// })
 
 	// Add other plugins here (jsvm, etc.)
 }
@@ -233,6 +250,9 @@ func (app *App) onServe(e *core.ServeEvent) error {
 	// Register archive cron job for data older than 30 days
 	jobs.RegisterArchiveOldData(app.PocketBase, app.Logger().With("component", "ARCHIVE_JOB"))
 
+	// Register update checker cron job (every 30 minutes)
+	jobs.RegisterUpdateChecker(app, app.Config, app.Logger())
+
 	// Start watcher with panic recovery
 	go func() {
 		defer func() {
@@ -323,11 +343,6 @@ func (app *App) GetA2SPool() *a2s.ServerPool {
 	return app.A2SPool
 }
 
-// GetServerManager returns the server manager plugin
-// func (app *App) GetServerManager() *servermgr.Plugin {
-// 	return app.ServerManager
-// }
-
 func (app *App) Logger() *slog.Logger {
 	if app.customLogger != nil {
 		return app.customLogger
@@ -342,7 +357,7 @@ func (app *App) GetUpdater() *updater.Updater {
 
 // setupLogFileWriter initializes the file writer.
 // This must be called AFTER app.Config is loaded.
-func (app *App) setupLogFileWriter() error {
+func (app *App) setupLogger() {
 	// Determine log file path
 	logFilePath := filepath.Join(".", "logs", "app.log")
 
@@ -362,35 +377,6 @@ func (app *App) setupLogFileWriter() error {
 		}
 		return e.Next()
 	})
-
-	// app.OnBootstrap().BindFunc(func(e *core.BootstrapEvent) error {
-	// 	if err := e.Next(); err != nil {
-	// 		return err
-	// 	}
-
-	// 	e.App.OnModelCreate(core.LogsTableName).BindFunc(func(e *core.ModelEvent) error {
-	// 		// get or create global file writer instance if not already created
-	// 		writer := e.App.Store().GetOrSet("logger:filewriter", func() any {
-	// 			fw, err := logger.NewFileWriter(logger.FileWriterConfig{
-	// 				FilePath:   logFilePath,
-	// 				MaxSize:    10 * 1024 * 1024, // 10MB max file size
-	// 				MaxBackups: maxBackups,
-	// 				BufferSize: 8192,                   // 8KB buffer
-	// 				FlushEvery: 500 * time.Millisecond, // Flush every 500ms (more responsive for development)
-	// 			})
-	// 			if err != nil {
-	// 				panic(fmt.Sprintf("failed to create file writer: %v", err))
-	// 			}
-
-	// 			return fw
-	// 		}).(*logger.FileWriter)
-	// 		l := e.Model.(*core.Log)
-	// 		writer.WriteLog(l)
-	// 		return e.Next()
-	// 	})
-
-	// 	return nil
-	// })
 
 	app.OnModelCreate(core.LogsTableName).BindFunc(func(e *core.ModelEvent) error {
 		// get or create global file writer instance if not already created
@@ -412,5 +398,4 @@ func (app *App) setupLogFileWriter() error {
 		writer.WriteLog(l)
 		return e.Next()
 	})
-	return nil
 }
