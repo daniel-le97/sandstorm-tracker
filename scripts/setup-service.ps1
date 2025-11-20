@@ -30,7 +30,7 @@ if (-not (Test-Path "$AppPath\sandstorm-tracker.exe")) {
     exit 1
 }
 
-$scriptPath = Join-Path $AppPath "run-with-update.ps1"
+$scriptPath = Join-Path $AppPath "scripts\run-with-update.ps1"
 $exePath = Join-Path $AppPath "sandstorm-tracker.exe"
 
 Write-Host "Setting up $TaskName service..." -ForegroundColor Cyan
@@ -65,7 +65,7 @@ $settings = New-ScheduledTaskSettingsSet `
     -MultipleInstances Queue `
     -StartWhenAvailable `
     -RestartCount 5 `
-    -RestartInterval (New-TimeSpan -Seconds 60) `
+    -RestartInterval (New-TimeSpan -Minutes 5) `
     -RunOnlyIfNetworkAvailable
 
 # Create the task
@@ -103,7 +103,7 @@ Write-Host "`nSetup complete!" -ForegroundColor Green
 Write-Host "The service will:"
 Write-Host "  - Start automatically on Windows startup"
 Write-Host "  - Restart automatically if it crashes"
-Write-Host "  - Restart every 2 seconds if it exits"
+Write-Host "  - Retry up to 5 times with 5-minute intervals between restarts"
 Write-Host "`nManagement commands:"
 Write-Host "  Start:   Start-ScheduledTask -TaskName $TaskName"
 Write-Host "  Stop:    Stop-ScheduledTask -TaskName $TaskName"

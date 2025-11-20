@@ -7,17 +7,10 @@ set -e
 
 # Get the app directory (parent directory of this script)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-APP_PATH="$(dirname "$SCRIPT_DIR")/scripts"
-
-# If called from scripts directory, use parent
-if [ "$(basename "$SCRIPT_DIR")" = "scripts" ]; then
-    APP_PATH="$SCRIPT_DIR/.."
-else
-    APP_PATH="$SCRIPT_DIR"
-fi
+APP_PATH="$(dirname "$SCRIPT_DIR")"
 
 TASK_NAME="${1:-sandstorm-tracker}"
-WRAPPER_SCRIPT="$APP_PATH/run-with-update.sh"
+WRAPPER_SCRIPT="$APP_PATH/scripts/run-with-update.sh"
 APP_BINARY="$APP_PATH/sandstorm-tracker"
 
 # Check if running as root
@@ -56,9 +49,9 @@ After=network.target
 Type=simple
 User=root
 WorkingDirectory=$APP_PATH
-ExecStart=$WRAPPER_SCRIPT sandstorm-tracker logs/update-serve.log
+ExecStart=$WRAPPER_SCRIPT
 Restart=always
-RestartSec=60
+RestartSec=300
 
 # Logging
 StandardOutput=journal
@@ -100,7 +93,7 @@ echo "Setup complete!"
 echo "The service will:"
 echo "  - Start automatically on system boot"
 echo "  - Restart automatically if it crashes"
-echo "  - Restart every 60 seconds if it exits"
+echo "  - Retry with 5-minute intervals between restarts"
 echo ""
 echo "Management commands:"
 echo "  Status:  sudo systemctl status $TASK_NAME"

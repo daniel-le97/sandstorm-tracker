@@ -1,0 +1,1 @@
+git describe --tags --abbrev=0 | ForEach-Object { git tag -d $_; git push origin ":$_" }; task tags; task goreleaser-release

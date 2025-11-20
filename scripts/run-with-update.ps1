@@ -1,76 +1,26 @@
 # run-with-update.ps1
-# Checks for updates, applies them, then starts the server with logging
+# Wrapper script to check for updates, then start the app
+# All app logging goes to app.log and the database
 
 param(
-    [string]$AppName = "sandstorm-tracker",
-    [string]$LogFile = "logs\update-serve.log"
+    [string]$AppName = "sandstorm-tracker"
 )
 
-# Get the directory where this script is located (scripts folder)
-# Then go up one level to the app directory
+# Get app directory (parent of scripts folder)
 $scriptDir = Split-Path -Parent $PSCommandPath
-$appPath = Join-Path (Split-Path -Parent $scriptDir) "$AppName.exe"
-$logDir = Join-Path (Split-Path -Parent $scriptDir) "logs"
-
-# Ensure logs directory exists
-if (-not (Test-Path $logDir)) {
-    New-Item -ItemType Directory -Path $logDir -Force | Out-Null
-}
-
-$logPath = Join-Path $logDir $LogFile
-
-# Helper function to log messages
-function Write-Log {
-    param(
-        [string]$Message,
-        [ValidateSet("INFO", "WARNING", "ERROR")]
-        [string]$Level = "INFO"
-    )
-    
-    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    $logEntry = "[$timestamp] [$Level] $Message"
-    
-    Write-Host $logEntry
-    Add-Content -Path $logPath -Value $logEntry -Encoding UTF8
-}
+$appDir = Split-Path -Parent $scriptDir
+$appPath = Join-Path $appDir "$AppName.exe"
 
 # Check if app exists
 if (-not (Test-Path $appPath)) {
-    Write-Log "Error: $AppName.exe not found at $appPath" "ERROR"
+    Write-Error "Error: $AppName.exe not found at $appPath"
     exit 1
 }
 
-Write-Log "Starting $AppName with update check..." "INFO"
+Write-Host "Checking for updates..."
+& $appPath update
 
-# Try to update
-Write-Log "Checking for updates and applying if available..." "INFO"
-& $appPath update 2>&1 | ForEach-Object {
-    Write-Host $_
-    Add-Content -Path $logPath -Value $_ -Encoding UTF8
-}
+Write-Host "Starting server..."
+& $appPath serve
 
-if ($LASTEXITCODE -ne 0) {
-    Write-Log "Update check completed (no updates or update skipped)" "INFO"
-}
-else {
-    Write-Log "Update applied successfully" "INFO"
-}
-
-# Start the server
-Write-Log "Starting server..." "INFO"
-& $appPath serve 2>&1 | ForEach-Object {
-    # Remove problematic Unicode characters
-    $clean = $_ -replace '[^\x20-\x7E\n\r\t]', ''
-    if ($clean -ne '') {
-        Write-Host $_
-        Add-Content -Path $logPath -Value $_ -Encoding UTF8
-    }
-}
-
-$exitCode = $LASTEXITCODE
-Write-Log "Server stopped with exit code: $exitCode" "WARNING"
-
-# Wait before exiting so Task Scheduler can detect the exit
-Start-Sleep -Seconds 2
-
-exit $exitCode
+exit $LASTEXITCODE
