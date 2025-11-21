@@ -2,6 +2,7 @@ package parser
 
 import (
 	"context"
+	"log/slog"
 	"testing"
 	"time"
 )
@@ -56,6 +57,7 @@ func TestChatCommandParsing(t *testing.T) {
 
 	parser := &LogParser{
 		patterns: NewLogPatterns(),
+		logger:   slog.Default(),
 	}
 
 	for _, tt := range tests {
@@ -80,6 +82,7 @@ func TestChatCommandEventEmission(t *testing.T) {
 
 	parser := &LogParser{
 		patterns: NewLogPatterns(),
+		logger:   slog.Default(),
 	}
 
 	// Parse the timestamp from the log line
@@ -138,6 +141,7 @@ func TestUnsupportedCommandsIgnored(t *testing.T) {
 
 	parser := &LogParser{
 		patterns: NewLogPatterns(),
+		logger:   slog.Default(),
 	}
 
 	for _, cmd := range unsupportedCommands {

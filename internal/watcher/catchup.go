@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
 	"regexp"
 	"strconv"
@@ -20,6 +20,7 @@ import (
 
 // CatchupProcessor handles startup catch-up logic
 type CatchupProcessor struct {
+	logger        *slog.Logger
 	parser        *parser.LogParser
 	a2sPool       A2SQuerier
 	serverConfigs map[string]config.ServerConfig
@@ -29,6 +30,7 @@ type CatchupProcessor struct {
 
 // NewCatchupProcessor creates a new catchup processor
 func NewCatchupProcessor(
+	logger *slog.Logger,
 	parser *parser.LogParser,
 	a2sPool A2SQuerier,
 	serverConfigs map[string]config.ServerConfig,
@@ -36,6 +38,7 @@ func NewCatchupProcessor(
 	ctx context.Context,
 ) *CatchupProcessor {
 	return &CatchupProcessor{
+		logger:        logger,
 		parser:        parser,
 		a2sPool:       a2sPool,
 		serverConfigs: serverConfigs,
@@ -50,13 +53,13 @@ func (c *CatchupProcessor) CheckStartupCatchup(filePath, serverID string) (int, 
 	// Get server config to access query address
 	serverConfig, exists := c.serverConfigs[serverID]
 	if !exists {
-		log.Printf("[Catchup] No config found for server %s, skipping catch-up", serverID)
+		c.logger.Debug("No config found for server, skipping catch-up", "serverID", serverID)
 		return 0, false
 	}
 
 	// Check 1: Query A2S to verify server is online and get current map
 	if serverConfig.QueryAddress == "" {
-		log.Printf("[Catchup] No query address configured for %s, skipping catch-up", serverID)
+		c.logger.Debug("No query address configured, skipping catch-up", "serverID", serverID)
 		return 0, false
 	}
 
@@ -65,22 +68,22 @@ func (c *CatchupProcessor) CheckStartupCatchup(filePath, serverID string) (int, 
 
 	serverStatus, err := c.a2sPool.QueryServer(ctx, serverConfig.QueryAddress)
 	if err != nil {
-		log.Printf("[Catchup] Server %s appears offline (A2S query failed: %v), skipping catch-up", serverID, err)
+		c.logger.Debug("Server appears offline", "serverID", serverID, "error", err)
 		return 0, false
 	}
 
 	if serverStatus == nil || serverStatus.Info == nil {
-		log.Printf("[Catchup] Server %s returned no info, skipping catch-up", serverID)
+		c.logger.Debug("Server returned no info, skipping catch-up", "serverID", serverID)
 		return 0, false
 	}
 
 	currentMap := serverStatus.Info.Map
-	log.Printf("[Catchup] Server %s is online, current map: %s", serverID, currentMap)
+	c.logger.Debug("Server is online", "serverID", serverID, "currentMap", currentMap)
 
 	// Check 2: Is file recently modified?
 	fileInfo, err := os.Stat(filePath)
 	if err != nil {
-		log.Printf("Failed to stat file %s: %v", filePath, err)
+		c.logger.Debug("Failed to stat file", "filePath", filePath, "error", err)
 		return 0, false
 	}
 
@@ -94,24 +97,23 @@ func (c *CatchupProcessor) CheckStartupCatchup(filePath, serverID string) (int, 
 	var fileModThreshold time.Duration
 	if sawActive {
 		fileModThreshold = 1 * time.Minute // SAW keeps file fresh with polling
-		log.Printf("[Catchup] SAW detected for %s, using 1-minute threshold", serverID)
+		c.logger.Debug("SAW detected, using 1-minute threshold", "serverID", serverID)
 	} else {
 		fileModThreshold = 9 * time.Hour // Servers restart every 8 hours, allow some buffer
-		log.Printf("[Catchup] No SAW detected for %s, using 9-hour threshold", serverID)
+		c.logger.Debug("No SAW detected, using 9-hour threshold", "serverID", serverID)
 	}
 
 	fileRecentlyModified := timeSinceModification < fileModThreshold
 
 	if !fileRecentlyModified {
-		log.Printf("[Catchup] File %s not recently modified (%.1f minutes ago), skipping catch-up",
-			serverID, timeSinceModification.Minutes())
+		c.logger.Debug("File not recently modified, skipping catch-up", "serverID", serverID, "minutesAgo", timeSinceModification.Minutes())
 		return 0, false
 	}
 
 	// Check 3: Find last map event in log file
 	mapName, scenario, mapTime, startLineNum, err := c.parser.FindLastMapEvent(filePath, time.Now())
 	if err != nil {
-		log.Printf("[Catchup] No map event found for %s: %v, skipping catch-up", serverID, err)
+		c.logger.Debug("No map event found, skipping catch-up", "serverID", serverID, "error", err)
 		return 0, false
 	}
 
@@ -119,21 +121,18 @@ func (c *CatchupProcessor) CheckStartupCatchup(filePath, serverID string) (int, 
 	recentMapEvent := timeSinceMap < 30*time.Minute
 
 	if !recentMapEvent {
-		log.Printf("[Catchup] Map event too old for %s (%.1f minutes ago), skipping catch-up",
-			serverID, timeSinceMap.Minutes())
+		c.logger.Debug("Map event too old, skipping catch-up", "serverID", serverID, "minutesAgo", timeSinceMap.Minutes())
 		return 0, false
 	}
 
 	// Check 4: Does the log map match the current server map?
 	if !strings.EqualFold(mapName, currentMap) {
-		log.Printf("[Catchup] Map mismatch for %s: log has '%s' but server is on '%s', skipping catch-up (can't get scores for old match)",
-			serverID, mapName, currentMap)
+		c.logger.Debug("Map mismatch, skipping catch-up", "serverID", serverID, "logMap", mapName, "serverMap", currentMap)
 		return 0, false
 	}
 
 	// All conditions met - do catch-up!
-	log.Printf("[Catchup] Starting catch-up for %s: server online, map matches (%s), file modified %.1fs ago, map loaded %.1fs ago",
-		serverID, mapName, timeSinceModification.Seconds(), timeSinceMap.Seconds())
+	c.logger.Debug("Starting catch-up", "serverID", serverID, "map", mapName, "fileMod(s)", timeSinceModification.Seconds(), "mapLoad(s)", timeSinceMap.Seconds())
 
 	// Get current file size as the catch-up end point
 	catchupEndOffset := fileInfo.Size()
@@ -159,19 +158,18 @@ func (c *CatchupProcessor) CheckStartupCatchup(filePath, serverID string) (int, 
 	if err != nil {
 		_, err = database.CreateMatch(c.ctx, c.pbApp, serverID, &mapName, &scenario, &mapTime, playerTeam)
 		if err != nil {
-			log.Printf("[Catchup] Failed to create match for %s: %v", serverID, err)
+			c.logger.Debug("Failed to create match", "serverID", serverID, "error", err)
 			return 0, false
 		}
-		log.Printf("[Catchup] Created match for %s: %s (%s) at %v", serverID, mapName, scenario, mapTime)
+		c.logger.Debug("Created match", "serverID", serverID, "map", mapName, "scenario", scenario)
 	} else {
-		log.Printf("[Catchup] Active match already exists for %s, using existing match", serverID)
+		c.logger.Debug("Active match already exists, using existing match", "serverID", serverID)
 	}
 
 	// Process historical events from map event to current position
 	linesProcessed := c.processHistoricalEvents(filePath, serverID, startLineNum, catchupEndOffset)
 
-	log.Printf("[Catchup] Completed for %s: processed %d lines from %d to %d",
-		serverID, linesProcessed, startLineNum, catchupEndOffset)
+	c.logger.Debug("Catch-up completed", "serverID", serverID, "linesProcessed", linesProcessed, "startLine", startLineNum, "endOffset", catchupEndOffset)
 
 	return int(catchupEndOffset), true
 }
@@ -220,7 +218,7 @@ func (c *CatchupProcessor) hasRecentRconLogs(filePath string, threshold time.Dur
 func (c *CatchupProcessor) processHistoricalEvents(filePath, serverID string, startLine int, endOffset int64) int {
 	file, err := os.Open(filePath)
 	if err != nil {
-		log.Printf("[Catchup] Failed to open file for historical processing: %v", err)
+		c.logger.Debug("Failed to open file for historical processing", "filePath", filePath, "error", err)
 		return 0
 	}
 	defer file.Close()
@@ -230,7 +228,7 @@ func (c *CatchupProcessor) processHistoricalEvents(filePath, serverID string, st
 	type contextKey string
 	isCatchupModeKey := contextKey("isCatchupMode")
 	catchupCtx := context.WithValue(c.ctx, isCatchupModeKey, true)
-	log.Printf("[Catchup] Processing historical events in catchup mode (no scoring/RCON)")
+	c.logger.Debug("Processing historical events in catchup mode (no scoring/RCON)")
 
 	scanner := bufio.NewScanner(file)
 	lineNum := 0
@@ -250,7 +248,7 @@ func (c *CatchupProcessor) processHistoricalEvents(filePath, serverID string, st
 
 		line := scanner.Text()
 		if err := c.parser.ParseAndProcess(catchupCtx, line, serverID, filePath); err != nil {
-			log.Printf("[Catchup] Error processing line %d: %v", lineNum, err)
+			c.logger.Debug("Error processing line in catch-up", "lineNum", lineNum, "error", err)
 		}
 
 		linesProcessed++

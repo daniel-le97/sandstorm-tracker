@@ -84,9 +84,9 @@ func NewWatcher(pbApp core.App, logParser *parser.LogParser, rconPool *rcon.Clie
 		a2sPool:          a2sPool,
 		serverConfigs:    scMap,
 		serverQueues:     make(map[string]chan string),
-		stateTracker:     NewServerStateTracker(inactivityDuration),
+		stateTracker:     NewServerStateTracker(logger, inactivityDuration),
 		rotationDetector: NewRotationDetector(logParser),
-		catchupProcessor: NewCatchupProcessor(logParser, a2sPool, scMap, pbApp, ctx),
+		catchupProcessor: NewCatchupProcessor(logger, logParser, a2sPool, scMap, pbApp, ctx),
 	}
 
 	// Start inactivity monitor
@@ -318,7 +318,7 @@ func (w *Watcher) processFile(filePath string) {
 	}
 
 	// Check for rotation using rotation detector
-	rotationResult := w.rotationDetector.CheckRotation(filePath, serverID, serverRecord, fileInfo)
+	rotationResult := w.rotationDetector.CheckRotation(w.logger, filePath, serverID, serverRecord, fileInfo)
 	offset = rotationResult.NewOffset
 
 	// Extract current log file creation time for saving
@@ -329,7 +329,7 @@ func (w *Watcher) processFile(filePath string) {
 
 	// Check if we should skip processing
 	if shouldSkip, _ := w.rotationDetector.ShouldSkipProcessing(
-		serverID, offset, rotationResult.CurrentSize, rotationResult.Rotated,
+		w.logger, serverID, offset, rotationResult.CurrentSize, rotationResult.Rotated,
 		savedLogFileTime, currentLogFileTime, serverRecord, w.pbApp,
 	); shouldSkip {
 		return

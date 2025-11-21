@@ -1,13 +1,14 @@
 package watcher
 
 import (
-	"log"
+	"log/slog"
 	"sync"
 	"time"
 )
 
 // ServerStateTracker manages server activity state and monitoring
 type ServerStateTracker struct {
+	logger           *slog.Logger
 	activeServers    map[string]bool
 	activeServersMu  sync.RWMutex
 	lastActivity     map[string]time.Time
@@ -19,8 +20,9 @@ type ServerStateTracker struct {
 }
 
 // NewServerStateTracker creates a new server state tracker
-func NewServerStateTracker(inactivityTimeout time.Duration) *ServerStateTracker {
+func NewServerStateTracker(logger *slog.Logger, inactivityTimeout time.Duration) *ServerStateTracker {
 	return &ServerStateTracker{
+		logger:          logger,
 		activeServers:   make(map[string]bool),
 		lastActivity:    make(map[string]time.Time),
 		inactivityTimer: inactivityTimeout,
@@ -51,7 +53,7 @@ func (s *ServerStateTracker) MarkActive(serverID string) {
 
 	// Only trigger callback if server wasn't already active
 	if !wasActive {
-		log.Printf("[Watcher] Server %s became active (log rotation detected)", serverID)
+		s.logger.Debug("Server became active", "serverID", serverID, "reason", "log rotation detected")
 
 		s.callbacksMu.RLock()
 		callback := s.onServerActive
@@ -72,7 +74,7 @@ func (s *ServerStateTracker) MarkInactive(serverID string) {
 
 	// Only trigger callback if server was actually active
 	if wasActive {
-		log.Printf("[Watcher] Server %s became inactive (no activity for 10s)", serverID)
+		s.logger.Debug("Server became inactive", "serverID", serverID, "reason", "no activity for 10s")
 
 		s.callbacksMu.RLock()
 		callback := s.onServerInactive

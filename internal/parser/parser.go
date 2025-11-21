@@ -4,7 +4,8 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"log"
+
+	// "log"
 	"log/slog"
 	"os"
 	"regexp"
@@ -144,12 +145,10 @@ func (p *LogParser) tryProcessMapTravel(ctx context.Context, line string, timest
 	scenario := strings.TrimSpace(matches[3])
 	// gameParam := strings.TrimSpace(matches[4]) // currently unused
 
-	log.Printf("Map travel detected: %s (scenario: %s) on server %s", mapName, scenario, serverID)
+	p.logger.Debug("Map travel detected", "map", mapName, "scenario", scenario, "serverID", serverID)
 
 	// Track this map travel time so we can ignore immediate disconnects/reconnects
 	p.lastMapTravelTimes[serverID] = timestamp
-
-	log.Printf("Map travel detected: %s (scenario: %s) on server %s", mapName, scenario, serverID)
 
 	// Emit map travel event for handler to process match transition
 	if p.eventCreator != nil {
@@ -303,7 +302,7 @@ func (p *LogParser) tryProcessLogFileOpen(ctx context.Context, line string, time
 		return false
 	}
 
-	log.Printf("Log file created for server %s at %s", serverID, timestamp)
+	p.logger.Debug("Log file created", "serverID", serverID, "timestamp", timestamp)
 
 	// Emit log file created event for handler to process
 	if p.eventCreator != nil {
@@ -333,7 +332,7 @@ func (p *LogParser) tryProcessPlayerConnection(ctx context.Context, line string,
 
 	ip := matches[2]
 
-	log.Printf("Player connection from IP %s to server %s", ip, serverID)
+	p.logger.Debug("Player connection from IP", "ip", ip, "serverID", serverID)
 
 	// Store IP in app store with key format: "serverID:lastIP"
 	// This will be used when the next player_login event occurs
@@ -344,7 +343,7 @@ func (p *LogParser) tryProcessPlayerConnection(ctx context.Context, line string,
 	if existingIP != nil {
 		// Another connection came in before the previous one logged in
 		// Discard both to avoid confusion about which IP connects to which player
-		log.Printf("Discarding duplicate connection IP for server %s - unable to match with player", serverID)
+		p.logger.Debug("Discarding duplicate connection IP - unable to match with player", "serverID", serverID)
 		p.pbApp.Store().Set(storeKey, nil)
 		return true
 	}
@@ -437,13 +436,13 @@ func (p *LogParser) tryProcessPlayerLogin(ctx context.Context, line string, time
 	steamID := strings.TrimSpace(matches[3])
 	platform := strings.TrimSpace(matches[4])
 
-	log.Printf("Player login request: %s (ID: %s, Platform: %s) on server %s", playerName, steamID, platform, serverID)
+	p.logger.Debug("Player login request", "playerName", playerName, "steamID", steamID, "platform", platform, "serverID", serverID)
 
 	// Create player_login event (handler will create/update player record)
 	if p.eventCreator != nil {
 		err := p.eventCreator.CreatePlayerLoginEvent(serverID, playerName, steamID, platform, isCatchupMode(ctx))
 		if err != nil {
-			log.Printf("[PARSER] Failed to create player_login event: %v", err)
+			p.logger.Debug("Failed to create player_login event", "error", err)
 		}
 	}
 
@@ -462,7 +461,7 @@ func (p *LogParser) tryProcessPlayerRegister(ctx context.Context, line string, t
 	// Group 1: timestamp
 	// Group 2: Steam ID
 	steamID := strings.TrimSpace(matches[2])
-	log.Printf("Player registered (pre-match): Steam ID %s on server %s", steamID, serverID)
+	p.logger.Debug("Player registered (pre-match)", "steamID", steamID, "serverID", serverID)
 
 	// We don't create the player here - wait for the LogNet "Join succeeded" event
 	// which will have the player's name
@@ -486,7 +485,7 @@ func (p *LogParser) tryProcessPlayerJoin(ctx context.Context, line string, times
 	if p.eventCreator != nil {
 		err := p.eventCreator.CreatePlayerJoinEvent(serverID, playerName, isCatchupMode(ctx))
 		if err != nil {
-			log.Printf("[PARSER] Failed to create player_join event: %v", err)
+			p.logger.Debug("Failed to create player_join event", "error", err)
 		}
 	}
 
@@ -511,7 +510,7 @@ func (p *LogParser) tryProcessPlayerDisconnect(ctx context.Context, line string,
 		if timeSinceTravel >= 0 && timeSinceTravel < 30*time.Second {
 			// This is a temporary disconnect during map travel, ignore it for database updates
 			// but don't return early - we still need to handle it below
-			log.Printf("Ignoring disconnect for player %s during map travel (%.1fs after travel)", steamID, timeSinceTravel.Seconds())
+			p.logger.Debug("Ignoring disconnect for player during map travel", "steamID", steamID, "secondsAfterTravel", timeSinceTravel.Seconds())
 			isMapTravelDisconnect = true
 		}
 	}
@@ -521,7 +520,7 @@ func (p *LogParser) tryProcessPlayerDisconnect(ctx context.Context, line string,
 		// Create player_leave event with raw Steam ID (handler will do player lookup)
 		err := p.eventCreator.CreatePlayerLeaveEvent(serverID, steamID, "")
 		if err != nil {
-			log.Printf("[PARSER] Failed to create player_leave event: %v", err)
+			p.logger.Debug("Failed to create player_leave event", "error", err)
 		}
 	}
 
@@ -540,11 +539,11 @@ func (p *LogParser) tryProcessRoundStart(ctx context.Context, line string, times
 	roundNumStr := strings.TrimSpace(matches[2])
 	roundNum, err := strconv.Atoi(roundNumStr)
 	if err != nil {
-		log.Printf("Failed to parse round number: %v", err)
+		p.logger.Debug("Failed to parse round number", "error", err)
 		return true
 	}
 
-	log.Printf("Round %d started on server %s", roundNum, serverID)
+	p.logger.Debug("Round started on server", "roundNum", roundNum, "serverID", serverID)
 
 	// Emit round start event - handler will reset round objectives
 	if p.eventCreator != nil {
@@ -570,7 +569,7 @@ func (p *LogParser) tryProcessRoundEnd(ctx context.Context, line string, timesta
 
 	winningTeam, err := strconv.Atoi(winningTeamStr)
 	if err != nil {
-		log.Printf("Failed to parse winning team: %v", err)
+		p.logger.Debug("Failed to parse winning team", "error", err)
 		return true
 	}
 
@@ -593,7 +592,7 @@ func (p *LogParser) tryProcessGameOver(ctx context.Context, line string, timesta
 		return false
 	}
 
-	log.Printf("Game over detected for server %s", serverID)
+	p.logger.Debug("Game over detected", "serverID", serverID)
 
 	// Emit game over event - handler will finalize match
 	if p.eventCreator != nil {
@@ -963,7 +962,7 @@ func (p *LogParser) tryProcessChatCommand(ctx context.Context, line string, time
 	steamID := strings.TrimSpace(matches[3])
 	command := strings.TrimSpace(matches[4])
 
-	log.Printf("[CHAT] %s (%s): %s", playerName, steamID, command)
+	p.logger.Debug("Chat command", "playerName", playerName, "steamID", steamID, "command", command)
 
 	// Emit chat command event for handler to process
 	if p.eventCreator != nil {

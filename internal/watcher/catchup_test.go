@@ -128,9 +128,9 @@ func TestStartupCatchup(t *testing.T) {
 		ctx:              ctx,
 		a2sPool:          mockA2S,
 		serverConfigs:    serverConfigs,
-		stateTracker:     NewServerStateTracker(10 * time.Second),
+		stateTracker:     NewServerStateTracker(testApp.Logger(), 10*time.Second),
 		rotationDetector: NewRotationDetector(logParser),
-		catchupProcessor: NewCatchupProcessor(logParser, mockA2S, serverConfigs, testApp, ctx),
+		catchupProcessor: NewCatchupProcessor(testApp.Logger(), logParser, mockA2S, serverConfigs, testApp, ctx),
 	}
 
 	// Create test server in database

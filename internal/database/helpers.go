@@ -3,7 +3,11 @@ package database
 import (
 	"context"
 	"fmt"
-	"log"
+
+	// "log"
+	"log/slog"
+
+	// "log"
 	"strings"
 	"time"
 
@@ -42,8 +46,13 @@ type MatchPlayerStat struct {
 	UpdatedAt     *time.Time
 }
 
+func getLogger(pbApp core.App) *slog.Logger {
+	return pbApp.Logger().With("COMPONENT", "DB")
+}
+
 // GetActiveMatch returns the current active match for a server (end_time IS NULL)
 func GetActiveMatch(ctx context.Context, pbApp core.App, serverID string) (*Match, error) {
+	log := getLogger(pbApp)
 	// Find server record first
 	serverRecord, err := pbApp.FindFirstRecordByFilter(
 		"servers",
@@ -56,7 +65,7 @@ func GetActiveMatch(ctx context.Context, pbApp core.App, serverID string) (*Matc
 
 	// Find active match (no end_time)
 	// In PocketBase, empty date fields are stored as empty strings, not NULL
-	log.Printf("[DB] Looking for active match: server ID = %s, filter = 'server = %s && end_time = \"\"'", serverID, serverRecord.Id)
+	log.Debug("[DB] Looking for active match: server ID = %s, filter = 'server = %s && end_time = \"\"'", serverID, serverRecord.Id)
 	matchRecord, err := pbApp.FindFirstRecordByFilter(
 		"matches",
 		"server = {:server} && end_time = \"\"",
@@ -64,11 +73,11 @@ func GetActiveMatch(ctx context.Context, pbApp core.App, serverID string) (*Matc
 	)
 	if err != nil {
 		// No active match found
-		log.Printf("[DB] No active match found for server %s: %v", serverID, err)
+		log.Debug("[DB] No active match found for server %s: %v", serverID, err)
 		return nil, fmt.Errorf("no active match found for server %s", serverID)
 	}
 
-	log.Printf("[DB] Found active match %s for server %s", matchRecord.Id, serverID)
+	log.Debug("[DB] Found active match %s for server %s", matchRecord.Id, serverID)
 
 	match := &Match{
 		ID:             matchRecord.Id,
@@ -96,6 +105,7 @@ func GetActiveMatch(ctx context.Context, pbApp core.App, serverID string) (*Matc
 
 // CreateMatch creates a new match record
 func CreateMatch(ctx context.Context, pbApp core.App, serverID string, mapName, mode *string, startTime *time.Time, playerTeam ...*string) (*Match, error) {
+	log := getLogger(pbApp)
 	// Find server record
 	serverRecord, err := pbApp.FindFirstRecordByFilter(
 		"servers",
@@ -113,7 +123,7 @@ func CreateMatch(ctx context.Context, pbApp core.App, serverID string, mapName, 
 
 	record := core.NewRecord(collection)
 	record.Set("server", serverRecord.Id)
-	log.Printf("[DB] Creating match for server %s (record ID: %s)", serverID, serverRecord.Id)
+	log.Debug("[DB] Creating match for server %s (record ID: %s)", serverID, serverRecord.Id)
 	if mapName != nil {
 		record.Set("map", *mapName)
 	}
@@ -133,7 +143,7 @@ func CreateMatch(ctx context.Context, pbApp core.App, serverID string, mapName, 
 		return nil, err
 	}
 
-	log.Printf("[DB] Successfully created match %s for server %s", record.Id, serverID)
+	log.Debug("[DB] Successfully created match %s for server %s", record.Id, serverID)
 
 	match := &Match{
 		ID:       record.Id,
@@ -415,6 +425,7 @@ func UpsertMatchWeaponStats(ctx context.Context, pbApp core.App, matchID, player
 
 // GetOrCreateServer gets or creates a server record by external ID, name, and path
 func GetOrCreateServer(ctx context.Context, pbApp core.App, externalID, name, path string) (string, error) {
+	log := getLogger(pbApp)
 	// Try to find existing server
 	record, err := pbApp.FindFirstRecordByFilter(
 		"servers",
@@ -443,7 +454,7 @@ func GetOrCreateServer(ctx context.Context, pbApp core.App, externalID, name, pa
 		return "", err
 	}
 
-	log.Printf("Created new server: name='%s', external_id='%s', path='%s'", name, externalID, path)
+	log.Debug("Created new server", "name", name, "external_id", externalID, "path", path)
 	return record.Id, nil
 }
 
@@ -494,6 +505,7 @@ func GetAllPlayersInMatch(ctx context.Context, pbApp core.App, matchID string) (
 
 // EndMatch updates a match with end time and winner team
 func EndMatch(ctx context.Context, pbApp core.App, matchID string, endTime *time.Time, winnerTeam *int64, status *string) error {
+	log := getLogger(pbApp)
 	record, err := pbApp.FindRecordById("matches", matchID)
 	if err != nil {
 		return err
@@ -532,7 +544,7 @@ func EndMatch(ctx context.Context, pbApp core.App, matchID string, endTime *time
 		for _, playerRecord := range playerRecords {
 			playerRecord.Set("status", matchStatus)
 			if err := pbApp.Save(playerRecord); err != nil {
-				log.Printf("Failed to update player status to %s: %v", matchStatus, err)
+				log.Debug("Failed to update player status to %s: %v", matchStatus, err)
 			}
 		}
 	}
@@ -542,6 +554,7 @@ func EndMatch(ctx context.Context, pbApp core.App, matchID string, endTime *time
 
 // DisconnectAllPlayersInMatch marks all players in a match as disconnected
 func DisconnectAllPlayersInMatch(ctx context.Context, pbApp core.App, matchID string, lastLeftAt *time.Time) error {
+	log := getLogger(pbApp)
 	records, err := pbApp.FindRecordsByFilter(
 		"match_player_stats",
 		"match = {:match}",
@@ -562,7 +575,7 @@ func DisconnectAllPlayersInMatch(ctx context.Context, pbApp core.App, matchID st
 		record.Set("status", "disconnected")
 		record.Set("is_currently_connected", false)
 		if err := pbApp.Save(record); err != nil {
-			log.Printf("Failed to disconnect player %s: %v", record.Id, err)
+			log.Debug("Failed to disconnect player %s: %v", record.Id, err)
 		}
 	}
 
@@ -571,11 +584,12 @@ func DisconnectAllPlayersInMatch(ctx context.Context, pbApp core.App, matchID st
 
 // DisconnectPlayerFromMatch marks a specific player as disconnected from a match
 func DisconnectPlayerFromMatch(ctx context.Context, pbApp core.App, matchID, playerID string, lastLeftAt *time.Time) error {
+	log := getLogger(pbApp)
 	// Get the latest match_player_stats record for this player
 	record, err := getLatestMatchPlayerStats(pbApp, matchID, playerID)
 	if err != nil {
 		// Player was never in this match, nothing to disconnect
-		log.Printf("Player %s not found in match %s, skipping disconnect", playerID, matchID)
+		log.Debug("Player %s not found in match %s, skipping disconnect", playerID, matchID)
 		return nil
 	}
 
@@ -590,6 +604,7 @@ func DisconnectPlayerFromMatch(ctx context.Context, pbApp core.App, matchID, pla
 
 // DeleteMatchIfEmpty deletes a match only if it has no player stats or weapon stats
 func DeleteMatchIfEmpty(ctx context.Context, pbApp core.App, matchID string) error {
+	log := getLogger(pbApp)
 	// Check for match_player_stats
 	playerStats, err := pbApp.FindRecordsByFilter(
 		"match_player_stats",
@@ -604,7 +619,7 @@ func DeleteMatchIfEmpty(ctx context.Context, pbApp core.App, matchID string) err
 	}
 
 	if len(playerStats) > 0 {
-		log.Printf("Match %s has player stats, keeping it", matchID)
+		log.Debug("Match has player stats, keeping it", "matchID", matchID)
 		return nil
 	}
 
@@ -622,7 +637,7 @@ func DeleteMatchIfEmpty(ctx context.Context, pbApp core.App, matchID string) err
 	}
 
 	if len(weaponStats) > 0 {
-		log.Printf("Match %s has weapon stats, keeping it", matchID)
+		log.Debug("Match has weapon stats, keeping it", "matchID", matchID)
 		return nil
 	}
 
@@ -636,13 +651,14 @@ func DeleteMatchIfEmpty(ctx context.Context, pbApp core.App, matchID string) err
 		return fmt.Errorf("failed to delete match: %w", err)
 	}
 
-	log.Printf("Deleted empty match %s (no player or weapon stats)", matchID)
+	log.Debug("Deleted empty match", "matchID", matchID)
 	return nil
 }
 
 // UpdateMatchField updates a numeric field in a match record
 // Operation types: "set" - sets to exact value, "increment" - adds to current value
 func UpdateMatchField(ctx context.Context, pbApp core.App, matchID, fieldName, operation string, value int) error {
+	log := getLogger(pbApp)
 	matchRecord, err := pbApp.FindRecordById("matches", matchID)
 	if err != nil {
 		return fmt.Errorf("failed to find match: %w", err)
@@ -665,7 +681,7 @@ func UpdateMatchField(ctx context.Context, pbApp core.App, matchID, fieldName, o
 		return fmt.Errorf("failed to update match %s: %w", fieldName, err)
 	}
 
-	log.Printf("Updated %s for match %s to %d (operation: %s)", fieldName, matchID, newValue, operation)
+	log.Debug("Updated field for match", "field", fieldName, "matchID", matchID, "newValue", newValue, "operation", operation)
 	return nil
 }
 
@@ -693,10 +709,11 @@ func ResetMatchRoundObjective(ctx context.Context, pbApp core.App, matchID strin
 // - Deleting empty matches
 // - Creating the new match record
 func EndActiveMatchAndCreateNew(ctx context.Context, pbApp core.App, serverID string, mapName, scenario string, timestamp time.Time, playerTeam *string) error {
+	log := getLogger(pbApp)
 	// If there's an active match, force-end it first
 	activeMatch, err := GetActiveMatch(ctx, pbApp, serverID)
 	if err == nil && activeMatch != nil {
-		log.Printf("Found active match %s on server %s, force-ending it before new map",
+		log.Debug("Found active match %s on server %s, force-ending it before new map",
 			activeMatch.ID, serverID)
 
 		// Determine end time (use last player activity if available)
@@ -712,21 +729,21 @@ func EndActiveMatchAndCreateNew(ctx context.Context, pbApp core.App, serverID st
 					endTime = pl.UpdatedAt
 				}
 			}
-			log.Printf("Using last player activity as end time: %v", endTime)
+			log.Debug("Using last player activity as end time", "endTime", endTime)
 		}
 
 		if err := EndMatch(ctx, pbApp, activeMatch.ID, endTime, nil, nil); err != nil {
-			log.Printf("Failed to force-end match %s: %v", activeMatch.ID, err)
+			log.Debug("Failed to force-end match %s: %v", activeMatch.ID, err)
 		}
 
 		if err := DisconnectAllPlayersInMatch(ctx, pbApp, activeMatch.ID, endTime); err != nil {
-			log.Printf("Failed to disconnect players from match %s: %v", activeMatch.ID, err)
+			log.Debug("Failed to disconnect players from match %s: %v", activeMatch.ID, err)
 		}
 
-		log.Printf("Successfully closed match %s", activeMatch.ID)
+		log.Debug("Successfully closed match", "match_id", activeMatch.ID)
 
 		if err := DeleteMatchIfEmpty(ctx, pbApp, activeMatch.ID); err != nil {
-			log.Printf("Failed to check/delete empty match %s: %v", activeMatch.ID, err)
+			log.Debug("Failed to check/delete empty match %s: %v", activeMatch.ID, err)
 		}
 	}
 
@@ -736,6 +753,6 @@ func EndActiveMatchAndCreateNew(ctx context.Context, pbApp core.App, serverID st
 		return fmt.Errorf("failed to create match for map %s on server %s: %w", mapName, serverID, err)
 	}
 
-	log.Printf("Created new match for map %s on server %s", mapName, serverID)
+	log.Debug("Created new match for map %s on server %s", mapName, serverID)
 	return nil
 }
