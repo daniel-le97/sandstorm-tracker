@@ -40,8 +40,10 @@ func LoadFromSAW(sawPath string) (*Config, error) {
 	config := &Config{
 		Servers: make([]ServerConfig, 0, len(sawConfigs)),
 		Logging: LoggingConfig{
-			Level:            "info",
-			EnableServerLogs: true,
+			Level:      "info",
+			MaxBackups: 10,
+			MaxSizeMB:  100,
+			MaxAgeDays: 7,
 		},
 	}
 

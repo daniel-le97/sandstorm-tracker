@@ -30,7 +30,9 @@ servers:
 
 logging:
   level: "debug"
-  enableServerLogs: true
+  maxSizeMB: 50
+  maxAgeDays: 3
+  maxBackups: 5
 `
 
 	err := os.WriteFile(configPath, []byte(yamlContent), 0644)
@@ -76,8 +78,14 @@ logging:
 	if cfg.Logging.Level != "debug" {
 		t.Errorf("Logging level = %s, want debug", cfg.Logging.Level)
 	}
-	if !cfg.Logging.EnableServerLogs {
-		t.Error("EnableServerLogs should be true")
+	if cfg.Logging.MaxSizeMB != 50 {
+		t.Errorf("MaxSizeMB = %d, want 50", cfg.Logging.MaxSizeMB)
+	}
+	if cfg.Logging.MaxAgeDays != 3 {
+		t.Errorf("MaxAgeDays = %d, want 3", cfg.Logging.MaxAgeDays)
+	}
+	if cfg.Logging.MaxBackups != 5 {
+		t.Errorf("MaxBackups = %d, want 5", cfg.Logging.MaxBackups)
 	}
 }
 
@@ -97,7 +105,9 @@ enabled = true
 
 [logging]
 level = "info"
-enableServerLogs = false
+maxSizeMB = 75
+maxAgeDays = 14
+maxBackups = 20
 `
 
 	err := os.WriteFile(configPath, []byte(tomlContent), 0644)
@@ -130,6 +140,15 @@ enableServerLogs = false
 
 	if cfg.Logging.Level != "info" {
 		t.Errorf("Logging level = %s, want info", cfg.Logging.Level)
+	}
+	if cfg.Logging.MaxSizeMB != 75 {
+		t.Errorf("MaxSizeMB = %d, want 75", cfg.Logging.MaxSizeMB)
+	}
+	if cfg.Logging.MaxAgeDays != 14 {
+		t.Errorf("MaxAgeDays = %d, want 14", cfg.Logging.MaxAgeDays)
+	}
+	if cfg.Logging.MaxBackups != 20 {
+		t.Errorf("MaxBackups = %d, want 20", cfg.Logging.MaxBackups)
 	}
 }
 

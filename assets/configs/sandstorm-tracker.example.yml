@@ -19,8 +19,11 @@ servers:
     enabled: false
 
 logging:
-  level: "info"
-  enableServerLogs: true
+  level: "info" # "debug", "info", "warn", "error"
+  maxSizeMB: 100 # Rotate when log reaches 100MB
+  maxAgeDays: 7 # Rotate logs older than 7 days
+  maxBackups: 10 # Keep 10 rotated backup files
+  # Note: Log files are automatically dated (e.g., sandstorm-tracker.2025-11-21.log)
 # This is an EXAMPLE configuration file for sandstorm-tracker
 #
 # Usage:

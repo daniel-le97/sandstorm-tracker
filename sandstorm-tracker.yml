@@ -69,14 +69,14 @@ servers:
     # Enable/disable this server without removing config
     enabled: false
 
-  # Example Server 2 (disabled)
+  # Example Server 2 (enabled)
   # - name: "Secondary Server"
   #   logPath: "/opt/sandstorm/server2/Insurgency/Saved/Logs"
   #   rconAddress: "192.168.1.100:27015"
   #   rconPassword: "server2_password"
   #   rconTimeout: 10
   #   queryAddress: "192.168.1.100:27131"
-  #   enabled: false
+  #   enabled: true
 
 # ============================================================================
 # LOGGING CONFIGURATION
@@ -87,10 +87,17 @@ logging:
   # Use "debug" for troubleshooting, "info" for normal operation
   level: "info"
 
-  # Enable per-server log files in addition to main application log
-  # Server logs go to: logs/{SERVER_NAME}.log
-  enableServerLogs: true
+  # Maximum file size in MB before rotation (default: 100)
+  # When the log file reaches this size, it's archived and a new one is created
+  maxSizeMB: 100
 
-  # Maximum number of rotated log files to keep (default: 5)
+  # Maximum age in days before rotation (default: 7)
+  # Log files older than this will be archived even if under maxSizeMB
+  maxAgeDays: 7
+
+  # Maximum number of rotated log files to keep (default: 10)
   # When this limit is reached, oldest logs are deleted
-  maxBackups: 5
+  maxBackups: 10
+
+  # Note: Log files are automatically named with the current date
+  # Example: logs/sandstorm-tracker.2025-11-21.log

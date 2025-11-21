@@ -21,9 +21,10 @@ type ServerConfig struct {
 }
 
 type LoggingConfig struct {
-	Level            string `mapstructure:"level"`
-	EnableServerLogs bool   `mapstructure:"enableServerLogs"`
-	MaxBackups       int    `mapstructure:"maxBackups"` // Number of rotated log files to keep (default: 5)
+	Level      string `mapstructure:"level"`      // "debug", "info", "warn", "error" (default: "info")
+	MaxBackups int    `mapstructure:"maxBackups"` // Number of rotated log files to keep (default: 10)
+	MaxSizeMB  int    `mapstructure:"maxSizeMB"`  // Max file size in MB before rotation (default: 100)
+	MaxAgeDays int    `mapstructure:"maxAgeDays"` // Max age in days before rotation (default: 7)
 }
 
 type Config struct {
@@ -50,8 +51,10 @@ func Load() (*Config, error) {
 			// No config file found - return empty config (will be handled by serve command)
 			return &Config{
 				Logging: LoggingConfig{
-					Level:            "info",
-					EnableServerLogs: true,
+					Level:      "info",
+					MaxBackups: 10,
+					MaxSizeMB:  100,
+					MaxAgeDays: 7,
 				},
 			}, nil
 		}
@@ -62,6 +65,9 @@ func Load() (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// Apply defaults for logging config
+	applyLoggingDefaults(&config.Logging)
 
 	// Environment variables take precedence - check SAW_PATH env var AFTER unmarshaling
 	// This ensures env var overrides config file value
@@ -277,4 +283,20 @@ func Exists() bool {
 	}
 
 	return false
+}
+
+// applyLoggingDefaults sets default values for logging config if not specified
+func applyLoggingDefaults(cfg *LoggingConfig) {
+	if cfg.Level == "" {
+		cfg.Level = "info"
+	}
+	if cfg.MaxBackups == 0 {
+		cfg.MaxBackups = 10
+	}
+	if cfg.MaxSizeMB == 0 {
+		cfg.MaxSizeMB = 100
+	}
+	if cfg.MaxAgeDays == 0 {
+		cfg.MaxAgeDays = 7
+	}
 }

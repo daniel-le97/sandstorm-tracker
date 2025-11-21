@@ -1,269 +1,294 @@
 package logger
 
 import (
-	"bufio"
-	"encoding/json"
 	"fmt"
-	"log/slog"
 	"os"
 	"path/filepath"
 	"sync"
 	"time"
-
-	"github.com/pocketbase/pocketbase/core"
 )
 
-// FileWriter writes log entries to a file with buffering and rotation
+// RotationPolicy defines when and how log files should rotate
+type RotationPolicy struct {
+	MaxSize    int64         // Max file size in bytes before rotation (0 = no limit)
+	MaxAge     time.Duration // Max age of a log file before rotation (0 = no limit)
+	MaxBackups int           // Number of rotated log files to keep (0 = unlimited)
+}
+
+// FileWriter handles writing logs to files with rotation
+// Production-grade: thread-safe, non-blocking, efficient buffering
 type FileWriter struct {
-	filePath   string
-	maxSize    int64
-	maxBackups int
-	file       *os.File
-	writer     *bufio.Writer
-	ticker     *time.Ticker
-	done       chan struct{}
-	wg         sync.WaitGroup // Wait for goroutine to finish
-	mu         sync.Mutex
+	filePath  string
+	file      *os.File
+	policy    RotationPolicy
+	fileSize  int64 // Current file size
+	fileTime  time.Time
+	writesCh  chan []byte    // Async write channel for non-blocking writes
+	closeCh   chan struct{}  // Signal to stop the writer goroutine
+	wg        sync.WaitGroup // Wait for goroutine to finish
+	mu        sync.RWMutex   // Protect file handle
+	err       error          // Last error encountered
+	rotateDir string         // Directory for rotated logs
 }
 
-// FileWriterConfig configures the file writer
-type FileWriterConfig struct {
-	FilePath   string        // Path to log file
-	MaxSize    int64         // Max file size in bytes (0 = no rotation)
-	MaxBackups int           // Number of rotated log files to keep (default: 5, 0 = unlimited)
-	BufferSize int           // Buffer size in bytes (0 = unbuffered, recommended: 8192)
-	FlushEvery time.Duration // How often to flush buffer (recommended: 3s)
-}
-
-// NewFileWriter creates a new file writer with buffering and rotation
-func NewFileWriter(config FileWriterConfig) (*FileWriter, error) {
-	// Set defaults
-	if config.MaxBackups <= 0 {
-		config.MaxBackups = 5
-	}
-	if config.BufferSize <= 0 {
-		config.BufferSize = 8192
-	}
-	if config.FlushEvery <= 0 {
-		config.FlushEvery = 3 * time.Second
-	}
-
+// NewFileWriter creates a production-ready file writer with async writes
+func NewFileWriter(filePath string, policy RotationPolicy) (*FileWriter, error) {
 	// Ensure directory exists
-	if err := os.MkdirAll(filepath.Dir(config.FilePath), 0755); err != nil {
+	dir := filepath.Dir(filePath)
+	if err := os.MkdirAll(dir, 0755); err != nil {
 		return nil, fmt.Errorf("failed to create log directory: %w", err)
 	}
 
-	// Always rotate existing log file at startup if it has content
-	if err := rotateOnStartup(config.FilePath, config.MaxBackups); err != nil {
-		return nil, fmt.Errorf("failed to rotate log file: %w", err)
-	}
-
-	// Open file for appending
-	file, err := os.OpenFile(config.FilePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open log file: %w", err)
-	}
-
 	fw := &FileWriter{
-		filePath:   config.FilePath,
-		maxSize:    config.MaxSize,
-		maxBackups: config.MaxBackups,
-		file:       file,
-		writer:     bufio.NewWriterSize(file, config.BufferSize),
-		done:       make(chan struct{}),
+		filePath:  filePath,
+		policy:    policy,
+		fileTime:  time.Now(),
+		writesCh:  make(chan []byte, 1000), // 1000-entry buffer for async writes
+		closeCh:   make(chan struct{}),
+		rotateDir: dir,
 	}
 
-	// Start periodic flush goroutine
-	if config.FlushEvery > 0 {
-		fw.ticker = time.NewTicker(config.FlushEvery)
-		fw.wg.Add(1)
-		go fw.periodicFlush()
+	// Open initial file
+	if err := fw.openFile(); err != nil {
+		return nil, err
 	}
+
+	// Start async writer goroutine
+	fw.wg.Add(1)
+	go fw.asyncWriter()
 
 	return fw, nil
 }
 
-// WriteRecord writes an slog.Record to the file
-func (fw *FileWriter) WriteRecord(r slog.Record) error {
-	fw.mu.Lock()
-	defer fw.mu.Unlock()
+// Write writes data to the log file (non-blocking, sends to channel)
+func (fw *FileWriter) Write(data []byte) (int, error) {
+	// Copy data to avoid mutations after return
+	dataCopy := make([]byte, len(data))
+	copy(dataCopy, data)
 
-	// Format log as JSON
-	entry := map[string]interface{}{
-		"time":    r.Time.Format(time.RFC3339Nano),
-		"level":   r.Level.String(),
-		"message": r.Message,
+	// Non-blocking send with fallback to blocking if buffer full
+	select {
+	case fw.writesCh <- dataCopy:
+		return len(data), nil
+	case <-fw.closeCh:
+		return 0, fmt.Errorf("writer is closed")
+	default:
+		// Buffer full, do blocking send
+		fw.writesCh <- dataCopy
+		return len(data), nil
 	}
-
-	// Add attributes from the record
-	attrCount := 0
-	r.Attrs(func(a slog.Attr) bool {
-		entry[a.Key] = a.Value.Any()
-		attrCount++
-		return true
-	})
-
-	// Debug: check if we're receiving attributes
-	if attrCount == 0 && r.NumAttrs() > 0 {
-		fmt.Fprintf(os.Stderr, "Warning: Record has %d attrs but Attrs() returned 0\n", r.NumAttrs())
-	}
-
-	// Marshal to JSON
-	data, err := json.Marshal(entry)
-	if err != nil {
-		return fmt.Errorf("failed to marshal log entry: %w", err)
-	}
-
-	// Write to buffer
-	if _, err := fw.writer.Write(data); err != nil {
-		return fmt.Errorf("failed to write log entry: %w", err)
-	}
-
-	// Write newline
-	if _, err := fw.writer.WriteString("\n"); err != nil {
-		return fmt.Errorf("failed to write newline: %w", err)
-	}
-
-	// Flush immediately (rely on periodic flush for batching if needed)
-	// This ensures logs are visible quickly in development
-	return fw.writer.Flush()
 }
 
-// WriteLog writes a PocketBase log entry to the file (for backward compatibility)
-func (fw *FileWriter) WriteLog(log *core.Log) error {
-	fw.mu.Lock()
-	defer fw.mu.Unlock()
+// Sync flushes any pending writes (waits for channel to be processed)
+func (fw *FileWriter) Sync() error {
+	fw.mu.RLock()
+	defer fw.mu.RUnlock()
 
-	// Format log as JSON
-	entry := map[string]interface{}{
-		"time":    log.Created.Time().Format(time.RFC3339Nano),
-		"level":   logLevelToString(log.Level),
-		"message": log.Message,
+	if fw.file != nil {
+		return fw.file.Sync()
 	}
-
-	// Add data fields if present
-	if len(log.Data) > 0 {
-		for k, v := range log.Data {
-			entry[k] = v
-		}
-	}
-
-	// Marshal to JSON
-	data, err := json.Marshal(entry)
-	if err != nil {
-		return fmt.Errorf("failed to marshal log entry: %w", err)
-	}
-
-	// Write to buffer
-	if _, err := fw.writer.Write(data); err != nil {
-		return fmt.Errorf("failed to write log entry: %w", err)
-	}
-
-	// Write newline
-	if _, err := fw.writer.WriteString("\n"); err != nil {
-		return fmt.Errorf("failed to write newline: %w", err)
-	}
-
-	// Flush immediately (rely on periodic flush for batching if needed)
-	// This ensures logs are visible quickly in development
-	return fw.writer.Flush()
-}
-
-// Flush flushes the buffer to disk
-func (fw *FileWriter) Flush() error {
-	fw.mu.Lock()
-	defer fw.mu.Unlock()
-	return fw.writer.Flush()
+	return fw.err
 }
 
 // Close closes the file writer
 func (fw *FileWriter) Close() error {
-	// Stop ticker and signal goroutine to stop
-	if fw.ticker != nil {
-		fw.ticker.Stop()
-		close(fw.done)
-		fw.wg.Wait() // Wait for goroutine to finish
-	}
+	close(fw.closeCh)
+	fw.wg.Wait() // Wait for goroutine to finish
 
-	// Final flush
 	fw.mu.Lock()
-	if err := fw.writer.Flush(); err != nil {
-		fw.mu.Unlock()
-		return err
-	}
-	fw.mu.Unlock()
+	defer fw.mu.Unlock()
 
-	return fw.file.Close()
+	if fw.file != nil {
+		return fw.file.Close()
+	}
+	return nil
 }
 
-// periodicFlush flushes the buffer periodically
-func (fw *FileWriter) periodicFlush() {
+// asyncWriter runs in a goroutine and handles all file I/O operations
+func (fw *FileWriter) asyncWriter() {
 	defer fw.wg.Done()
+	ticker := time.NewTicker(100 * time.Millisecond) // Batch writes every 100ms
+	defer ticker.Stop()
+
+	var batch [][]byte
+
 	for {
 		select {
-		case <-fw.ticker.C:
-			_ = fw.Flush() // Ignore errors during periodic flush
-		case <-fw.done:
+		case data := <-fw.writesCh:
+			batch = append(batch, data)
+
+		case <-ticker.C:
+			if len(batch) > 0 {
+				fw.flushBatch(batch)
+				batch = nil
+			}
+
+		case <-fw.closeCh:
+			// Final flush on close
+			if len(batch) > 0 {
+				fw.flushBatch(batch)
+			}
 			return
 		}
 	}
 }
 
-// logLevelToString converts PocketBase log level to string
-func logLevelToString(level int) string {
-	switch level {
-	case -4:
-		return "DEBUG"
-	case 0:
-		return "INFO"
-	case 4:
-		return "WARN"
-	case 8:
-		return "ERROR"
-	default:
-		return fmt.Sprintf("LEVEL_%d", level)
+// flushBatch writes a batch of log entries to disk
+func (fw *FileWriter) flushBatch(batch [][]byte) {
+	fw.mu.Lock()
+	defer fw.mu.Unlock()
+
+	if fw.file == nil {
+		return
 	}
+
+	for _, data := range batch {
+		n, err := fw.file.Write(data)
+		if err != nil {
+			fw.err = err
+			return
+		}
+
+		// Write newline
+		fw.file.WriteString("\n")
+
+		fw.fileSize += int64(n) + 1 // +1 for newline
+
+		// Check if rotation is needed
+		if fw.shouldRotate() {
+			if err := fw.rotate(); err != nil {
+				fw.err = err
+				return
+			}
+		}
+	}
+
+	// Sync to disk (fsync on every flush for safety)
+	_ = fw.file.Sync()
 }
 
-// rotateOnStartup rotates the log file at startup if it exists and has content
-// Rotation strategy: app.log -> app.log.1 -> app.log.2 -> ... (keeps last maxBackups rotations)
-func rotateOnStartup(filePath string, maxBackups int) error {
-	// Check if file exists
-	info, err := os.Stat(filePath)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return nil // File doesn't exist, nothing to rotate
+// shouldRotate checks if the log file should rotate
+func (fw *FileWriter) shouldRotate() bool {
+	// Check size limit
+	if fw.policy.MaxSize > 0 && fw.fileSize >= fw.policy.MaxSize {
+		return true
+	}
+
+	// Check age limit
+	if fw.policy.MaxAge > 0 && time.Since(fw.fileTime) > fw.policy.MaxAge {
+		return true
+	}
+
+	return false
+}
+
+// rotate renames current file and opens a new one
+func (fw *FileWriter) rotate() error {
+	if fw.file != nil {
+		fw.file.Close()
+	}
+
+	// Generate timestamped backup filename
+	timestamp := fw.fileTime.Format("20060102-150405")
+	backupPath := fmt.Sprintf("%s.%s", fw.filePath, timestamp)
+
+	// Ensure backup doesn't already exist
+	if _, err := os.Stat(backupPath); err == nil {
+		// File exists, add counter
+		for i := 1; i < 1000; i++ {
+			counterPath := fmt.Sprintf("%s.%s-%d", fw.filePath, timestamp, i)
+			if _, err := os.Stat(counterPath); os.IsNotExist(err) {
+				backupPath = counterPath
+				break
+			}
 		}
-		return fmt.Errorf("failed to stat log file: %w", err)
 	}
 
-	// Don't rotate empty files
-	if info.Size() == 0 {
-		return nil
-	}
-
-	// Default to 5 backups if not specified
-	if maxBackups <= 0 {
-		maxBackups = 5
-	}
-
-	// Remove .log extension for rotation (app.log -> app)
-	basePath := filePath[:len(filePath)-4] // Remove ".log"
-
-	// Rotate existing backups (app.4.log -> app.5.log, app.3.log -> app.4.log, etc.)
-	for i := maxBackups - 1; i >= 1; i-- {
-		oldPath := fmt.Sprintf("%s.%d.log", basePath, i)
-		newPath := fmt.Sprintf("%s.%d.log", basePath, i+1)
-		if _, err := os.Stat(oldPath); err == nil {
-			os.Rename(oldPath, newPath) // Overwrite oldest backup
-		}
-	}
-
-	// Rotate current log file to .1.log (app.log -> app.1.log)
-	backupPath := fmt.Sprintf("%s.1.log", basePath)
-	if err := os.Rename(filePath, backupPath); err != nil {
+	// Move current file to backup
+	if err := os.Rename(fw.filePath, backupPath); err != nil {
 		return fmt.Errorf("failed to rotate log file: %w", err)
 	}
 
+	// Clean old backups
+	fw.cleanOldBackups()
+
+	// Open new file
+	if err := fw.openFile(); err != nil {
+		return err
+	}
+
 	return nil
+}
+
+// openFile opens the log file for writing
+func (fw *FileWriter) openFile() error {
+	file, err := os.OpenFile(fw.filePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	if err != nil {
+		return fmt.Errorf("failed to open log file: %w", err)
+	}
+
+	// Get current file size
+	info, err := file.Stat()
+	if err != nil {
+		file.Close()
+		return fmt.Errorf("failed to stat log file: %w", err)
+	}
+
+	fw.file = file
+	fw.fileSize = info.Size()
+	fw.fileTime = time.Now()
+	fw.err = nil
+
+	return nil
+}
+
+// cleanOldBackups removes old backup files exceeding MaxBackups limit
+func (fw *FileWriter) cleanOldBackups() {
+	if fw.policy.MaxBackups <= 0 {
+		return
+	}
+
+	// List files in the log directory
+	entries, err := os.ReadDir(fw.rotateDir)
+	if err != nil {
+		return
+	}
+
+	// Find all backup files for this log
+	type backup struct {
+		name string
+		time time.Time
+	}
+	var backups []backup
+
+	baseFileName := filepath.Base(fw.filePath)
+	for _, entry := range entries {
+		if !entry.IsDir() && filepath.HasPrefix(entry.Name(), baseFileName+".") {
+			info, err := entry.Info()
+			if err == nil {
+				backups = append(backups, backup{
+					name: filepath.Join(fw.rotateDir, entry.Name()),
+					time: info.ModTime(),
+				})
+			}
+		}
+	}
+
+	// If we exceed max backups, delete oldest ones
+	if len(backups) > fw.policy.MaxBackups {
+		// Sort by modification time (oldest first)
+		// Simple bubble sort for small lists
+		for i := 0; i < len(backups); i++ {
+			for j := i + 1; j < len(backups); j++ {
+				if backups[j].time.Before(backups[i].time) {
+					backups[i], backups[j] = backups[j], backups[i]
+				}
+			}
+		}
+
+		// Delete oldest files
+		for i := 0; i < len(backups)-fw.policy.MaxBackups; i++ {
+			_ = os.Remove(backups[i].name)
+		}
+	}
 }

@@ -2,10 +2,10 @@ package app
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"os"
-	"path/filepath"
 	"time"
 
 	"sandstorm-tracker/internal/a2s"
@@ -349,18 +349,23 @@ func (app *App) GetUpdater() *updater.Updater {
 	return app.updater
 }
 
-// setupLogFileWriter initializes the file writer.
-// This must be called AFTER app.Config is loaded.
+// setupLogger initializes the file writer using configuration
+// This must be called AFTER app.Config is loaded
 func (app *App) setupLogger() {
-	// Determine log file path
-	logFilePath := filepath.Join(".", "logs", "app.log")
+	// Use config values or defaults
+	logCfg := app.Config.Logging
 
-	// Get max backups from config (default to 5 if not set)
-	maxBackups := app.Config.Logging.MaxBackups
-	if maxBackups <= 0 {
-		maxBackups = 5
+	// Generate date-based log filename: sandstorm-tracker.2025-11-21.log
+	logFilePath := fmt.Sprintf("logs/sandstorm-tracker.%s.log", time.Now().Format("2006-01-02"))
+
+	// Rotation policy from config
+	policy := logger.RotationPolicy{
+		MaxSize:    int64(logCfg.MaxSizeMB) * 1024 * 1024, // Convert MB to bytes
+		MaxAge:     time.Duration(logCfg.MaxAgeDays) * 24 * time.Hour,
+		MaxBackups: logCfg.MaxBackups,
 	}
 
+	// Cleanup hook: close file writer on app termination
 	app.OnTerminate().BindFunc(func(e *core.TerminateEvent) error {
 		writer := app.Store().Get("logger:filewriter")
 		if writer != nil {
@@ -372,24 +377,49 @@ func (app *App) setupLogger() {
 		return e.Next()
 	})
 
+	// Create and store file writer (singleton)
 	app.OnModelCreate(core.LogsTableName).BindFunc(func(e *core.ModelEvent) error {
-		// get or create global file writer instance if not already created
 		writer := e.App.Store().GetOrSet("logger:filewriter", func() any {
-			fw, err := logger.NewFileWriter(logger.FileWriterConfig{
-				FilePath:   logFilePath,
-				MaxSize:    10 * 1024 * 1024, // 10MB max file size
-				MaxBackups: maxBackups,
-				BufferSize: 8192,                   // 8KB buffer
-				FlushEvery: 500 * time.Millisecond, // Flush every 500ms (more responsive for development)
-			})
+			fw, err := logger.NewFileWriter(logFilePath, policy)
 			if err != nil {
 				panic(fmt.Sprintf("failed to create file writer: %v", err))
 			}
-
 			return fw
 		}).(*logger.FileWriter)
+
 		l := e.Model.(*core.Log)
-		writer.WriteLog(l)
+
+		// Format log entry as JSON with proper structure
+		entry := map[string]interface{}{
+			"timestamp": l.Created.Time().Format(time.RFC3339Nano),
+			"level":     logLevelToString(l.Level),
+			"message":   l.Message,
+		}
+
+		// Add metadata if present
+		if len(l.Data) > 0 {
+			entry["data"] = l.Data
+		}
+
+		data, _ := json.Marshal(entry)
+		_, _ = writer.Write(append(data, '\n'))
+
 		return e.Next()
 	})
+}
+
+// logLevelToString converts PocketBase log level to human-readable string
+func logLevelToString(level int) string {
+	switch level {
+	case -4:
+		return "DEBUG"
+	case 0:
+		return "INFO"
+	case 4:
+		return "WARN"
+	case 8:
+		return "ERROR"
+	default:
+		return fmt.Sprintf("LEVEL_%d", level)
+	}
 }
