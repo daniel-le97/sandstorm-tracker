@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   sandstorm-tracker:
@@ -6,62 +6,77 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: sandstorm-tracker
-    
+
     # Port mapping - PocketBase admin UI and API
     ports:
       - "8090:8090"
-    
+
     # Volumes for persistent data
     volumes:
       # PocketBase data directory - use bind mount for better control
       - ./pb_data:/app/pb_data
-      
+
       # Application logs
       - ./logs:/app/logs
-      
+
       # Config file - mount from host
-      - ./sandstorm-tracker.docker.yml:/app/sandstorm-tracker.yml:ro
-      
+      - ./sandstorm-tracker.yml:/app/sandstorm-tracker.yml:ro
+
+      # Mount sandstorm-admin-wrapper for SAW mode
+      # Adjust the Windows path if your SAW installation is elsewhere
+      - C:\Users\danie\code\forks\sandstorm-admin-wrapper:/opt/sandstorm-admin-wrapper:ro
+
       # Optional: Mount server log paths for log watching
       # Adjust paths to match your server setup
       # - /path/to/game/logs:/mnt/game_logs:ro
-    
+
     # Environment variables
     environment:
       # PocketBase settings
       - TZ=UTC
-      
+
+      # SAW path for admin wrapper auto-discovery
+      - SAW_PATH=/opt/sandstorm-admin-wrapper
+
       # Optional: enable debug logging
       - DEBUG=false
-    
+
     # Resource limits
     deploy:
       resources:
         limits:
-          cpus: '1'
+          cpus: "1"
           memory: 512M
         reservations:
-          cpus: '0.5'
+          cpus: "0.5"
           memory: 256M
-    
+
     # Restart policy
     restart: unless-stopped
-    
+
     # Health check
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8090/api/health"]
+      test:
+        [
+          "CMD",
+          "wget",
+          "--quiet",
+          "--tries=1",
+          "--spider",
+          "http://localhost:8090/api/health",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 10s
-    
+
     # Logging
     logging:
       driver: "json-file"
       options:
         max-size: "10m"
         max-file: "3"
-    
+
     # Network
     networks:
       - sandstorm-network

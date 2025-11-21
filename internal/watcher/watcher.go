@@ -58,6 +58,11 @@ func NewWatcher(pbApp core.App, logParser *parser.LogParser, rconPool *rcon.Clie
 
 	scMap := make(map[string]config.ServerConfig)
 	for _, sc := range serverConfigs {
+		// Skip disabled servers
+		if !sc.Enabled {
+			continue
+		}
+
 		serverID, err := util.GetServerIdFromPath(sc.LogPath)
 		if err != nil {
 			cancel()

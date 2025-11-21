@@ -7,11 +7,11 @@ tasks:
   goreleaser-dev:
     desc: Run goreleaser in snapshot (dev) mode
     cmds:
-      - powershell -ExecutionPolicy Bypass -Command ". ./scripts/load-env.ps1; goreleaser release --snapshot --clean --skip=docker"
+      - powershell -ExecutionPolicy Bypass -Command ". ./scripts/load-env.ps1; goreleaser release --snapshot --clean"
   goreleaser-release:
     desc: Run goreleaser for a full release
     cmds:
-      - powershell -ExecutionPolicy Bypass -Command ". ./scripts/load-env.ps1; goreleaser release --clean --skip=docker"
+      - powershell -ExecutionPolicy Bypass -Command ". ./scripts/load-env.ps1; goreleaser release --clean"
   build:
     desc: Build all Go binaries
     cmds:
@@ -75,3 +75,32 @@ tasks:
     cmds:
       - powershell -Command "Invoke-WebRequest -Uri 'https://cdn.jsdelivr.net/npm/pocketbase/dist/pocketbase.es.mjs' -OutFile 'assets/static/pocketbase.es.mjs'"
       - echo "PocketBase client updated successfully"
+
+  # Docker Development Tasks
+  docker-up:
+    desc: Start Docker container
+    cmds:
+      - docker-compose up -d
+
+  docker-down:
+    desc: Stop Docker container
+    cmds:
+      - docker-compose down
+
+  docker-logs:
+    desc: View Docker container logs
+    cmds:
+      - docker-compose logs -f sandstorm-tracker
+
+  docker-fresh:
+    desc: Clean rebuild with fresh data
+    prompt: "This will delete all data. Continue?"
+    cmds:
+      - docker-compose down -v
+      - docker-compose up --build
+
+  docker-reset:
+    desc: Reset database only
+    cmds:
+      - docker-compose down -v
+      - docker-compose up -d

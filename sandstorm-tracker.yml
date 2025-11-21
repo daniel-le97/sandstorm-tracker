@@ -48,7 +48,7 @@ servers:
     #   Example: /opt/sandstorm-admin-wrapper/sandstorm-server/Insurgency/Saved/Logs/abc123-uuid.log
     # For standalone: Directory path (tracker finds all .log files)
     #   Example: /opt/sandstorm/Insurgency/Saved/Logs
-    logPath: "C:\\SAW_1.0.4\\sandstorm-server\\Insurgency\\Saved\\Logs"
+    logPath: "."
 
     # RCON (Remote Console) address and port
     # Format: "IP:PORT" (typically game port + 27015 offset)
