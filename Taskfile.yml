@@ -11,7 +11,7 @@ tasks:
   goreleaser-release:
     desc: Run goreleaser for a full release with Docker image publishing
     cmds:
-      - powershell -ExecutionPolicy Bypass -Command ". ./scripts/load-env.ps1; goreleaser release --clean"
+      - powershell -ExecutionPolicy Bypass -Command ". ./scripts/load-env.ps1; goreleaser release --clean --skip=docker"
   build:
     desc: Build all Go binaries
     cmds:
