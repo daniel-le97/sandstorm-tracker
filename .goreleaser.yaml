@@ -73,14 +73,11 @@ archives:
     files:
       - README.md
       - LICENSE
+      - sandstorm-tracker.yml
       - src: scripts/setup-*
         dst: scripts
       - src: scripts/run-with-update.*
         dst: scripts
-      - src: scripts/install.ps1
-        dst: scripts
-      - src: assets/configs/sandstorm-tracker-saw.example.yml
-        dst: sandstorm-tracker.yml
 
 checksum:
   name_template: "checksums.txt"

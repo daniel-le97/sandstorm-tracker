@@ -1,7 +1,96 @@
-# sawPath: "C:\\Users\\danie\\code\\forks\\sandstorm-admin-wrapper"
+# Sandstorm Tracker Configuration
+#
+# This file demonstrates all available configuration options.
+# Edit this file to customize the tracker for your server(s).
+#
+# Configuration Precedence (highest to lowest):
+#   1. Environment Variables (e.g., SAW_PATH, RCON_PASSWORD_0)
+#   2. This config file (sandstorm-tracker.yml or .toml)
+#   3. Built-in defaults
+#
+# For sandstorm-admin-wrapper users:
+#   Set sawPath below to auto-discover all servers
+#
+# For standalone servers:
+#   Define each server manually in the 'servers' section
 
-sawPath: "C:\\SAW_1.0.4"
+# ============================================================================
+# SANDSTORM ADMIN WRAPPER SETUP (Optional)
+# ============================================================================
+# If you use sandstorm-admin-wrapper, set the path below to auto-discover servers.
+# Leave commented out if using manual server setup.
+#
+# The tracker will:
+#   - Read server-configs.json from: {sawPath}/admin-interface/config/server-configs.json
+#   - Auto-construct log paths for each server
+#   - Extract RCON addresses and passwords
+#
+# Can also be set via SAW_PATH environment variable (overrides this value)
+#
+# sawPath: "C:\\SAW_1.0.4"
+# sawPath: "/opt/sandstorm-admin-wrapper"
+
+# ============================================================================
+# MANUAL SERVER SETUP
+# ============================================================================
+# Define servers manually if not using sandstorm-admin-wrapper.
+# Each server requires: name, logPath, rconAddress, rconPassword, queryAddress
+#
+# Passwords can be overridden with environment variables:
+#   - RCON_PASSWORD_0, RCON_PASSWORD_1, RCON_PASSWORD_2, etc.
+
+servers:
+  # Example Server 1
+  - name: "Main Server"
+
+    # Log file path to monitor
+    # For SAW users: Full path to specific UUID-based log file
+    #   Example: /opt/sandstorm-admin-wrapper/sandstorm-server/Insurgency/Saved/Logs/abc123-uuid.log
+    # For standalone: Directory path (tracker finds all .log files)
+    #   Example: /opt/sandstorm/Insurgency/Saved/Logs
+    logPath: "C:\\SAW_1.0.4\\sandstorm-server\\Insurgency\\Saved\\Logs"
+
+    # RCON (Remote Console) address and port
+    # Format: "IP:PORT" (typically game port + 27015 offset)
+    rconAddress: "127.0.0.1:27015"
+
+    # RCON password - Can be overridden with RCON_PASSWORD_0 environment variable
+    rconPassword: "your_rcon_password"
+
+    # RCON connection timeout in seconds (default: 5)
+    # Increase for slow/distant servers
+    rconTimeout: 5
+
+    # A2S query address (UDP protocol)
+    # Typically: game port + 29 offset
+    # Used for querying server info and player lists
+    queryAddress: "127.0.0.1:27131"
+
+    # Enable/disable this server without removing config
+    enabled: false
+
+  # Example Server 2 (disabled)
+  # - name: "Secondary Server"
+  #   logPath: "/opt/sandstorm/server2/Insurgency/Saved/Logs"
+  #   rconAddress: "192.168.1.100:27015"
+  #   rconPassword: "server2_password"
+  #   rconTimeout: 10
+  #   queryAddress: "192.168.1.100:27131"
+  #   enabled: false
+
+# ============================================================================
+# LOGGING CONFIGURATION
+# ============================================================================
 
 logging:
+  # Log level: "debug", "info", "warn", "error"
+  # Use "debug" for troubleshooting, "info" for normal operation
   level: "info"
+
+  # Enable per-server log files in addition to main application log
+  # Server logs go to: logs/{SERVER_NAME}.log
   enableServerLogs: true
+
+  # Maximum number of rotated log files to keep (default: 5)
+  # When this limit is reached, oldest logs are deleted
+  maxBackups: 5
