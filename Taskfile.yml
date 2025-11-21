@@ -5,11 +5,11 @@ tasks:
     cmds:
       - powershell -ExecutionPolicy Bypass -File ./scripts/create-release-tag.ps1
   goreleaser-dev:
-    desc: Run goreleaser in snapshot (dev) mode
+    desc: Run goreleaser in snapshot (dev) mode (no Docker builds)
     cmds:
-      - powershell -ExecutionPolicy Bypass -Command ". ./scripts/load-env.ps1; goreleaser release --snapshot --clean"
+      - powershell -ExecutionPolicy Bypass -Command ". ./scripts/load-env.ps1; goreleaser release --snapshot --clean --skip=docker"
   goreleaser-release:
-    desc: Run goreleaser for a full release
+    desc: Run goreleaser for a full release with Docker image publishing
     cmds:
       - powershell -ExecutionPolicy Bypass -Command ". ./scripts/load-env.ps1; goreleaser release --clean"
   build:
