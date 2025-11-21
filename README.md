@@ -13,154 +13,42 @@ Sandstorm Tracker is a Go project that tracks kills, playtime, alive time, weapo
 
 ## Requirements
 
-- Go 1.20+
 - Insurgency: Sandstorm server(s) with log access
-- ### optional
-  - [Task](https://taskfile.dev/#/installation) (only if you want to use the taskfile)
+- Go 1.25+ (only if building from source)
+- [Task](https://taskfile.dev/#/installation) (optional, for using the taskfile)
 
-## Setup
+## Quick Start
 
-1. **Download the binary:**
+Choose one of the two methods below:
 
-   - Get the latest release from [Releases](https://github.com/daniel-le97/sandstorm-tracker/releases)
-   - Or build from source (see Development section)
+### Option 1: Download Pre-built Binary (Recommended)
 
-2. **Create your configuration file:**
+1. **Get the binary:**
 
-   ```sh
-   # Copy the example config
-   cp sandstorm-tracker.example.yml my-config.yml
+   - Download from [GitHub Releases](https://github.com/daniel-le97/sandstorm-tracker/releases)
+   - Choose the appropriate file for your OS:
+     - Windows: `sandstorm-tracker_windows_amd64.zip`
+     - Linux: `sandstorm-tracker_linux_amd64.tar.gz`
+     - macOS: `sandstorm-tracker_darwin_amd64.tar.gz`
 
-   # Edit with your server details
-   nano my-config.yml
-   ```
-
-   Update the following in your config:
-
-   - Server log paths
-   - RCON addresses and passwords
-   - Query addresses (optional, for A2S server monitoring)
-   - Database path
-   - Enable/disable servers as needed
-
-3. **Secure your config file (Linux/Mac):**
+2. **Extract and setup:**
 
    ```sh
-   chmod 600 my-config.yml
+   # Extract the archive
+   unzip sandstorm-tracker_windows_amd64.zip
+   # or
+   tar -xzf sandstorm-tracker_linux_amd64.tar.gz
+
+   cd sandstorm-tracker
    ```
 
-   **Windows:**
+3. **Configure the application** (see [Configuration](#configuration) section below)
 
-   ```powershell
-   icacls my-config.yml /inheritance:r /grant:r "${env:USERNAME}:(F)"
-   ```
+4. **Install as a service** (see [Installation as a Service](#installation-as-a-service) section below)
 
-4. **Run the tracker:**
+5. **Verify and test** (see [Verification & Testing](#verification--testing) section below)
 
-   ```sh
-   ./sandstorm-tracker --config my-config.yml
-   ```
-
-   Or on Windows:
-
-   ```powershell
-   .\sandstorm-tracker.exe -c my-config.yml
-   ```
-
-## Configuration
-
-The tracker accepts configuration via YAML, TOML, or JSON files. There are two configuration modes:
-
-1. **SAW Mode** (Recommended for sandstorm-admin-wrapper users) - Auto-discovers servers
-2. **Manual Mode** (For standalone servers) - Explicit configuration
-
-### For sandstorm-admin-wrapper Users
-
-If you're using [sandstorm-admin-wrapper](https://github.com/Joe-Klauza/sandstorm-admin-wrapper), configuration is simplified! The tracker automatically reads your SAW configuration and constructs log paths for all servers.
-
-**Simple configuration - just provide the SAW path:**
-
-```yaml
-sawPath: "/opt/sandstorm-admin-wrapper" # Path to your SAW installation
-
-# That's it! The tracker will:
-# - Read server-configs.json automatically
-# - Construct log paths for all servers
-# - Extract RCON addresses and passwords
-# - Configure query addresses (game port + 29)
-```
-
-**Example full configuration:**
-
-```yaml
-sawPath: "/opt/sandstorm-admin-wrapper"
-
-logging:
-  level: "info"
-```
-
-The tracker will automatically discover all servers configured in your SAW installation at:
-
-- `{SAW_PATH}/admin-interface/config/server-configs.json`
-
-And construct log paths like:
-
-- `{SAW_PATH}/sandstorm-server/Insurgency/Saved/Logs/{SERVER_UUID}.log`
-
-**Windows users:**
-
-```yaml
-sawPath: "C:\\SAW_1.0.4"
-```
-
-### For Standalone Server Users
-
-If you're running a single Insurgency: Sandstorm server, you can use the directory path:
-
-```yaml
-servers:
-  - name: "My Server"
-    logPath: "/opt/sandstorm/Insurgency/Saved/Logs" # Directory path
-    rconAddress: "127.0.0.1:27015"
-    rconPassword: "your_rcon_password"
-    queryAddress: "127.0.0.1:27016"
-    enabled: true
-```
-
-The tracker will automatically monitor all `.log` files in that directory.
-
-### Example Configuration
-
-```yaml
-servers:
-  - name: "Main Server"
-    logPath: "/opt/sandstorm/Insurgency/Saved/Logs"
-    rconAddress: "127.0.0.1:27015"
-    rconPassword: "your_rcon_password"
-    queryAddress: "127.0.0.1:27016" # Optional: for server monitoring
-    enabled: true
-
-database:
-  path: "sandstorm-tracker.db"
-  enableWAL: true
-  cacheSize: 2000
-
-logging:
-  level: "info"
-  enableServerLogs: true
-```
-
-### Security Best Practices
-
-- **Never commit your actual config file to version control**
-- Use strong, unique passwords for each server
-- Set restrictive file permissions (600 on Unix, restricted ACL on Windows)
-- Consider using environment variables for passwords: `rconPassword: "${RCON_PASSWORD}"`
-- Store config files outside web-accessible directories
-
-## Development
-
-### Building from Source
+### Option 2: Build from Source
 
 1. **Clone the repository:**
 
@@ -175,32 +63,194 @@ logging:
    go mod download
    ```
 
-3. **Build the project:**
+3. **Build the binary:**
 
    ```sh
    go build -o sandstorm-tracker main.go
    ```
 
-   Or use Task:
+   Or use Task (if installed):
 
    ```sh
    task build
    ```
 
-   - Use `-check` to print database stats and exit.
+4. **Configure the application** (see [Configuration](#configuration) section below)
+
+5. **Install as a service** (see [Installation as a Service](#installation-as-a-service) section below)
+
+6. **Verify and test** (see [Verification & Testing](#verification--testing) section below)
 
 ## Configuration
 
-- Edit `sandstorm-tracker.yaml` to add your servers, log paths, and database options.
-- Example config:
-  - [YAML file](.\assets\configs\sandstorm-tracker.example.yml)
-  - [TOML file](.\assets\configs\sandstorm-tracker.example.toml)
+The tracker uses a **3-tier configuration system** (in order of priority):
+
+1. **Environment Variables** (highest priority) - Override config file values
+2. **Config File** (YAML/TOML) - Main configuration
+3. **Built-in Defaults** (lowest priority) - Sensible fallbacks
+
+### Configuration File
+
+Create `sandstorm-tracker.yml` or `sandstorm-tracker.toml` in the app directory. Example configs are included:
+
+```sh
+# Copy the example config
+cp sandstorm-tracker.example.yml sandstorm-tracker.yml
+
+# Edit with your settings
+nano sandstorm-tracker.yml  # Linux/macOS
+# or open in your editor on Windows
+```
+
+Example config files:
+
+- `sandstorm-tracker.example.yml`
+- `sandstorm-tracker-saw.example.yml`
+
+### SAW Mode (Recommended)
+
+For [sandstorm-admin-wrapper](https://github.com/Joe-Klauza/sandstorm-admin-wrapper) users, the tracker auto-discovers servers:
+
+**Configuration:**
+
+```yaml
+sawPath: "/opt/sandstorm-admin-wrapper"
+
+logging:
+  level: "info"
+  enableServerLogs: true
+```
+
+**Via Environment Variable:**
+
+```bash
+export SAW_PATH="/opt/sandstorm-admin-wrapper"
+# Config file value will be overridden
+```
+
+The tracker will:
+
+- Read `{SAW_PATH}/admin-interface/config/server-configs.json`
+- Construct log paths: `{SAW_PATH}/sandstorm-server/Insurgency/Saved/Logs/{SERVER_UUID}.log`
+- Extract RCON addresses and passwords
+- Configure query addresses
+
+### Manual Mode
+
+For standalone servers:
+
+```yaml
+servers:
+  - name: "Main Server"
+    logPath: "/opt/sandstorm/Insurgency/Saved/Logs"
+    rconAddress: "127.0.0.1:27015"
+    rconPassword: "your_rcon_password"
+    queryAddress: "127.0.0.1:27016"
+    enabled: true
+
+logging:
+  level: "info"
+  enableServerLogs: true
+```
+
+### Environment Variable Overrides
+
+Use environment variables to override config file values (useful for Docker/cloud deployments):
+
+```bash
+# Set SAW path via environment
+export SAW_PATH="/path/to/saw"
+
+# Set individual RCON passwords
+export RCON_PASSWORD_0="server0_password"
+export RCON_PASSWORD_1="server1_password"
+```
+
+Or in a `.env` file:
+
+```
+SAW_PATH=/opt/sandstorm-admin-wrapper
+RCON_PASSWORD_0=server0_password
+RCON_PASSWORD_1=server1_password
+```
+
+### Security Best Practices
+
+- **Never commit actual config or .env files to version control**
+- Use strong, unique RCON passwords
+- Secure file permissions:
+  - Linux/macOS: `chmod 600 sandstorm-tracker.yml .env`
+  - Windows: Set restricted ACLs via `icacls`
+- Store sensitive files outside web-accessible directories
+- Rotate RCON passwords regularly
+
+## Setup as a Service
+
+After configuring the application, set it up to run automatically:
+
+### Windows
+
+```powershell
+# Run as Administrator
+.\scripts\setup-service.ps1
+```
+
+### Linux
+
+```bash
+sudo ./scripts/setup-service.sh
+```
+
+Both set up automatic startup and restart on failure (5-minute restart intervals).
+
+## Running the Application
+
+### Start the Service
+
+**Windows:**
+
+```powershell
+Start-ScheduledTask -TaskName SandstormTracker
+```
+
+**Linux:**
+
+```bash
+sudo systemctl start sandstorm-tracker
+```
+
+### Manual Testing
+
+To test without installing as a service:
+
+```sh
+# Check for updates
+./sandstorm-tracker update
+
+# Start the server
+./sandstorm-tracker serve
+```
+
+### Create Superuser Account (First-Time Only)
+
+Before accessing the PocketBase admin dashboard at `http://localhost:8090/_/`, create a superuser account:
+
+```sh
+# Windows
+.\sandstorm-tracker.exe superuser create admin@example.com password123
+
+# Linux/macOS
+./sandstorm-tracker superuser create admin@example.com password123
+```
+
+Replace `admin@example.com` and `password123` with your desired credentials. Use a strong, unique password.
 
 ## Usage
 
 - Start your Insurgency: Sandstorm server(s) with logging enabled.
 - Run the tracker as described above.
 - Stats will be collected and stored in the configured database.
+- Access the PocketBase admin dashboard at `http://localhost:8090/_/` to view collected data
 
 ## Tools
 
@@ -245,6 +295,15 @@ See [tools/servermgr/README.md](tools/servermgr/README.md) for complete document
 - **`tools/a2s-test-simple`**: Simple A2S query protocol testing
 - **`tools/rcon-test`**: RCON connection testing
 - **`tools/run-server`**: Development server runner
+
+## Development
+
+For developers contributing to or extending the project, see the [Development Guide](DEVELOPMENT.md) for detailed information on:
+
+- Project architecture
+- Building and testing
+- Adding new features
+- Code organization
 
 ## License
 
