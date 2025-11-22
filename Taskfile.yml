@@ -47,6 +47,10 @@ tasks:
     desc: Remove pb_data directory to reset database
     cmds:
       - powershell -Command "if (Test-Path pb_data) { Remove-Item -Recurse -Force pb_data; Write-Host 'pb_data removed' } else { Write-Host 'pb_data does not exist' }"
+  kill-tracker:
+    desc: Kill all running sandstorm-tracker.exe processes
+    cmds:
+      - powershell -ExecutionPolicy Bypass -File ./scripts/kill-tracker.ps1
   kill-server:
     desc: Kill all running Insurgency server processes (not the game client)
     cmds:

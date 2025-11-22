@@ -1,0 +1,328 @@
+{{define "title"}}Server Stats - Sandstorm Tracker{{end}}
+
+{{define "content"}}
+<style>
+    .stats-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid #3d3d3d;
+    }
+
+    .stats-header h1 {
+        color: #ff6b35;
+        margin: 0;
+    }
+
+    .server-selector {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+    }
+
+    .server-selector label {
+        color: #999;
+        font-weight: 500;
+    }
+
+    .server-selector select {
+        padding: 0.5rem 1rem;
+        background-color: #2d2d2d;
+        color: #e0e0e0;
+        border: 1px solid #444;
+        border-radius: 4px;
+        font-size: 1rem;
+        cursor: pointer;
+    }
+
+    .stats-filters {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
+    }
+
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .filter-group label {
+        color: #999;
+        font-size: 0.9rem;
+        font-weight: 500;
+    }
+
+    .filter-group input,
+    .filter-group select {
+        padding: 0.5rem;
+        background-color: #2d2d2d;
+        color: #e0e0e0;
+        border: 1px solid #444;
+        border-radius: 4px;
+        min-width: 200px;
+        cursor: pointer;
+    }
+
+    .stats-summary {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .summary-card {
+        background-color: #2d2d2d;
+        padding: 1.5rem;
+        border-radius: 8px;
+        border-left: 4px solid #ff6b35;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    .summary-card h3 {
+        color: #999;
+        font-size: 0.9rem;
+        margin: 0 0 0.5rem 0;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .summary-card .value {
+        color: #ff6b35;
+        font-size: 2rem;
+        font-weight: bold;
+        margin: 0;
+    }
+
+    .stats-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 1rem;
+    }
+
+    .stats-table thead {
+        background-color: #3d3d3d;
+    }
+
+    .stats-table th {
+        padding: 1rem;
+        text-align: left;
+        color: #ff6b35;
+        font-weight: 600;
+        border-bottom: 2px solid #4d4d4d;
+    }
+
+    .stats-table td {
+        padding: 0.875rem 1rem;
+        border-bottom: 1px solid #3d3d3d;
+    }
+
+    .stats-table tbody tr:hover {
+        background-color: #353535;
+    }
+
+    .player-name {
+        font-weight: 600;
+        color: #e0e0e0;
+    }
+
+    .stat-good {
+        color: #4caf50;
+        font-weight: 600;
+    }
+
+    .stat-neutral {
+        color: #ffc107;
+        font-weight: 600;
+    }
+
+    .stat-bad {
+        color: #f44336;
+        font-weight: 600;
+    }
+
+    .stat-info {
+        color: #999;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+        color: #666;
+    }
+
+    .kd-ratio-badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 4px;
+        font-weight: 600;
+        background-color: #333;
+    }
+
+    .kd-ratio-badge.good {
+        background-color: rgba(76, 175, 80, 0.2);
+        color: #4CAF50;
+    }
+
+    .kd-ratio-badge.ok {
+        background-color: rgba(255, 193, 7, 0.2);
+        color: #FFC107;
+    }
+
+    .kd-ratio-badge.bad {
+        background-color: rgba(244, 67, 54, 0.2);
+        color: #f44336;
+    }
+</style>
+
+<div class="card">
+    <div class="stats-header">
+        <h1>Server Player Statistics</h1>
+        {{if .Servers}}
+        <div class="server-selector">
+            <label for="serverSelect">Server:</label>
+            <select id="serverSelect" onchange="window.location.href='/servers/' + this.value + '/stats'">
+                <option value="">-- Select a Server --</option>
+                {{range .Servers}}
+                <option value="{{.ID}}" {{if eq .ID $.CurrentServerID}}selected{{end}}>{{.Name}}</option>
+                {{end}}
+            </select>
+        </div>
+        {{end}}
+    </div>
+
+    {{if .CurrentServerID}}
+        {{if .ServerName}}
+        <p style="color: #999; margin-bottom: 1.5rem; font-size: 0.95rem;">
+            <strong>{{.ServerName}}</strong> — {{.TotalPlayers}} players | {{.TotalKills}} total kills
+        </p>
+        {{end}}
+
+        <div class="stats-summary">
+            <div class="summary-card">
+                <h3>Total Players</h3>
+                <p class="value">{{.TotalPlayers}}</p>
+            </div>
+            <div class="summary-card">
+                <h3>Total Kills</h3>
+                <p class="value">{{.TotalKills}}</p>
+            </div>
+            <div class="summary-card">
+                <h3>Total Deaths</h3>
+                <p class="value">{{.TotalDeaths}}</p>
+            </div>
+            <div class="summary-card">
+                <h3>Server K/D Ratio</h3>
+                <p class="value">{{.ServerKDRatio}}</p>
+            </div>
+        </div>
+
+        <!-- Search and Filter -->
+        <div class="stats-filters">
+            <div class="filter-group">
+                <label for="playerSearch">Search Player:</label>
+                <input type="text" id="playerSearch" placeholder="Player name..." value="{{.SearchQuery}}"
+                    hx-get="/servers/{{.CurrentServerID}}/stats"
+                    hx-trigger="keyup changed delay:300ms"
+                    hx-target="#statsTable"
+                    hx-include="#playerSearch,#sortBy"
+                    name="search"
+                    style="min-width: 300px;">
+            </div>
+            <div class="filter-group">
+                <label for="sortBy">Sort By:</label>
+                <select id="sortBy" name="sort"
+                    hx-get="/servers/{{.CurrentServerID}}/stats"
+                    hx-trigger="change"
+                    hx-target="#statsTable"
+                    hx-include="#playerSearch,#sortBy">
+                    <option value="kills" {{if eq .SortBy "kills"}}selected{{end}}>Most Kills</option>
+                    <option value="deaths" {{if eq .SortBy "deaths"}}selected{{end}}>Most Deaths</option>
+                    <option value="kd" {{if eq .SortBy "kd"}}selected{{end}}>Best K/D Ratio</option>
+                    <option value="score" {{if eq .SortBy "score"}}selected{{end}}>Highest Score</option>
+                    <option value="matches" {{if eq .SortBy "matches"}}selected{{end}}>Most Matches</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Stats Table -->
+        <div id="statsTable">
+            {{if .PlayerStats}}
+            <table class="stats-table">
+                <thead>
+                    <tr>
+                        <th style="width: 30%;">Player Name</th>
+                        <th style="width: 12%; text-align: center;">Kills</th>
+                        <th style="width: 12%; text-align: center;">Deaths</th>
+                        <th style="width: 12%; text-align: center;">K/D Ratio</th>
+                        <th style="width: 12%; text-align: center;">Score</th>
+                        <th style="width: 12%; text-align: center;">Matches</th>
+                        <th style="width: 10%; text-align: center;">Last Seen</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{range .PlayerStats}}
+                    <tr>
+                        <td><span class="player-name">{{.Name}}</span></td>
+                        <td style="text-align: center;"><span class="stat-good">{{.Kills}}</span></td>
+                        <td style="text-align: center;"><span class="stat-bad">{{.Deaths}}</span></td>
+                        <td style="text-align: center;">
+                            {{if eq .KDRatioStr "∞"}}
+                                <span class="kd-ratio-badge good">{{.KDRatioStr}}</span>
+                            {{else if gt .KDRatio 1.5}}
+                                <span class="kd-ratio-badge good">{{.KDRatioStr}}</span>
+                            {{else if gt .KDRatio 0.8}}
+                                <span class="kd-ratio-badge ok">{{.KDRatioStr}}</span>
+                            {{else}}
+                                <span class="kd-ratio-badge bad">{{.KDRatioStr}}</span>
+                            {{end}}
+                        </td>
+                        <td style="text-align: center;"><span class="stat-info">{{.Score}}</span></td>
+                        <td style="text-align: center;"><span class="stat-info">{{.MatchCount}}</span></td>
+                        <td style="text-align: center;"><span class="stat-info">{{.LastSeen}}</span></td>
+                    </tr>
+                    {{end}}
+                </tbody>
+            </table>
+            {{else}}
+            <div class="empty-state">
+                <p>No player stats found for this server{{if .SearchQuery}} matching "{{.SearchQuery}}"{{end}}</p>
+            </div>
+            {{end}}
+        </div>
+
+    {{else}}
+        <div class="empty-state">
+            <p style="margin: 2rem 0;">👈 Select a server from the dropdown above to view player statistics</p>
+        </div>
+    {{end}}
+</div>
+
+<script>
+    // Re-apply K/D ratio color coding when HTMX updates the table
+    function updateKDRatioColors() {
+        document.querySelectorAll('.kd-ratio-badge').forEach(el => {
+            el.classList.remove('good', 'ok', 'bad');
+            const text = el.textContent.trim();
+            if (text === '∞') {
+                el.classList.add('good');
+            } else {
+                const kdValue = parseFloat(text);
+                if (kdValue >= 1.5) {
+                    el.classList.add('good');
+                } else if (kdValue >= 0.8) {
+                    el.classList.add('ok');
+                } else {
+                    el.classList.add('bad');
+                }
+            }
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', updateKDRatioColors);
+    document.addEventListener('htmx:afterSwap', updateKDRatioColors);
+</script>
+{{end}}

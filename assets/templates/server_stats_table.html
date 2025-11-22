@@ -1,0 +1,55 @@
+{{if .PlayerStats}}
+<table class="stats-table">
+    <thead>
+        <tr>
+            <th style="width: 30%">Player Name</th>
+            <th style="width: 12%; text-align: center">Kills</th>
+            <th style="width: 12%; text-align: center">Deaths</th>
+            <th style="width: 12%; text-align: center">K/D Ratio</th>
+            <th style="width: 12%; text-align: center">Score</th>
+            <th style="width: 12%; text-align: center">Matches</th>
+            <th style="width: 10%; text-align: center">Last Seen</th>
+        </tr>
+    </thead>
+    <tbody>
+        {{range .PlayerStats}}
+        <tr>
+            <td><span class="player-name">{{.Name}}</span></td>
+            <td style="text-align: center">
+                <span class="stat-good">{{.Kills}}</span>
+            </td>
+            <td style="text-align: center">
+                <span class="stat-bad">{{.Deaths}}</span>
+            </td>
+            <td style="text-align: center">
+                {{if eq .KDRatioStr "∞"}}
+                <span class="kd-ratio-badge good">{{.KDRatioStr}}</span>
+                {{else if gt .KDRatio 1.5}}
+                <span class="kd-ratio-badge good">{{.KDRatioStr}}</span>
+                {{else if gt .KDRatio 0.8}}
+                <span class="kd-ratio-badge ok">{{.KDRatioStr}}</span>
+                {{else}}
+                <span class="kd-ratio-badge bad">{{.KDRatioStr}}</span>
+                {{end}}
+            </td>
+            <td style="text-align: center">
+                <span class="stat-info">{{.Score}}</span>
+            </td>
+            <td style="text-align: center">
+                <span class="stat-info">{{.MatchCount}}</span>
+            </td>
+            <td style="text-align: center">
+                <span class="stat-info">{{.LastSeen}}</span>
+            </td>
+        </tr>
+        {{end}}
+    </tbody>
+</table>
+{{else}}
+<div class="empty-state">
+    <p>
+        No player stats found for this server{{if .SearchQuery}} matching
+        "{{.SearchQuery}}"{{end}}
+    </p>
+</div>
+{{end}}

@@ -57,3 +57,48 @@ func GetServerIdFromPath(path string) (string, error) {
 
 	return "", fmt.Errorf("no log files found in directory: %s", path)
 }
+
+// ExtractGameMode extracts the game mode from a scenario string or simple mode string
+// Examples:
+//
+//	"Scenario_Ministry_Checkpoint_Security" -> "Checkpoint"
+//	"Scenario_Refinery_Push_Insurgents" -> "Push"
+//	"Scenario_Town_Skirmish" -> "Skirmish"
+//	"Checkpoint" -> "Checkpoint"
+//	"Push" -> "Push"
+//	"Skirmish" -> "Skirmish"
+func ExtractGameMode(scenario string) string {
+	if scenario == "" {
+		return "Unknown"
+	}
+
+	// Check if it's already a simple mode string
+	switch scenario {
+	case "Checkpoint", "Push", "Skirmish":
+		return scenario
+	}
+
+	// Remove "Scenario_" prefix if present
+	if strings.HasPrefix(scenario, "Scenario_") {
+		scenario = strings.TrimPrefix(scenario, "Scenario_")
+	}
+
+	// Split by underscore
+	parts := strings.Split(scenario, "_")
+	if len(parts) < 2 {
+		return "Unknown"
+	}
+
+	// For Checkpoint and Push modes, the mode is the second part
+	// (first is the map name, second is the mode, third is the team)
+	// For Skirmish, there's no team, so it's just the second part
+	mode := parts[1]
+
+	// Validate it's a known mode
+	switch mode {
+	case "Checkpoint", "Push", "Skirmish":
+		return mode
+	default:
+		return "Unknown"
+	}
+}

@@ -145,6 +145,98 @@ func TestGetServerIdFromPath(t *testing.T) {
 	}
 }
 
+func TestExtractGameMode(t *testing.T) {
+	tests := []struct {
+		name     string
+		scenario string
+		want     string
+	}{
+		// Full scenario strings with Scenario_ prefix
+		{
+			name:     "Ministry Checkpoint Security",
+			scenario: "Scenario_Ministry_Checkpoint_Security",
+			want:     "Checkpoint",
+		},
+		{
+			name:     "Refinery Push Insurgents",
+			scenario: "Scenario_Refinery_Push_Insurgents",
+			want:     "Push",
+		},
+		{
+			name:     "Town Skirmish",
+			scenario: "Scenario_Town_Skirmish",
+			want:     "Skirmish",
+		},
+		{
+			name:     "Hideout Checkpoint Security",
+			scenario: "Scenario_Hideout_Checkpoint_Security",
+			want:     "Checkpoint",
+		},
+		{
+			name:     "Oilfield Push Insurgents",
+			scenario: "Scenario_Oilfield_Push_Insurgents",
+			want:     "Push",
+		},
+		// Simple mode strings (already extracted)
+		{
+			name:     "Simple Checkpoint",
+			scenario: "Checkpoint",
+			want:     "Checkpoint",
+		},
+		{
+			name:     "Simple Push",
+			scenario: "Push",
+			want:     "Push",
+		},
+		{
+			name:     "Simple Skirmish",
+			scenario: "Skirmish",
+			want:     "Skirmish",
+		},
+		// Full scenario without Scenario_ prefix
+		{
+			name:     "Ministry Checkpoint Security without prefix",
+			scenario: "Ministry_Checkpoint_Security",
+			want:     "Checkpoint",
+		},
+		{
+			name:     "Town Skirmish without prefix",
+			scenario: "Town_Skirmish",
+			want:     "Skirmish",
+		},
+		// Edge cases
+		{
+			name:     "Empty string",
+			scenario: "",
+			want:     "Unknown",
+		},
+		{
+			name:     "Single part",
+			scenario: "Scenario_Ministry",
+			want:     "Unknown",
+		},
+		{
+			name:     "Unknown mode",
+			scenario: "Scenario_Ministry_Unknown_Security",
+			want:     "Unknown",
+		},
+		{
+			name:     "Invalid mode name",
+			scenario: "Scenario_Ministry_InvalidMode_Security",
+			want:     "Unknown",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := ExtractGameMode(tt.scenario)
+			if got != tt.want {
+				t.Errorf("ExtractGameMode(%q) = %q, want %q", tt.scenario, got, tt.want)
+			}
+		})
+	}
+}
+
 func containsString(str, substr string) bool {
 	return len(str) >= len(substr) && (str == substr || len(substr) == 0 ||
 		(len(str) > 0 && len(substr) > 0 && findSubstring(str, substr)))

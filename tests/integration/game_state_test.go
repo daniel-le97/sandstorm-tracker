@@ -67,7 +67,7 @@ func TestMapLoadEvent(t *testing.T) {
 
 	match := matches[0]
 	assert.Equal(t, "Ministry", match.GetString("map"))
-	assert.Equal(t, "Scenario_Ministry_Checkpoint_Security", match.GetString("mode"))
+	assert.Equal(t, "Checkpoint", match.GetString("mode"))
 
 	// Verify match_start event was emitted
 	startEvents, err := testApp.FindRecordsByFilter("events", "type = 'match_start'", "-created", 1, 0)
@@ -165,7 +165,7 @@ func TestMapTravelEvent(t *testing.T) {
 	}
 	require.NotNil(t, newMatch, "Should have created a new match for Oilfield")
 	assert.NotEqual(t, firstMatchID, newMatch.Id)
-	assert.Equal(t, "Scenario_Refinery_Push_Insurgents", newMatch.GetString("mode"))
+	assert.Equal(t, "Push", newMatch.GetString("mode"))
 
 	// Verify match_start event for new match
 	startEvents, err := testApp.FindRecordsByFilter("events", "type = 'match_start'", "-created", 1, 0)

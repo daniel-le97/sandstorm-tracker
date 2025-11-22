@@ -11,6 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"sandstorm-tracker/internal/util"
+
 	"github.com/pocketbase/pocketbase/core"
 )
 
@@ -127,11 +129,14 @@ func CreateMatch(ctx context.Context, pbApp core.App, serverID string, mapName, 
 	if mapName != nil {
 		record.Set("map", *mapName)
 	}
+
+	// Extract game mode from scenario string
+	gameMode := "Unknown"
 	if mode != nil {
-		record.Set("mode", *mode)
-	} else {
-		record.Set("mode", "Unknown")
+		gameMode = util.ExtractGameMode(*mode)
 	}
+	record.Set("mode", gameMode)
+
 	if startTime != nil {
 		record.Set("start_time", startTime.Format(time.RFC3339))
 	}
