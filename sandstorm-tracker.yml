@@ -26,8 +26,8 @@
 #   - Extract RCON addresses and passwords
 #
 # Can also be set via SAW_PATH environment variable (overrides this value)
-#
-# sawPath: "C:\\SAW_1.0.4"
+# windows paths will need double backslashes or single forward slashes
+sawPath: "C:/SAW_1.0.4/sandstorm-admin-wrapper"
 # sawPath: "/opt/sandstorm-admin-wrapper"
 
 # ============================================================================
@@ -87,9 +87,9 @@ logging:
   # Use "debug" for troubleshooting, "info" for normal operation
   level: "debug"
 
-  # Maximum file size in MB before rotation (default: 100)
+  # Maximum file size in MB before rotation (default: 10)
   # When the log file reaches this size, it's archived and a new one is created
-  maxSizeMB: 100
+  maxSizeMB: 10
 
   # Maximum age in days before rotation (default: 7)
   # Log files older than this will be archived even if under maxSizeMB

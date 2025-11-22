@@ -180,8 +180,6 @@ func (app *App) Bootstrap() error {
 // onServe is called when the server starts
 func (app *App) onServe(e *core.ServeEvent) error {
 
-
-	
 	logger := app.Logger().With("component", "APP")
 	logger.Info("Starting sandstorm-tracker application")
 	// Validate configuration before starting
@@ -251,6 +249,27 @@ func (app *App) onServe(e *core.ServeEvent) error {
 	gameEventHandlers.RegisterHooks()
 	app.Logger().Info("Registered game event handlers", "component", "APP")
 
+	// Register hooks to restrict player metadata field access to superusers only
+	app.OnRecordsListRequest("players").BindFunc(func(e *core.RecordsListRequestEvent) error {
+		// If not authenticated as superuser admin, hide metadata from all records
+		if !e.HasSuperuserAuth() {
+			for _, record := range e.Records {
+				record.Hide("metadata")
+			}
+		}
+		return e.Next()
+	})
+
+	app.OnRecordViewRequest("players").BindFunc(func(e *core.RecordRequestEvent) error {
+		// If not authenticated as superuser admin, hide metadata from record
+		if !e.HasSuperuserAuth() {
+			e.Record.Hide("metadata")
+		}
+		return e.Next()
+	})
+
+	app.Logger().Info("Registered player metadata access control hooks", "component", "APP")
+
 	// Start file watcher
 	for _, serverCfg := range app.Config.Servers {
 		if serverCfg.Enabled {
@@ -265,7 +284,7 @@ func (app *App) onServe(e *core.ServeEvent) error {
 
 	// Register update checker cron job (every 30 minutes)
 	jobs.RegisterUpdateChecker(app, app.Config, app.Logger())
-	
+
 	if osutils.IsProbablyGoRun() {
 		logPath := "C:\\Users\\danie\\code\\go\\sandstorm-trackerv2\\internal\\parser\\test_data\\hc.log"
 		serverId := "1d6407b7-f51b-4b1d-ad9e-faabbfbb7dde"
