@@ -363,7 +363,7 @@ func (p *LogParser) tryProcessKillEvent(ctx context.Context, line string, timest
 
 	killerSection := strings.TrimSpace(matches[2])
 	victimSection := strings.TrimSpace(matches[3])
-	weapon := CleanWeaponName(matches[4])
+	weapon := matches[4]
 
 	// Parse killer section
 	killers := ParseKillerSection(killerSection)
@@ -395,6 +395,8 @@ func (p *LogParser) tryProcessKillEvent(ctx context.Context, line string, timest
 		}
 
 		// Emit a single event with all killers in the array (as []killer)
+		// Note: weapon is passed raw (unsanitized) - UpsertMatchWeaponStats will handle
+		// cleaning the name and extracting the weapon type internally
 		err := p.eventCreator.CreateEvent(events.TypePlayerKill, serverID, map[string]interface{}{
 			"killers":    killersArr,
 			"victim":     victim,

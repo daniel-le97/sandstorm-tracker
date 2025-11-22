@@ -405,10 +405,12 @@ func TestWeaponTypeClassification(t *testing.T) {
 				t.Fatalf("UpsertMatchWeaponStats() error = %v", err)
 			}
 
+			// Use cleaned weapon name for the filter (UpsertMatchWeaponStats cleans it before storage)
+			cleanedWeaponName := CleanWeaponName(tc.weaponName)
 			weaponRecord, err := testApp.FindFirstRecordByFilter(
 				"match_weapon_stats",
 				"match = {:match} && player = {:player} && weapon_name = {:weapon}",
-				map[string]any{"match": match.ID, "player": player.ID, "weapon": tc.weaponName},
+				map[string]any{"match": match.ID, "player": player.ID, "weapon": cleanedWeaponName},
 			)
 			if err != nil {
 				t.Fatalf("Weapon stats record not found: %v", err)
@@ -417,6 +419,49 @@ func TestWeaponTypeClassification(t *testing.T) {
 			actualType := weaponRecord.GetString("type")
 			if actualType != tc.expectedType {
 				t.Errorf("Weapon %s: type = %s, want %s", tc.weaponName, actualType, tc.expectedType)
+			}
+		})
+	}
+}
+
+func TestGetWeaponType(t *testing.T) {
+	testCases := []struct {
+		weaponName   string
+		expectedType string
+		description  string
+	}{
+		// Firearms - rifles, pistols, sniper rifles, shotguns
+		{"BP_Firearm_M4A1_C_2147480587", "Firearm", "M4A1 rifle"},
+		{"BP_Firearm_AKM_C_2147480339", "Firearm", "AKM rifle"},
+		{"BP_Firearm_M16A4_C_2147481419", "Firearm", "M16A4 rifle"},
+		{"BP_Firearm_M1911_C_2147481234", "Firearm", "M1911 pistol"},
+		{"BP_Firearm_Mosin_Nagant", "Firearm", "Mosin-Nagant sniper rifle"},
+		{"BP_Firearm_Remington_870", "Firearm", "Remington 870 shotgun"},
+
+		// Projectiles - grenades, molotovs, c4, etc
+		{"BP_Projectile_Molotov_C_2147480055", "Projectile", "Molotov cocktail"},
+		{"BP_Projectile_F1_C_2147467410", "Projectile", "F1 grenade"},
+		{"BP_Projectile_GAU8_C_2147477120", "Projectile", "GAU8 cluster bomb"},
+		{"BP_Projectile_C4_Remote", "Projectile", "C4 explosive"},
+
+		// Melee - knives, melee weapons
+		{"BP_Melee_Knife", "Melee", "Combat knife"},
+		{"BP_Melee_Crowbar", "Melee", "Crowbar"},
+
+		// Weapons without full naming convention
+		{"M4A1", "M4A1", "Weapon name only (no BP_ prefix)"},
+		{"Knife", "Knife", "Simple weapon name"},
+
+		// Edge cases
+		{"BP_", "", "Only BP_ prefix"},
+		{"BP_Unknown_Weapon_C_12345", "Unknown", "Unknown weapon type"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			result := GetWeaponType(tc.weaponName)
+			if result != tc.expectedType {
+				t.Errorf("GetWeaponType(%q) = %q, want %q", tc.weaponName, result, tc.expectedType)
 			}
 		})
 	}

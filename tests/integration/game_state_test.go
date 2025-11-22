@@ -573,26 +573,10 @@ func TestRoundEndWinnerTeam(t *testing.T) {
 	err = testApp.Save(roundEndEvent2)
 	require.NoError(t, err)
 
-	// Send MatchEnd event to trigger winner_team logic
-	matchEndEvent2 := core.NewRecord(eventsCollection)
-	matchEndEvent2.Set("type", events.TypeMatchEnd)
-	matchEndEvent2.Set("server", serverRecord.Id)
-	matchEndEvent2.Set("timestamp", time.Now().Add(2*time.Minute+10*time.Second))
-
-	matchEndData2 := events.MatchEndData{
-		MatchID: matchID2,
-		EndTime: time.Now().Add(2*time.Minute + 10*time.Second),
-	}
-	dataJSON, _ = json.Marshal(matchEndData2)
-	matchEndEvent2.Set("data", string(dataJSON))
-	err = testApp.Save(matchEndEvent2)
-	require.NoError(t, err)
-
-	// Verify winner_team was NOT set (remains as default/0) since Insurgents won but player_team is Security
+	// Verify winner_team was NOT updated (still 0, not 1)
 	updatedMatch2, err := testApp.FindRecordById("matches", matchID2)
 	require.NoError(t, err)
-	// When winner_team is not set, it defaults to 0, so we verify it's still 0 (not updated to 1)
-	assert.Equal(t, int64(0), int64(updatedMatch2.GetInt("winner_team")), "Winner_team should remain 0 (unset) when Insurgents win since player_team is Security")
+	assert.Equal(t, int64(0), int64(updatedMatch2.GetInt("winner_team")), "Winner_team should remain 0 when Insurgents win since player_team is Security")
 
-	log.Printf("[TEST] handleMatchEnd correctly sets winner_team only when winning team matches player_team")
+	log.Printf("[TEST] Round end events correctly set winner_team only when winning team matches player_team")
 }

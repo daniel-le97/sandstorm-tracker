@@ -13,6 +13,7 @@ import (
 	"sandstorm-tracker/internal/ghupdate"
 	"sandstorm-tracker/internal/handlers"
 	"sandstorm-tracker/internal/jobs"
+	"sandstorm-tracker/internal/loader"
 	"sandstorm-tracker/internal/logger"
 	"sandstorm-tracker/internal/parser"
 	"sandstorm-tracker/internal/rcon"
@@ -22,6 +23,7 @@ import (
 
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/core"
+	"github.com/pocketbase/pocketbase/tools/osutils"
 
 	"github.com/pocketbase/pocketbase/plugins/migratecmd"
 
@@ -119,6 +121,7 @@ func NewWithVersion(version, commit, date string) (*App, error) {
 
 // setupPlugins configures PocketBase plugins
 func (app *App) setupPlugins() {
+
 	// Auto-migrate database
 	migratecmd.MustRegister(app.PocketBase, app.RootCmd, migratecmd.Config{
 		Automigrate: true,
@@ -176,6 +179,9 @@ func (app *App) Bootstrap() error {
 
 // onServe is called when the server starts
 func (app *App) onServe(e *core.ServeEvent) error {
+
+
+	
 	logger := app.Logger().With("component", "APP")
 	logger.Info("Starting sandstorm-tracker application")
 	// Validate configuration before starting
@@ -259,6 +265,12 @@ func (app *App) onServe(e *core.ServeEvent) error {
 
 	// Register update checker cron job (every 30 minutes)
 	jobs.RegisterUpdateChecker(app, app.Config, app.Logger())
+	
+	if osutils.IsProbablyGoRun() {
+		logPath := "C:\\Users\\danie\\code\\go\\sandstorm-trackerv2\\internal\\parser\\test_data\\hc.log"
+		serverId := "1d6407b7-f51b-4b1d-ad9e-faabbfbb7dde"
+		loader.LoadLogsFromPath(app.PocketBase, logPath, serverId, time.Now())
+	}
 
 	// Start watcher with panic recovery
 	go func() {

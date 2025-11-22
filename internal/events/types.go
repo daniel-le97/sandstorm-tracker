@@ -49,7 +49,7 @@ type PlayerLoginData struct {
 type PlayerKillData struct {
 	Killers   []Killer `json:"killers"`
 	Victim    Victim   `json:"victim"`
-	Weapon    string   `json:"weapon"`
+	Weapon    string   `json:"weapon"` // Raw weapon name from log (e.g., BP_Firearm_M4A1_C_2147480587)
 	IsCatchup bool     `json:"is_catchup"`
 }
 

@@ -109,23 +109,14 @@ COMPLETED:
 - after this the event the next one that would be hit is a mapload event
 - in either of these handlers we need to ensure there is not already an active match for the server, if there is we need to end it -->
 
-<!-- ## weapon types
-COMPLETED:
+ ## weapon types
 adding a weapon type to match_weapon_stats when creating a record
 - BP_Projectile_F1_C_2147479037 -> Projectile
 - BP_Firearm_M16A4_C_2147478730 -> Firearm -->
-
-<!-- ## chat command parser should be refactored to also use our event architechure
-COMPLETED:
-- business logic should be moved to /handlers -->
+- currently weapon type is being saved as the same as weapon_name
 
 
 
-## round end events
- - on round end events we should check what mode the server is on, and then what team the player team is on u match collection
- - [2025.11.10-21.12.05:370][627]LogGameplayEvents: Display: Round 2 Over: Team 0 won (win reason: Objective)
- - Team 0 is Security, Team 1 is Insurgents
- - so if the mode is checkpoint, and the player team is Security and Team 0 won and the match's winner_team should be set to 0 (Security)
 
 
 ## clean this repo for unused/out of date files

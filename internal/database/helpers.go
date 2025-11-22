@@ -379,16 +379,62 @@ func GetWeaponType(weaponName string) string {
 	return weaponName
 }
 
+func CleanWeaponName(weapon string) string {
+	weapon = strings.TrimSpace(weapon)
+	weapon = strings.TrimPrefix(weapon, "BP_")
+
+	// Remove numeric ID suffix first (e.g., "_2147480339")
+	// Find the last underscore followed by only digits
+	lastUnderscore := strings.LastIndex(weapon, "_")
+	if lastUnderscore != -1 {
+		// Check if everything after the last underscore is digits
+		potentialID := weapon[lastUnderscore+1:]
+		isNumeric := true
+		for _, ch := range potentialID {
+			if ch < '0' || ch > '9' {
+				isNumeric = false
+				break
+			}
+		}
+		if isNumeric && len(potentialID) > 0 {
+			weapon = weapon[:lastUnderscore]
+		}
+	}
+
+	// Now remove _C suffix
+	weapon = strings.TrimSuffix(weapon, "_C")
+
+	// Remove common prefixes like "Firearm_", "Weapon_", "Melee_", "Projectile_"
+	weapon = strings.TrimPrefix(weapon, "Firearm_")
+	weapon = strings.TrimPrefix(weapon, "Weapon_")
+	weapon = strings.TrimPrefix(weapon, "Melee_")
+	weapon = strings.TrimPrefix(weapon, "Projectile_")
+
+	weapon = strings.ReplaceAll(weapon, "_", " ")
+
+	// Standardize ODCheckpoint variants (ODCheckpoint A, ODCheckpoint B -> ODCheckpoint)
+	if strings.HasPrefix(weapon, "ODCheckpoint ") {
+		weapon = "ODCheckpoint"
+	}
+
+	return weapon
+}
+
 // UpsertMatchWeaponStats creates or updates weapon stats for a player in a match
+// weaponName should be the raw weapon name from the log (e.g., BP_Firearm_M4A1_C_2147480587)
+// This function will clean the name and extract the weapon type automatically
 func UpsertMatchWeaponStats(ctx context.Context, pbApp core.App, matchID, playerID, weaponName string, kills, assists *int64) error {
-	// Try to find existing record
+	// Clean the weapon name for storage and lookup
+	cleanedWeaponName := CleanWeaponName(weaponName)
+
+	// Try to find existing record using the cleaned weapon name
 	record, err := pbApp.FindFirstRecordByFilter(
 		"match_weapon_stats",
 		"match = {:match} && player = {:player} && weapon_name = {:weapon}",
 		map[string]any{
 			"match":  matchID,
 			"player": playerID,
-			"weapon": weaponName,
+			"weapon": cleanedWeaponName,
 		},
 	)
 
@@ -402,7 +448,7 @@ func UpsertMatchWeaponStats(ctx context.Context, pbApp core.App, matchID, player
 		record = core.NewRecord(collection)
 		record.Set("match", matchID)
 		record.Set("player", playerID)
-		record.Set("weapon_name", weaponName)
+		record.Set("weapon_name", cleanedWeaponName)
 		record.Set("type", GetWeaponType(weaponName))
 		record.Set("kills", 0)
 		record.Set("assists", 0)
