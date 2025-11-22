@@ -2,40 +2,40 @@
 
 {{define "content"}}
 <div class="card">
-    <h2>Weapon Statistics</h2>
+    <h2>Player Weapons (Top 3 Each)</h2>
 
     <!-- Search Bar -->
     <div style="margin-bottom: 1rem;">
-        <input type="text" id="weaponSearch" placeholder="Search by weapon name..." hx-get="/weapons"
+        <input type="text" id="weaponSearch" placeholder="Search by player or weapon name..." hx-get="/weapons"
             hx-trigger="keyup changed delay:300ms" hx-target="#weaponsTable" hx-include="#weaponSearch" name="search"
             style="width: 100%; padding: 0.75rem; background: #1a1a1a; border: 1px solid #333; border-radius: 4px; color: #e0e0e0; font-size: 1rem;" />
     </div>
 
     <div id="weaponsTable">
-        <table>
-            <thead>
-                <tr>
-                    <th>Weapon</th>
-                    <th>Total Kills</th>
-                    <th>Times Used</th>
-                    <th>Avg Kills per Use</th>
-                </tr>
-            </thead>
-            <tbody>
-                {{range .Weapons}}
-                <tr>
-                    <td><strong>{{.Weapon}}</strong></td>
-                    <td>{{.TotalKills}}</td>
-                    <td>{{.TimesUsed}}</td>
-                    <td>{{printf "%.2f" .AvgKills}}</td>
-                </tr>
-                {{else}}
-                    <tr>
-                        <td colspan="4" style="text-align: center; color: #999;">No weapon data found</td>
-                    </tr>
+        {{if .Players}}
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 1.5rem;">
+            {{range .Players}}
+            <div style="background: #2d2d2d; border-radius: 8px; padding: 1.5rem; border-left: 4px solid #ff6b35;">
+                <h3 style="color: #ff6b35; margin-bottom: 1rem; font-size: 1.1rem;">{{.PlayerName}}</h3>
+                <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                    {{range .TopWeapons}}
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem; background: #1a1a1a; border-radius: 4px;">
+                        <span style="color: #e0e0e0;">{{.Weapon}}</span>
+                        <span
+                            style="background: #ff6b35; color: #1a1a1a; padding: 0.25rem 0.75rem; border-radius: 4px; font-weight: bold; font-size: 0.9rem;">{{.Kills}}
+                            kills</span>
+                    </div>
                     {{end}}
-            </tbody>
-        </table>
+                </div>
+            </div>
+            {{end}}
+        </div>
+        {{else}}
+            <div style="text-align: center; padding: 2rem; color: #999;">
+                <p>No weapon data found</p>
+            </div>
+            {{end}}
     </div>
 </div>
 {{end}}

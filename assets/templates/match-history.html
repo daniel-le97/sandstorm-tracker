@@ -1,0 +1,255 @@
+{{define "title"}}Match History - Sandstorm Tracker{{end}}
+
+{{define "content"}}
+<style>
+    .match-card {
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+
+    .match-card:hover {
+        background-color: #353535;
+    }
+
+    .team-badge-match-security {
+        background-color: #1b5e20;
+        color: #81c784;
+    }
+
+    .team-badge-match-insurgents {
+        background-color: #b71c1c;
+        color: #ef5350;
+    }
+
+    .kd-ratio-match {
+        font-weight: bold;
+    }
+
+    .kd-ratio-match.good {
+        color: #4CAF50;
+    }
+
+    .kd-ratio-match.ok {
+        color: #FFC107;
+    }
+
+    .kd-ratio-match.bad {
+        color: #f44336;
+    }
+</style>
+<div style="padding: 2rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <h1>Match History</h1>
+    </div>
+
+    {{if .Matches}}
+    <div style="display: flex; gap: 2rem; margin-bottom: 2rem;">
+        <!-- Filters -->
+        <div class="card" style="flex: 0 0 200px; height: fit-content;">
+            <h3 style="margin-top: 0;">Filters</h3>
+            <form id="filterForm" style="display: flex; flex-direction: column; gap: 1rem;">
+                <div>
+                    <label
+                        style="display: block; color: #999; font-size: 0.9rem; margin-bottom: 0.5rem; text-transform: uppercase;">Server</label>
+                    <select name="server"
+                        style="width: 100%; padding: 0.5rem; background-color: #2d2d2d; color: #e0e0e0; border: 1px solid #444; border-radius: 4px;">
+                        <option value="">All Servers</option>
+                        {{range .Servers}}
+                        <option value="{{.Id}}" {{if eq .Id $.SelectedServer}}selected{{end}}>{{.GetString "name"}}
+                        </option>
+                        {{end}}
+                    </select>
+                </div>
+
+                <div>
+                    <label
+                        style="display: block; color: #999; font-size: 0.9rem; margin-bottom: 0.5rem; text-transform: uppercase;">Map</label>
+                    <select name="map"
+                        style="width: 100%; padding: 0.5rem; background-color: #2d2d2d; color: #e0e0e0; border: 1px solid #444; border-radius: 4px;">
+                        <option value="">All Maps</option>
+                        {{range .Maps}}
+                        <option value="{{.}}" {{if eq . $.SelectedMap}}selected{{end}}>{{.}}</option>
+                        {{end}}
+                    </select>
+                </div>
+
+                <div>
+                    <label
+                        style="display: block; color: #999; font-size: 0.9rem; margin-bottom: 0.5rem; text-transform: uppercase;">Mode</label>
+                    <select name="mode"
+                        style="width: 100%; padding: 0.5rem; background-color: #2d2d2d; color: #e0e0e0; border: 1px solid #444; border-radius: 4px;">
+                        <option value="">All Modes</option>
+                        {{range .Modes}}
+                        <option value="{{.}}" {{if eq . $.SelectedMode}}selected{{end}}>{{.}}</option>
+                        {{end}}
+                    </select>
+                </div>
+
+                <button type="submit"
+                    style="padding: 0.5rem 1rem; background-color: #ff6b35; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
+                    Apply Filters
+                </button>
+            </form>
+        </div>
+
+        <!-- Match List -->
+        <div style="flex: 1;">
+            {{range .Matches}}
+            <div class="card match-card"
+                onclick="this.querySelector('.match-details').style.display = this.querySelector('.match-details').style.display === 'none' ? 'block' : 'none'">
+                <div
+                    style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 1rem; align-items: center; padding-bottom: 1rem; border-bottom: 1px solid #2d2d2d;">
+                    <div>
+                        <p style="color: #999; font-size: 0.85rem; margin: 0 0 0.25rem 0; text-transform: uppercase;">
+                            Map</p>
+                        <p style="color: #e0e0e0; font-weight: bold; margin: 0;">{{.Map}}</p>
+                    </div>
+                    <div>
+                        <p style="color: #999; font-size: 0.85rem; margin: 0 0 0.25rem 0; text-transform: uppercase;">
+                            Mode</p>
+                        <p style="color: #e0e0e0; font-weight: bold; margin: 0;">{{.Mode}}</p>
+                    </div>
+                    <div>
+                        <p style="color: #999; font-size: 0.85rem; margin: 0 0 0.25rem 0; text-transform: uppercase;">
+                            Duration</p>
+                        <p style="color: #e0e0e0; font-weight: bold; margin: 0;">{{.Duration}}</p>
+                    </div>
+                    <div style="text-align: right;">
+                        <p style="color: #999; font-size: 0.85rem; margin: 0 0 0.25rem 0; text-transform: uppercase;">
+                            Ended</p>
+                        <p style="color: #e0e0e0; font-weight: bold; margin: 0;">{{.EndTime}}</p>
+                    </div>
+                </div>
+
+                <div class="match-details"
+                    style="display: none; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #2d2d2d;">
+                    <div style="margin-bottom: 1.5rem;">
+                        <p style="color: #999; font-size: 0.85rem; text-transform: uppercase; margin-bottom: 0.5rem;">
+                            Team Stats</p>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <div style="background-color: #1b5e20; padding: 0.75rem; border-radius: 4px;">
+                                <p style="color: #81c784; font-size: 0.9rem; margin: 0;">Security</p>
+                                <p style="color: #c8e6c9; margin: 0;"><span
+                                        style="font-weight: bold;">{{.SecurityKills}}</span> kills, <span
+                                        style="font-weight: bold;">{{.SecurityDeaths}}</span> deaths</p>
+                            </div>
+                            <div style="background-color: #b71c1c; padding: 0.75rem; border-radius: 4px;">
+                                <p style="color: #ef5350; font-size: 0.9rem; margin: 0;">Insurgents</p>
+                                <p style="color: #ffcdd2; margin: 0;"><span
+                                        style="font-weight: bold;">{{.InsurgentKills}}</span> kills, <span
+                                        style="font-weight: bold;">{{.InsurgentDeaths}}</span> deaths</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{if .Players}}
+                    <div>
+                        <p style="color: #999; font-size: 0.85rem; text-transform: uppercase; margin-bottom: 0.75rem;">
+                            Player Stats</p>
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="border-bottom: 1px solid #2d2d2d;">
+                                    <th
+                                        style="text-align: left; padding: 0.5rem; color: #999; font-weight: normal; font-size: 0.85rem; text-transform: uppercase;">
+                                        Player</th>
+                                    <th
+                                        style="text-align: center; padding: 0.5rem; color: #999; font-weight: normal; font-size: 0.85rem; text-transform: uppercase;">
+                                        Team</th>
+                                    <th
+                                        style="text-align: center; padding: 0.5rem; color: #999; font-weight: normal; font-size: 0.85rem; text-transform: uppercase;">
+                                        K</th>
+                                    <th
+                                        style="text-align: center; padding: 0.5rem; color: #999; font-weight: normal; font-size: 0.85rem; text-transform: uppercase;">
+                                        D</th>
+                                    <th
+                                        style="text-align: center; padding: 0.5rem; color: #999; font-weight: normal; font-size: 0.85rem; text-transform: uppercase;">
+                                        A</th>
+                                    <th
+                                        style="text-align: center; padding: 0.5rem; color: #999; font-weight: normal; font-size: 0.85rem; text-transform: uppercase;">
+                                        K/D</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {{range .Players}}
+                                <tr style="border-bottom: 1px solid #333;">
+                                    <td style="padding: 0.5rem; color: #e0e0e0; font-size: 0.9rem;">{{.PlayerName}}</td>
+                                    <td style="text-align: center; padding: 0.5rem;">
+                                        <span class="team-badge-match"
+                                            style="padding: 0.2rem 0.5rem; border-radius: 3px; font-size: 0.8rem;">
+                                            {{.Team}}
+                                        </span>
+                                    </td>
+                                    <td style="text-align: center; padding: 0.5rem; color: #4CAF50; font-weight: bold;">
+                                        {{.Kills}}</td>
+                                    <td style="text-align: center; padding: 0.5rem; color: #f44336; font-weight: bold;">
+                                        {{.Deaths}}</td>
+                                    <td style="text-align: center; padding: 0.5rem; color: #bbb;">{{.Assists}}</td>
+                                    <td style="text-align: center; padding: 0.5rem;">
+                                        <span class="kd-ratio-match" data-kd="{{.KDRatio}}">
+                                            {{.KDRatio}}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {{end}}
+                            </tbody>
+                        </table>
+                    </div>
+                    {{end}}
+                </div>
+            </div>
+            {{end}}
+
+            {{if .HasNextPage}}
+            <div style="text-align: center; margin-top: 2rem;">
+                <form method="get" style="display: inline;">
+                    <input type="hidden" name="page" value="{{.NextPage}}">
+                    {{if .SelectedServer}}<input type="hidden" name="server" value="{{.SelectedServer}}">{{end}}
+                    {{if .SelectedMap}}<input type="hidden" name="map" value="{{.SelectedMap}}">{{end}}
+                    {{if .SelectedMode}}<input type="hidden" name="mode" value="{{.SelectedMode}}">{{end}}
+                    <button type="submit"
+                        style="padding: 0.75rem 1.5rem; background-color: #ff6b35; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
+                        Load More
+                    </button>
+                </form>
+            </div>
+            {{end}}
+        </div>
+    </div>
+    {{else}}
+        <div class="card" style="text-align: center; padding: 3rem;">
+            <p style="color: #999; font-size: 1.1rem;">No matches found</p>
+        </div>
+        {{end}}
+</div>
+
+<script>
+    // Apply team badge classes for match history
+    document.querySelectorAll( '.team-badge-match' ).forEach( badge =>
+    {
+        const team = badge.textContent.trim();
+        if ( team === 'Security' )
+        {
+            badge.classList.add( 'team-badge-match-security' );
+        } else if ( team === 'Insurgents' )
+        {
+            badge.classList.add( 'team-badge-match-insurgents' );
+        }
+    } );
+
+    // Apply K/D ratio color coding for match history
+    document.querySelectorAll( '.kd-ratio-match' ).forEach( el =>
+    {
+        const kdValue = parseFloat( el.getAttribute( 'data-kd' ) );
+        if ( kdValue >= 1.0 )
+        {
+            el.classList.add( 'good' );
+        } else if ( kdValue >= 0.5 )
+        {
+            el.classList.add( 'ok' );
+        } else
+        {
+            el.classList.add( 'bad' );
+        }
+    } );
+</script>
+{{end}}

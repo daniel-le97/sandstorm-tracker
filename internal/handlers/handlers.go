@@ -1,8 +1,7 @@
-package handlers
-
-import (
+package handlersimport (
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"sandstorm-tracker/assets"
@@ -414,65 +413,103 @@ func Register(app AppInterface, e *core.ServeEvent) {
 		return re.HTML(http.StatusOK, html)
 	})
 
-	// Weapons page
+	// Weapons page - shows each player's top 3 weapons
 	e.Router.GET("/weapons", func(re *core.RequestEvent) error {
 		searchQuery := re.Request.URL.Query().Get("search")
 
+		// Get all players
+		players, err := re.App.FindAllRecords("players")
+		if err != nil {
+			players = []*core.Record{}
+		}
+
+		// Get all weapon stats
 		weaponStats, err := re.App.FindAllRecords("match_weapon_stats")
 		if err != nil {
 			weaponStats = []*core.Record{}
 		}
 
-		// Aggregate weapon statistics
-		type WeaponStat struct {
-			Weapon     string
-			TotalKills int
-			TimesUsed  int
-			AvgKills   float64
+		type PlayerWeapon struct {
+			Weapon string
+			Kills  int
 		}
 
-		weaponMap := make(map[string]*WeaponStat)
-		for _, stat := range weaponStats {
-			weapon := stat.GetString("weapon")
-			kills := stat.GetInt("kills")
+		type PlayerWeaponData struct {
+			PlayerName string
+			PlayerID   string
+			TopWeapons []PlayerWeapon
+		}
 
-			if weapon == "" {
+		playerWeaponMap := make(map[string]map[string]int)
+		playerNameMap := make(map[string]string) // playerID -> playerName
+
+		// Build player name map first
+		for _, player := range players {
+			playerNameMap[player.Id] = player.GetString("name")
+		}
+
+		// Aggregate weapons by player from weapon stats
+		for _, stat := range weaponStats {
+			weapon := stat.GetString("weapon_name")
+			kills := stat.GetInt("kills")
+			playerID := stat.GetString("player")
+
+			if weapon == "" || playerID == "" || kills == 0 {
 				continue
 			}
 
-			// Apply search filter
+			// Apply search filter to weapon name or player name
 			if searchQuery != "" {
-				if !contains(weapon, searchQuery) {
+				playerName := playerNameMap[playerID]
+				if !contains(weapon, searchQuery) && !contains(playerName, searchQuery) {
 					continue
 				}
 			}
 
-			if _, exists := weaponMap[weapon]; !exists {
-				weaponMap[weapon] = &WeaponStat{
+			if _, exists := playerWeaponMap[playerID]; !exists {
+				playerWeaponMap[playerID] = make(map[string]int)
+			}
+
+			playerWeaponMap[playerID][weapon] += kills
+		}
+
+		// Build player weapon data with top 3 weapons
+		playerWeapons := make([]PlayerWeaponData, 0)
+		for playerID, weapons := range playerWeaponMap {
+			playerName := playerNameMap[playerID]
+			if playerName == "" {
+				continue // Skip if player not found
+			}
+
+			// Convert to slice and sort by kills
+			weaponSlice := make([]PlayerWeapon, 0, len(weapons))
+			for weapon, kills := range weapons {
+				weaponSlice = append(weaponSlice, PlayerWeapon{
 					Weapon: weapon,
+					Kills:  kills,
+				})
+			}
+
+			// Sort by kills descending
+			for i := 0; i < len(weaponSlice); i++ {
+				for j := i + 1; j < len(weaponSlice); j++ {
+					if weaponSlice[j].Kills > weaponSlice[i].Kills {
+						weaponSlice[i], weaponSlice[j] = weaponSlice[j], weaponSlice[i]
+					}
 				}
 			}
 
-			weaponMap[weapon].TotalKills += kills
-			weaponMap[weapon].TimesUsed++
-		}
-
-		// Convert map to slice and calculate averages
-		weapons := make([]WeaponStat, 0, len(weaponMap))
-		for _, ws := range weaponMap {
-			if ws.TimesUsed > 0 {
-				ws.AvgKills = float64(ws.TotalKills) / float64(ws.TimesUsed)
+			// Take top 3
+			topCount := 3
+			if len(weaponSlice) < topCount {
+				topCount = len(weaponSlice)
 			}
-			weapons = append(weapons, *ws)
-		}
 
-		// Sort by total kills (descending) - simple bubble sort
-		for i := 0; i < len(weapons); i++ {
-			for j := i + 1; j < len(weapons); j++ {
-				if weapons[j].TotalKills > weapons[i].TotalKills {
-					weapons[i], weapons[j] = weapons[j], weapons[i]
-				}
-			}
+			playerWeapons = append(playerWeapons, PlayerWeaponData{
+				PlayerName: playerName,
+				PlayerID:   playerID,
+				TopWeapons: weaponSlice[:topCount],
+			})
 		}
 
 		// Check if this is an HTMX request (partial update)
@@ -484,7 +521,7 @@ func Register(app AppInterface, e *core.ServeEvent) {
 			html, err = registry.LoadFS(assets.GetWebAssets().FS(),
 				"templates/weapons_table.html",
 			).Render(map[string]any{
-				"Weapons": weapons,
+				"Players": playerWeapons,
 			})
 		} else {
 			// Return full page
@@ -493,9 +530,337 @@ func Register(app AppInterface, e *core.ServeEvent) {
 				"templates/weapons.html",
 			).Render(map[string]any{
 				"ActivePage": "weapons",
-				"Weapons":    weapons,
+				"Players":    playerWeapons,
 			})
 		}
+
+		if err != nil {
+			return re.InternalServerError("Failed to render template", err)
+		}
+
+		return re.HTML(http.StatusOK, html)
+	})
+
+	// Live Match - Current match details with player scores
+	e.Router.GET("/live-match/:serverId", func(re *core.RequestEvent) error {
+		serverID := re.Request.PathValue("serverId")
+
+		server, err := re.App.FindRecordById("servers", serverID)
+		if err != nil {
+			return re.NotFoundError("Server not found", err)
+		}
+
+		matches, err := re.App.FindRecordsByFilter(
+			"matches",
+			"server = {:serverId} && end_time = ''",
+			"-start_time",
+			1,
+			0,
+			map[string]any{"serverId": serverID},
+		)
+
+		type PlayerScore struct {
+			PlayerName string
+			Team       string
+			Kills      int
+			Deaths     int
+			Assists    int
+			KDRatio    string
+		}
+
+		data := map[string]any{
+			"ActivePage": "live-match",
+			"IsActive":   false,
+			"ServerName": server.GetString("name"),
+		}
+
+		if err == nil && len(matches) > 0 {
+			match := matches[0]
+			data["IsActive"] = true
+			data["Map"] = match.GetString("map")
+			data["Mode"] = match.GetString("mode")
+			data["Round"] = match.GetInt("round")
+			data["StartTime"] = match.GetDateTime("start_time").Time().Format("15:04")
+			data["RoundObjective"] = match.GetInt("round_objective")
+			data["NumObjectives"] = match.GetInt("num_objectives")
+
+			if numObj := match.GetInt("num_objectives"); numObj > 0 {
+				data["ObjectivePercent"] = (match.GetInt("round_objective") * 100) / numObj
+				data["CurrentObjective"] = string(rune('A' + match.GetInt("round_objective")))
+				lastLetter := string(rune('A' + numObj - 1))
+				if numObj == 1 {
+					data["TotalObjectivesStr"] = "A"
+				} else {
+					data["TotalObjectivesStr"] = "A-" + lastLetter
+				}
+			}
+
+			playerStats, err := re.App.FindRecordsByFilter(
+				"match_player_stats",
+				"match = {:matchId}",
+				"-kills, -deaths",
+				-1,
+				0,
+				map[string]any{"matchId": match.Id},
+			)
+
+			if err == nil {
+				re.App.ExpandRecords(playerStats, []string{"player"}, nil)
+
+				players := make([]PlayerScore, 0, len(playerStats))
+				securityKills, securityDeaths, insurgentKills, insurgentDeaths := 0, 0, 0, 0
+				securityCount, insurgentCount := 0, 0
+
+				for _, stat := range playerStats {
+					playerRec := stat.ExpandedOne("player")
+					if playerRec == nil {
+						continue
+					}
+
+					kills := stat.GetInt("kills")
+					deaths := stat.GetInt("deaths")
+					assists := stat.GetInt("assists")
+
+					kdRatio := 0.0
+					if deaths > 0 {
+						kdRatio = float64(kills) / float64(deaths)
+					} else if kills > 0 {
+						kdRatio = float64(kills)
+					}
+
+					player := PlayerScore{
+						PlayerName: playerRec.GetString("name"),
+						Kills:      kills,
+						Deaths:     deaths,
+						Assists:    assists,
+						KDRatio:    fmt.Sprintf("%.2f", kdRatio),
+					}
+
+					// Determine team (would need to query match_player_stats for team info)
+					// For now, alternate or get from stat record
+					team := stat.GetString("team")
+					if team == "" {
+						team = "Unknown"
+					}
+					player.Team = team
+
+					if team == "Security" {
+						securityCount++
+						securityKills += kills
+						securityDeaths += deaths
+					} else if team == "Insurgents" {
+						insurgentCount++
+						insurgentKills += kills
+						insurgentDeaths += deaths
+					}
+
+					players = append(players, player)
+				}
+
+				data["Players"] = players
+				data["SecurityPlayerCount"] = securityCount
+				data["SecurityKills"] = securityKills
+				data["SecurityDeaths"] = securityDeaths
+				data["InsurgentPlayerCount"] = insurgentCount
+				data["InsurgentKills"] = insurgentKills
+				data["InsurgentDeaths"] = insurgentDeaths
+			}
+		}
+
+		html, err := registry.LoadFS(assets.GetWebAssets().FS(),
+			"templates/layout.html",
+			"templates/live-match.html",
+		).Render(data)
+
+		if err != nil {
+			return re.InternalServerError("Failed to render template", err)
+		}
+
+		return re.HTML(http.StatusOK, html)
+	})
+
+	// Match History - Historical matches with player stats
+	e.Router.GET("/match-history", func(re *core.RequestEvent) error {
+		page := 1
+		pageSize := 10
+
+		if p := re.Request.URL.Query().Get("page"); p != "" {
+			if parsed, err := strconv.Atoi(p); err == nil && parsed > 0 {
+				page = parsed
+			}
+		}
+
+		// Get filter parameters
+		selectedServer := re.Request.URL.Query().Get("server")
+		selectedMap := re.Request.URL.Query().Get("map")
+		selectedMode := re.Request.URL.Query().Get("mode")
+
+		// Build filter
+		filters := []string{"end_time != ''"}
+		filterParams := make(map[string]any)
+
+		if selectedServer != "" {
+			filters = append(filters, "server = {:serverId}")
+			filterParams["serverId"] = selectedServer
+		}
+		if selectedMap != "" {
+			filters = append(filters, "map = {:mapName}")
+			filterParams["mapName"] = selectedMap
+		}
+		if selectedMode != "" {
+			filters = append(filters, "mode = {:modeName}")
+			filterParams["modeName"] = selectedMode
+		}
+
+		filterStr := strings.Join(filters, " && ")
+
+		// Get all servers for filter dropdown
+		servers, _ := re.App.FindAllRecords("servers")
+
+		// Get unique maps and modes
+		allMatches, _ := re.App.FindAllRecords("matches")
+		mapSet := make(map[string]bool)
+		modeSet := make(map[string]bool)
+		for _, m := range allMatches {
+			mapSet[m.GetString("map")] = true
+			modeSet[m.GetString("mode")] = true
+		}
+
+		maps := make([]string, 0, len(mapSet))
+		modes := make([]string, 0, len(modeSet))
+		for k := range mapSet {
+			if k != "" {
+				maps = append(maps, k)
+			}
+		}
+		for k := range modeSet {
+			if k != "" {
+				modes = append(modes, k)
+			}
+		}
+
+		// Get matches for current page
+		offset := (page - 1) * pageSize
+		matches, err := re.App.FindRecordsByFilter(
+			"matches",
+			filterStr,
+			"-end_time",
+			pageSize+1, // Get one extra to determine if there's a next page
+			offset,
+			filterParams,
+		)
+
+		hasNextPage := len(matches) > pageSize
+		if hasNextPage {
+			matches = matches[:pageSize]
+		}
+
+		type MatchPlayer struct {
+			PlayerName string
+			Team       string
+			Kills      int
+			Deaths     int
+			Assists    int
+			KDRatio    string
+		}
+
+		type MatchData struct {
+			MatchId           string
+			Map               string
+			Mode              string
+			Duration          string
+			EndTime           string
+			SecurityKills     int
+			SecurityDeaths    int
+			InsurgentKills    int
+			InsurgentDeaths   int
+			Players           []MatchPlayer
+		}
+
+		matchData := make([]MatchData, 0, len(matches))
+		for _, match := range matches {
+			startTime := match.GetDateTime("start_time").Time()
+			endTime := match.GetDateTime("end_time").Time()
+			duration := endTime.Sub(startTime)
+
+			md := MatchData{
+				MatchId:  match.Id,
+				Map:      match.GetString("map"),
+				Mode:     match.GetString("mode"),
+				Duration: fmt.Sprintf("%dh %dm", int(duration.Hours()), int(duration.Minutes())%60),
+				EndTime:  endTime.Format("2006-01-02 15:04"),
+			}
+
+			// Get player stats for this match
+			playerStats, err := re.App.FindRecordsByFilter(
+				"match_player_stats",
+				"match = {:matchId}",
+				"-kills",
+				-1,
+				0,
+				map[string]any{"matchId": match.Id},
+			)
+
+			if err == nil {
+				re.App.ExpandRecords(playerStats, []string{"player"}, nil)
+
+				for _, stat := range playerStats {
+					playerRec := stat.ExpandedOne("player")
+					if playerRec == nil {
+						continue
+					}
+
+					kills := stat.GetInt("kills")
+					deaths := stat.GetInt("deaths")
+					assists := stat.GetInt("assists")
+
+					kdRatio := 0.0
+					if deaths > 0 {
+						kdRatio = float64(kills) / float64(deaths)
+					} else if kills > 0 {
+						kdRatio = float64(kills)
+					}
+
+					player := MatchPlayer{
+						PlayerName: playerRec.GetString("name"),
+						Kills:      kills,
+						Deaths:     deaths,
+						Assists:    assists,
+						KDRatio:    fmt.Sprintf("%.2f", kdRatio),
+						Team:       stat.GetString("team"),
+					}
+
+					if player.Team == "Security" {
+						md.SecurityKills += kills
+						md.SecurityDeaths += deaths
+					} else {
+						md.InsurgentKills += kills
+						md.InsurgentDeaths += deaths
+					}
+
+					md.Players = append(md.Players, player)
+				}
+			}
+
+			matchData = append(matchData, md)
+		}
+
+		html, err := registry.LoadFS(assets.GetWebAssets().FS(),
+			"templates/layout.html",
+			"templates/match-history.html",
+		).Render(map[string]any{
+			"ActivePage":    "match-history",
+			"Matches":       matchData,
+			"Servers":       servers,
+			"Maps":          maps,
+			"Modes":         modes,
+			"SelectedServer": selectedServer,
+			"SelectedMap":    selectedMap,
+			"SelectedMode":   selectedMode,
+			"Page":           page,
+			"NextPage":       page + 1,
+			"HasNextPage":    hasNextPage,
+		})
 
 		if err != nil {
 			return re.InternalServerError("Failed to render template", err)

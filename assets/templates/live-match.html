@@ -1,0 +1,240 @@
+{{define "title"}}Live Match - Sandstorm Tracker{{end}}
+
+{{define "content"}}
+<style>
+    .team-badge-security {
+        background-color: #1b5e20;
+        color: #81c784;
+    }
+
+    .team-badge-insurgents {
+        background-color: #b71c1c;
+        color: #ef5350;
+    }
+
+    .kd-ratio {
+        font-weight: bold;
+    }
+
+    .kd-ratio.good {
+        color: #4CAF50;
+    }
+
+    .kd-ratio.ok {
+        color: #FFC107;
+    }
+
+    .kd-ratio.bad {
+        color: #f44336;
+    }
+
+    .progress-bar {
+        background-color: #ff6b35;
+        height: 100%;
+        transition: width 0.3s ease;
+    }
+</style>
+
+<div style="padding: 2rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <h1>Live Match</h1>
+        <a href="/dashboard"
+            style="text-decoration: none; padding: 0.5rem 1rem; background-color: #2d2d2d; color: #e0e0e0; border-radius: 4px; cursor: pointer;">
+            ← Back to Dashboard
+        </a>
+    </div>
+
+    {{if .IsActive}}
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
+        <!-- Match Info -->
+        <div class="card">
+            <h2>Match Information</h2>
+
+            <div style="margin-bottom: 1.5rem;">
+                <p style="color: #999; font-size: 0.85rem; margin: 0 0 0.25rem 0; text-transform: uppercase;">Server</p>
+                <p style="color: #e0e0e0; font-size: 1.1rem; font-weight: bold; margin: 0;">{{.ServerName}}</p>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+                <div>
+                    <p style="color: #999; font-size: 0.85rem; margin: 0 0 0.25rem 0; text-transform: uppercase;">Map
+                    </p>
+                    <p style="color: #e0e0e0; font-size: 1rem; font-weight: bold; margin: 0;">{{.Map}}</p>
+                </div>
+                <div>
+                    <p style="color: #999; font-size: 0.85rem; margin: 0 0 0.25rem 0; text-transform: uppercase;">Mode
+                    </p>
+                    <p style="color: #e0e0e0; font-size: 1rem; font-weight: bold; margin: 0;">{{.Mode}}</p>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+                <div>
+                    <p style="color: #999; font-size: 0.85rem; margin: 0 0 0.25rem 0; text-transform: uppercase;">Round
+                    </p>
+                    <p style="color: #e0e0e0; font-size: 1.1rem; font-weight: bold; margin: 0;">{{.Round}}</p>
+                </div>
+                <div>
+                    <p style="color: #999; font-size: 0.85rem; margin: 0 0 0.25rem 0; text-transform: uppercase;">
+                        Started</p>
+                    <p style="color: #e0e0e0; font-size: 0.9rem; margin: 0;">{{.StartTime}}</p>
+                </div>
+            </div>
+
+            <div>
+                <p style="color: #999; font-size: 0.85rem; margin: 0 0 0.5rem 0; text-transform: uppercase;">Objectives
+                </p>
+                <div style="background-color: #252525; padding: 0.75rem; border-radius: 4px;">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                        <span style="color: #bbb;">Progress: {{.CurrentObjective}} / {{.TotalObjectivesStr}}</span>
+                        <span style="color: #ff6b35; font-weight: bold;">{{.ObjectivePercent}}%</span>
+                    </div>
+                    <div style="background-color: #1a1a1a; border-radius: 4px; height: 8px; overflow: hidden;">
+                        <div class="progress-bar" data-width="{{.ObjectivePercent}}"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Team Summary -->
+        <div class="card">
+            <h2>Team Overview</h2>
+
+            <div style="margin-bottom: 2rem;">
+                <div
+                    style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                    <p style="color: #999; font-size: 0.85rem; text-transform: uppercase; margin: 0;">Security</p>
+                    <p style="color: #e0e0e0; font-size: 1.2rem; font-weight: bold; margin: 0;">{{.SecurityPlayerCount}}
+                        Players</p>
+                </div>
+                <div style="background-color: #252525; padding: 0.5rem; border-radius: 4px; font-size: 0.9rem;">
+                    <span style="color: #bbb;">Kills: </span><span
+                        style="color: #4CAF50; font-weight: bold;">{{.SecurityKills}}</span>
+                    <span style="color: #bbb; margin-left: 1rem;">Deaths: </span><span
+                        style="color: #f44336; font-weight: bold;">{{.SecurityDeaths}}</span>
+                </div>
+            </div>
+
+            <div>
+                <div
+                    style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                    <p style="color: #999; font-size: 0.85rem; text-transform: uppercase; margin: 0;">Insurgents</p>
+                    <p style="color: #e0e0e0; font-size: 1.2rem; font-weight: bold; margin: 0;">
+                        {{.InsurgentPlayerCount}} Players</p>
+                </div>
+                <div style="background-color: #252525; padding: 0.5rem; border-radius: 4px; font-size: 0.9rem;">
+                    <span style="color: #bbb;">Kills: </span><span
+                        style="color: #4CAF50; font-weight: bold;">{{.InsurgentKills}}</span>
+                    <span style="color: #bbb; margin-left: 1rem;">Deaths: </span><span
+                        style="color: #f44336; font-weight: bold;">{{.InsurgentDeaths}}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Player Scoreboard -->
+    <div class="card">
+        <h2>Player Scoreboard</h2>
+
+        {{if .Players}}
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="border-bottom: 2px solid #ff6b35;">
+                    <th
+                        style="text-align: left; padding: 0.75rem; color: #999; font-weight: normal; font-size: 0.9rem; text-transform: uppercase;">
+                        Player Name</th>
+                    <th
+                        style="text-align: center; padding: 0.75rem; color: #999; font-weight: normal; font-size: 0.9rem; text-transform: uppercase;">
+                        Team</th>
+                    <th
+                        style="text-align: center; padding: 0.75rem; color: #999; font-weight: normal; font-size: 0.9rem; text-transform: uppercase;">
+                        Kills</th>
+                    <th
+                        style="text-align: center; padding: 0.75rem; color: #999; font-weight: normal; font-size: 0.9rem; text-transform: uppercase;">
+                        Deaths</th>
+                    <th
+                        style="text-align: center; padding: 0.75rem; color: #999; font-weight: normal; font-size: 0.9rem; text-transform: uppercase;">
+                        Assists</th>
+                    <th
+                        style="text-align: center; padding: 0.75rem; color: #999; font-weight: normal; font-size: 0.9rem; text-transform: uppercase;">
+                        K/D Ratio</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{range .Players}}
+                <tr style="border-bottom: 1px solid #2d2d2d;">
+                    <td style="padding: 0.75rem; color: #e0e0e0;">{{.PlayerName}}</td>
+                    <td style="text-align: center; padding: 0.75rem;">
+                        <span class="team-badge"
+                            style="padding: 0.25rem 0.75rem; border-radius: 4px; font-size: 0.85rem;">
+                            {{.Team}}
+                        </span>
+                    </td>
+                    <td style="text-align: center; padding: 0.75rem; color: #4CAF50; font-weight: bold;">{{.Kills}}</td>
+                    <td style="text-align: center; padding: 0.75rem; color: #f44336; font-weight: bold;">{{.Deaths}}
+                    </td>
+                    <td style="text-align: center; padding: 0.75rem; color: #bbb;">{{.Assists}}</td>
+                    <td style="text-align: center; padding: 0.75rem;">
+                        <span class="kd-ratio" data-kd="{{.KDRatio}}">
+                            {{.KDRatio}}
+                        </span>
+                    </td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+        {{else}}
+            <p style="color: #999; text-align: center; padding: 2rem;">No players in this match</p>
+            {{end}}
+    </div>
+
+    {{else}}
+        <div class="card" style="text-align: center; padding: 3rem;">
+            <p style="color: #999; font-size: 1.1rem; margin-bottom: 1rem;">No active match on this server</p>
+            <a href="/dashboard"
+                style="text-decoration: none; padding: 0.75rem 1.5rem; background-color: #ff6b35; color: white; border-radius: 4px; display: inline-block;">
+                Return to Dashboard
+            </a>
+        </div>
+        {{end}}
+</div>
+
+<script>
+    // Set progress bar widths
+    document.querySelectorAll( '.progress-bar' ).forEach( bar =>
+    {
+        const width = bar.getAttribute( 'data-width' );
+        bar.style.width = width + '%';
+    } );
+
+    // Apply team badge classes
+    document.querySelectorAll( '.team-badge' ).forEach( badge =>
+    {
+        const team = badge.textContent.trim();
+        if ( team === 'Security' )
+        {
+            badge.classList.add( 'team-badge-security' );
+        } else if ( team === 'Insurgents' )
+        {
+            badge.classList.add( 'team-badge-insurgents' );
+        }
+    } );
+
+    // Apply K/D ratio color coding
+    document.querySelectorAll( '.kd-ratio' ).forEach( el =>
+    {
+        const kdValue = parseFloat( el.getAttribute( 'data-kd' ) );
+        if ( kdValue >= 1.0 )
+        {
+            el.classList.add( 'good' );
+        } else if ( kdValue >= 0.5 )
+        {
+            el.classList.add( 'ok' );
+        } else
+        {
+            el.classList.add( 'bad' );
+        }
+    } );
+</script>
+{{end}}

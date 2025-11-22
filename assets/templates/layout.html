@@ -148,8 +148,9 @@
     <nav>
         <ul>
             <li class="brand">🎮 Sandstorm Tracker</li>
-            <li><a href="/" {{if eq .ActivePage "status" }}class="active" {{end}}>Live Status</a></li>
-            <li><a href="/matches" {{if eq .ActivePage "matches" }}class="active" {{end}}>Matches</a></li>
+            <li><a href="/servers" {{if eq .ActivePage "live-match" }}class="active" {{end}}>Live Match</a></li>
+            <li><a href="/match-history" {{if eq .ActivePage "match-history" }}class="active" {{end}}>Match History</a>
+            </li>
             <li><a href="/players" {{if eq .ActivePage "players" }}class="active" {{end}}>Players</a></li>
             <li><a href="/weapons" {{if eq .ActivePage "weapons" }}class="active" {{end}}>Weapons</a></li>
         </ul>
