@@ -85,7 +85,7 @@ servers:
 logging:
   # Log level: "debug", "info", "warn", "error"
   # Use "debug" for troubleshooting, "info" for normal operation
-  level: "info"
+  level: "debug"
 
   # Maximum file size in MB before rotation (default: 100)
   # When the log file reaches this size, it's archived and a new one is created

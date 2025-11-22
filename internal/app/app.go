@@ -55,16 +55,26 @@ func New() (*App, error) {
 }
 
 // Setup configuration, logger, pools, parser, etc.
-func (app *App) setupServices() {
-	app.Config = app.Store().GetOrSet("config", func() any {
+func (app *App) setupServices() error {
+	// Load config
+	cfgVal := app.Store().GetOrSet("config", func() any {
 		cfg, err := config.Load()
 		if err != nil {
-			panic(fmt.Sprintf("failed to load config: %v", err))
+			return err
 		}
 		return cfg
-	}).(*config.Config)
+	})
 
-	app.setupLogger()
+	// Check for error from config.Load
+	if err, ok := cfgVal.(error); ok {
+		return fmt.Errorf("failed to load config: %w", err)
+	}
+
+	app.Config = cfgVal.(*config.Config)
+
+	if err := app.setupLogger(); err != nil {
+		return fmt.Errorf("failed to setup logger: %w", err)
+	}
 
 	app.RconPool = app.Store().GetOrSet("rconpool", func() any {
 		return rcon.NewClientPool(app.Logger().WithGroup("RCON"))
@@ -85,6 +95,7 @@ func (app *App) setupServices() {
 		return e.Next()
 	})
 
+	return nil
 }
 
 // NewWithVersion creates a new app with version information
@@ -96,7 +107,9 @@ func NewWithVersion(version, commit, date string) (*App, error) {
 		Date:       date,
 	}
 
-	app.setupServices()
+	if err := app.setupServices(); err != nil {
+		return nil, fmt.Errorf("failed to setup services: %w", err)
+	}
 
 	// Setup default plugins (typically adds more cli commands)
 	app.setupPlugins()
@@ -351,7 +364,11 @@ func (app *App) GetUpdater() *updater.Updater {
 
 // setupLogger initializes the file writer using configuration
 // This must be called AFTER app.Config is loaded
-func (app *App) setupLogger() {
+func (app *App) setupLogger() error {
+	if app.Config == nil {
+		return fmt.Errorf("config not loaded")
+	}
+
 	// Use config values or defaults
 	logCfg := app.Config.Logging
 
@@ -379,14 +396,21 @@ func (app *App) setupLogger() {
 
 	// Create and store file writer (singleton)
 	app.OnModelCreate(core.LogsTableName).BindFunc(func(e *core.ModelEvent) error {
-		writer := e.App.Store().GetOrSet("logger:filewriter", func() any {
+		writerVal := e.App.Store().GetOrSet("logger:filewriter", func() any {
 			fw, err := logger.NewFileWriter(logFilePath, policy)
 			if err != nil {
-				panic(fmt.Sprintf("failed to create file writer: %v", err))
+				return err
 			}
 			return fw
-		}).(*logger.FileWriter)
+		})
 
+		// Check for error from file writer creation
+		if err, ok := writerVal.(error); ok {
+			e.App.Logger().Error("Failed to create file writer", "component", "APP", "error", err)
+			return e.Next()
+		}
+
+		writer := writerVal.(*logger.FileWriter)
 		l := e.Model.(*core.Log)
 
 		// Format log entry as JSON with proper structure
@@ -406,6 +430,8 @@ func (app *App) setupLogger() {
 
 		return e.Next()
 	})
+
+	return nil
 }
 
 // logLevelToString converts PocketBase log level to human-readable string

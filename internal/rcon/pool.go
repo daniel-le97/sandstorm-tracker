@@ -59,29 +59,49 @@ func (p *ClientPool) RemoveServer(serverID string) {
 
 // GetClient returns an RCON client for the specified server, creating it if needed
 func (p *ClientPool) GetClient(serverID string) (*RconClient, error) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
+	p.mu.RLock()
 	// Return existing client if available
 	if client, exists := p.clients[serverID]; exists {
+		p.mu.RUnlock()
 		return client, nil
 	}
 
-	// Get server config
+	// Get server config (hold minimal lock)
 	config, exists := p.configs[serverID]
 	if !exists {
+		if p.logger != nil {
+			p.logger.Error("Server not configured in RCON pool",
+				"server", serverID,
+				"available_servers", fmt.Sprintf("%v", p.listConfiguredServersLocked()))
+		}
+		p.mu.RUnlock()
 		return nil, fmt.Errorf("no configuration found for server: %s", serverID)
 	}
 
-	// Create new client
-	client, err := p.createClient(serverID, config)
+	// Copy config to avoid holding lock during network I/O
+	configCopy := *config
+	p.mu.RUnlock()
+
+	// Create new client outside of lock (allows other goroutines to access pool)
+	client, err := p.createClient(serverID, &configCopy)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create RCON client for %s: %w", serverID, err)
 	}
 
+	// Acquire lock to store client
+	p.mu.Lock()
+	// Double-check another goroutine didn't create it while we were creating ours
+	if existing, exists := p.clients[serverID]; exists {
+		p.mu.Unlock()
+		client.Conn.Close() // Close our redundant client
+		return existing, nil
+	}
+
 	p.clients[serverID] = client
+	p.mu.Unlock()
+
 	if p.logger != nil {
-		p.logger.Info("Created RCON client", "server", serverID, "address", config.Address)
+		p.logger.Info("Created RCON client", "server", serverID, "address", configCopy.Address)
 	}
 
 	return client, nil
@@ -161,6 +181,15 @@ func (p *ClientPool) ListServers() []string {
 		servers = append(servers, serverID)
 	}
 
+	return servers
+}
+
+// listConfiguredServersLocked returns all configured server IDs (must be called with lock held)
+func (p *ClientPool) listConfiguredServersLocked() []string {
+	servers := make([]string, 0, len(p.configs))
+	for serverID := range p.configs {
+		servers = append(servers, serverID)
+	}
 	return servers
 }
 
