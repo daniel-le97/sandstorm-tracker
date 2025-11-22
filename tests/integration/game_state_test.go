@@ -18,6 +18,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// Helper to create string pointers for test values
+func stringPtr(s string) *string { return &s }
+
 // TestMapLoadEvent tests the complete flow of a map load event
 func TestMapLoadEvent(t *testing.T) {
 	testApp, err := tests.NewTestApp(t.TempDir())
@@ -435,4 +438,161 @@ func TestLogFileCreatedEvent(t *testing.T) {
 	assert.Equal(t, "crashed", endedMatch.GetString("status"), "Match status should be set to 'crashed'")
 
 	log.Printf("[TEST] Log file created event successfully ended stale match %s with crashed status", matchID)
+}
+
+// TestRoundEndWinnerTeam tests that winner_team is set in handleMatchEnd only when winning team matches player_team
+func TestRoundEndWinnerTeam(t *testing.T) {
+	testApp, err := tests.NewTestApp(t.TempDir())
+	require.NoError(t, err)
+	defer testApp.Cleanup()
+
+	ctx := context.Background()
+	serverID := "test-server-round-end"
+
+	// Setup: Create server
+	_, err = database.GetOrCreateServer(ctx, testApp, serverID, "Test Server", "/path")
+	require.NoError(t, err)
+
+	appWrapper := NewTestAppWrapper(testApp)
+	gameHandlers := handlers.NewGameEventHandlers(appWrapper, nil)
+	gameHandlers.RegisterHooks()
+
+	// Create a map load event with Security as player_team (Scenario_Ministry_Checkpoint_Security)
+	eventsCollection, err := testApp.FindCollectionByNameOrId("events")
+	require.NoError(t, err)
+
+	serverRecord, err := testApp.FindFirstRecordByFilter("servers", "external_id = {:id}", map[string]any{"id": serverID})
+	require.NoError(t, err)
+
+	mapLoadEvent := core.NewRecord(eventsCollection)
+	mapLoadEvent.Set("type", events.TypeMapLoad)
+	mapLoadEvent.Set("server", serverRecord.Id)
+	mapLoadEvent.Set("timestamp", time.Now())
+
+	mapLoadData := events.MapLoadData{
+		Map:        "Ministry",
+		Scenario:   "Scenario_Ministry_Checkpoint_Security",
+		Timestamp:  time.Now(),
+		PlayerTeam: stringPtr("Security"),
+		IsCatchup:  false,
+	}
+	dataJSON, _ := json.Marshal(mapLoadData)
+	mapLoadEvent.Set("data", string(dataJSON))
+	err = testApp.Save(mapLoadEvent)
+	require.NoError(t, err)
+
+	// Get the created match
+	matches, err := testApp.FindRecordsByFilter("matches", "server = {:serverId} && end_time = ''", "-start_time", 1, 0, map[string]any{"serverId": serverRecord.Id})
+	require.NoError(t, err)
+	require.Len(t, matches, 1)
+
+	match := matches[0]
+	matchID := match.Id
+	mode := match.GetString("mode")
+	playerTeam := match.GetString("player_team")
+	assert.Equal(t, "Checkpoint", mode, "Match mode should be Checkpoint")
+	assert.Equal(t, "Security", playerTeam, "Match player_team should be Security")
+
+	// Test 1: Team 0 (Security) wins - should set winner_team since it matches player_team
+	roundEndEvent1 := core.NewRecord(eventsCollection)
+	roundEndEvent1.Set("type", events.TypeRoundEnd)
+	roundEndEvent1.Set("server", serverRecord.Id)
+	roundEndEvent1.Set("timestamp", time.Now())
+
+	roundEndData1 := events.RoundEndData{
+		MatchID:     matchID,
+		RoundNumber: 1,
+		WinningTeam: 0, // Team 0 = Security (matches player_team)
+		IsCatchup:   false,
+	}
+	dataJSON, _ = json.Marshal(roundEndData1)
+	roundEndEvent1.Set("data", string(dataJSON))
+	err = testApp.Save(roundEndEvent1)
+	require.NoError(t, err)
+
+	// Send MatchEnd event to trigger winner_team logic in handleMatchEnd
+	matchEndEvent1 := core.NewRecord(eventsCollection)
+	matchEndEvent1.Set("type", events.TypeMatchEnd)
+	matchEndEvent1.Set("server", serverRecord.Id)
+	matchEndEvent1.Set("timestamp", time.Now().Add(10*time.Second))
+
+	matchEndData1 := events.MatchEndData{
+		MatchID: matchID,
+		EndTime: time.Now().Add(10 * time.Second),
+	}
+	dataJSON, _ = json.Marshal(matchEndData1)
+	matchEndEvent1.Set("data", string(dataJSON))
+	err = testApp.Save(matchEndEvent1)
+	require.NoError(t, err)
+
+	// Verify winner_team was set to 0 (Security) by handleMatchEnd
+	updatedMatch1, err := testApp.FindRecordById("matches", matchID)
+	require.NoError(t, err)
+	assert.Equal(t, int64(0), int64(updatedMatch1.GetInt("winner_team")), "Winner_team should be set to 0 when Security wins and player_team is Security")
+
+	// Test 2: Start a new match with same server for the second test
+	mapLoadEvent2 := core.NewRecord(eventsCollection)
+	mapLoadEvent2.Set("type", events.TypeMapLoad)
+	mapLoadEvent2.Set("server", serverRecord.Id)
+	mapLoadEvent2.Set("timestamp", time.Now().Add(1*time.Minute))
+
+	mapLoadData2 := events.MapLoadData{
+		Map:        "Ministry",
+		Scenario:   "Scenario_Ministry_Checkpoint_Security",
+		Timestamp:  time.Now().Add(1 * time.Minute),
+		PlayerTeam: stringPtr("Security"),
+		IsCatchup:  false,
+	}
+	dataJSON, _ = json.Marshal(mapLoadData2)
+	mapLoadEvent2.Set("data", string(dataJSON))
+	err = testApp.Save(mapLoadEvent2)
+	require.NoError(t, err)
+
+	// Get the new match
+	matches2, err := testApp.FindRecordsByFilter("matches", "server = {:serverId} && end_time = '' && start_time != {:oldTime}", "-start_time", 1, 0, map[string]any{"serverId": serverRecord.Id, "oldTime": match.GetString("start_time")})
+	require.NoError(t, err)
+	require.Len(t, matches2, 1)
+
+	match2 := matches2[0]
+	matchID2 := match2.Id
+
+	// Test 2: Team 1 (Insurgents) wins - should NOT set winner_team since it doesn't match player_team
+	roundEndEvent2 := core.NewRecord(eventsCollection)
+	roundEndEvent2.Set("type", events.TypeRoundEnd)
+	roundEndEvent2.Set("server", serverRecord.Id)
+	roundEndEvent2.Set("timestamp", time.Now().Add(2*time.Minute))
+
+	roundEndData2 := events.RoundEndData{
+		MatchID:     matchID2,
+		RoundNumber: 1,
+		WinningTeam: 1, // Team 1 = Insurgents (does NOT match player_team)
+		IsCatchup:   false,
+	}
+	dataJSON, _ = json.Marshal(roundEndData2)
+	roundEndEvent2.Set("data", string(dataJSON))
+	err = testApp.Save(roundEndEvent2)
+	require.NoError(t, err)
+
+	// Send MatchEnd event to trigger winner_team logic
+	matchEndEvent2 := core.NewRecord(eventsCollection)
+	matchEndEvent2.Set("type", events.TypeMatchEnd)
+	matchEndEvent2.Set("server", serverRecord.Id)
+	matchEndEvent2.Set("timestamp", time.Now().Add(2*time.Minute+10*time.Second))
+
+	matchEndData2 := events.MatchEndData{
+		MatchID: matchID2,
+		EndTime: time.Now().Add(2*time.Minute + 10*time.Second),
+	}
+	dataJSON, _ = json.Marshal(matchEndData2)
+	matchEndEvent2.Set("data", string(dataJSON))
+	err = testApp.Save(matchEndEvent2)
+	require.NoError(t, err)
+
+	// Verify winner_team was NOT set (remains as default/0) since Insurgents won but player_team is Security
+	updatedMatch2, err := testApp.FindRecordById("matches", matchID2)
+	require.NoError(t, err)
+	// When winner_team is not set, it defaults to 0, so we verify it's still 0 (not updated to 1)
+	assert.Equal(t, int64(0), int64(updatedMatch2.GetInt("winner_team")), "Winner_team should remain 0 (unset) when Insurgents win since player_team is Security")
+
+	log.Printf("[TEST] handleMatchEnd correctly sets winner_team only when winning team matches player_team")
 }

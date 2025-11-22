@@ -79,9 +79,7 @@ func ExtractGameMode(scenario string) string {
 	}
 
 	// Remove "Scenario_" prefix if present
-	if strings.HasPrefix(scenario, "Scenario_") {
-		scenario = strings.TrimPrefix(scenario, "Scenario_")
-	}
+	scenario, _ = strings.CutPrefix(scenario, "Scenario_")
 
 	// Split by underscore
 	parts := strings.Split(scenario, "_")

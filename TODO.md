@@ -120,5 +120,13 @@ COMPLETED:
 - business logic should be moved to /handlers -->
 
 
+
+## round end events
+ - on round end events we should check what mode the server is on, and then what team the player team is on u match collection
+ - [2025.11.10-21.12.05:370][627]LogGameplayEvents: Display: Round 2 Over: Team 0 won (win reason: Objective)
+ - Team 0 is Security, Team 1 is Insurgents
+ - so if the mode is checkpoint, and the player team is Security and Team 0 won and the match's winner_team should be set to 0 (Security)
+
+
 ## clean this repo for unused/out of date files
 

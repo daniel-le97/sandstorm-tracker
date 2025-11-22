@@ -294,29 +294,123 @@
 {{end}} {{define "scripts"}}
 <script>
     // Set progress bar widths from data attributes
-    document.addEventListener("DOMContentLoaded", function () {
+    function updateProgressBars() {
         document.querySelectorAll(".progress-fill").forEach(function (el) {
             const progress = el.getAttribute("data-progress");
             if (progress) {
                 el.style.width = progress + "%";
             }
         });
+    }
 
-        // Subscribe to real-time match updates (replaces 30s polling)
+    // Find server card element for a given match's server
+    function findServerCardForMatch(matchId) {
+        // Get match to find its server
+        return fetch(`/api/collections/matches/records/${matchId}`)
+            .then((response) => response.json())
+            .then((match) => {
+                // Find the server card that contains this match
+                const serverCards = document.querySelectorAll(".server-card");
+                // Since we don't have server data in DOM directly, we reload on significant changes
+                return null;
+            })
+            .catch((error) => {
+                console.error("Failed to fetch match:", error);
+                return null;
+            });
+    }
+
+    // Update specific match card data
+    function updateMatchCardData(matchData) {
+        if (!matchData) return;
+
+        // Update progress bar for objective changes
+        const progressFill = document.querySelector(".progress-fill");
+        if (
+            progressFill &&
+            matchData.round_objective !== undefined &&
+            matchData.num_objectives !== undefined
+        ) {
+            const percent =
+                matchData.num_objectives > 0
+                    ? (matchData.round_objective * 100) /
+                      matchData.num_objectives
+                    : 0;
+            progressFill.setAttribute("data-progress", percent);
+            progressFill.style.width = percent + "%";
+        }
+
+        // Update round number if visible
+        const roundElements = document.querySelectorAll(".info-row");
+        roundElements.forEach(function (row) {
+            const label = row.querySelector(".label");
+            if (label && label.textContent.includes("Round:")) {
+                const value = row.querySelector(".value");
+                if (value && matchData.round !== undefined) {
+                    value.textContent = matchData.round;
+                }
+            }
+            if (label && label.textContent.includes("Current Objective:")) {
+                const value = row.querySelector(".value");
+                if (value && matchData.round_objective !== undefined) {
+                    const letter = String.fromCharCode(
+                        65 + matchData.round_objective,
+                    ); // 65 = 'A'
+                    value.textContent = letter;
+                }
+            }
+        });
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        updateProgressBars();
+
+        // Subscribe to real-time match updates with smart DOM updates
         pb.collection("matches").subscribe("*", function (e) {
-            console.log("Match update:", e.action, e.record);
+            const record = e.record;
+            console.log("Match update:", e.action, record);
 
-            // Reload page on match changes (create, update, delete)
-            // TODO: Update DOM directly instead of full reload for better UX
-            if (e.action === "update" || e.action === "create") {
+            if (e.action === "update") {
+                // For updates, try to update DOM directly for better UX
+                // Only reload if critical data changed (map, mode, status)
+                const criticalFields = ["map", "mode", "status", "end_time"];
+                const changedCritical = criticalFields.some(
+                    (field) => record[field] !== undefined,
+                );
+
+                if (changedCritical) {
+                    // Critical change - reload page
+                    console.log(
+                        "Critical match change detected, reloading page...",
+                    );
+                    window.location.reload();
+                } else {
+                    // Minor update (round, objectives) - update DOM directly
+                    console.log("Minor match update, updating DOM...");
+                    updateMatchCardData(record);
+                }
+            } else if (e.action === "create") {
+                // New match created - reload to show it
+                console.log("New match created, reloading page...");
                 window.location.reload();
             }
         });
 
-        // Subscribe to player stats updates (for player counts/scores)
+        // Subscribe to player stats updates for real-time player count/list changes
         pb.collection("match_player_stats").subscribe("*", function (e) {
             console.log("Player stats update:", e.action, e.record);
-            // Player joined/left or score changed - could update count dynamically
+
+            // For player joins/leaves, we could update the player count dynamically
+            // However, this requires more complex DOM manipulation to:
+            // 1. Identify which server the player joined
+            // 2. Update the player list in the correct card
+            // 3. Update the player count
+            // For now, we acknowledge the event but let periodic renders handle it
+
+            // TODO: Implement real-time player list updates by:
+            // 1. Fetching the related match data
+            // 2. Finding the correct server card
+            // 3. Updating player list and count dynamically
         });
 
         // Clean up subscriptions when page unloads

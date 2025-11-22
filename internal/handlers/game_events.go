@@ -502,6 +502,7 @@ func (h *GameEventHandlers) handleRoundEnd(e *core.RecordEvent) error {
 		log.Debug("Failed to increment round for match", "match", activeMatch.ID, "error", err)
 	}
 
+
 	// Trigger immediate score update after round end - skip during catchup
 	if h.scoreDebouncer != nil {
 		if !data.IsCatchup {
@@ -537,6 +538,7 @@ func (h *GameEventHandlers) handleMatchStart(e *core.RecordEvent) error {
 }
 
 // handleMatchEnd processes match end events
+// Sets the final winner_team based on the last round end event for this match
 func (h *GameEventHandlers) handleMatchEnd(e *core.RecordEvent) error {
 	log := getLogger(e)
 	ctx := context.Background()
@@ -555,6 +557,60 @@ func (h *GameEventHandlers) handleMatchEnd(e *core.RecordEvent) error {
 	}
 
 	log.Debug("Match end event processed", "serverID", serverID)
+
+	// Get the active match
+	activeMatch, err := database.GetActiveMatch(ctx, e.App, serverID)
+	if err != nil || activeMatch == nil {
+		log.Debug("No active match found for match end event", "serverID", serverID)
+		return e.Next()
+	}
+
+	// Find the last round end event for this match to determine the final winner
+	roundEndEvents, err := e.App.FindRecordsByFilter(
+		"events",
+		"type = {:type} && server = {:server}",
+		"-created",
+		1,
+		0,
+		map[string]any{
+			"type":   events.TypeRoundEnd,
+			"server": serverRecordID,
+		},
+	)
+
+	if err == nil && len(roundEndEvents) > 0 {
+		// Extract the winning team from the last round end event
+		var roundEndData events.RoundEndData
+		if err := json.Unmarshal([]byte(roundEndEvents[0].GetString("data")), &roundEndData); err == nil {
+			// Get the match record to check player_team
+			matchRecord, err := e.App.FindRecordById("matches", activeMatch.ID)
+			if err == nil && matchRecord != nil {
+				playerTeamStr := matchRecord.GetString("player_team")
+
+				// Convert player_team string to int for comparison
+				var playerTeam int
+				if playerTeamStr == "Security" {
+					playerTeam = 0
+				} else if playerTeamStr == "Insurgents" {
+					playerTeam = 1
+				} else {
+					playerTeam = -1
+				}
+
+				// Set winner_team if the winning team matches the player_team
+				if playerTeam >= 0 && playerTeam == roundEndData.WinningTeam {
+					matchRecord.Set("winner_team", roundEndData.WinningTeam)
+					if err := e.App.Save(matchRecord); err != nil {
+						log.Debug("Failed to set final winner_team", "matchID", activeMatch.ID, "error", err)
+					} else {
+						log.Debug("Set final winner_team from last round end event", "matchID", activeMatch.ID, "winningTeam", roundEndData.WinningTeam, "playerTeam", playerTeamStr)
+					}
+				} else if playerTeam >= 0 {
+					log.Debug("Last round winner does not match player_team, not updating winner_team", "matchID", activeMatch.ID, "winningTeam", roundEndData.WinningTeam, "playerTeam", playerTeamStr)
+				}
+			}
+		}
+	}
 
 	// Trigger immediate score update when match ends
 	if h.scoreDebouncer != nil {
