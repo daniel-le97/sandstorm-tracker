@@ -21,6 +21,47 @@ type AppInterface interface {
 	SendRconCommand(serverID string, command string) (string, error)
 }
 
+// getMapImageFilename converts a map name (including lighting suffix) to its image filename
+func getMapImageFilename(mapName string) string {
+	// Normalize the map name to match common variations
+	mapLookup := map[string]string{
+		// Formal map names
+		"Crossing":          "crossing.png",
+		"Crossing Night":    "crossing.png",
+		"Farmhouse":         "farmhouse.png",
+		"Farmhouse Night":   "farmhouse.png",
+		"Hideout":           "hideout.png",
+		"Hideout Night":     "hideout.png",
+		"Precinct":          "precinct.png",
+		"Precinct Night":    "precinct.png",
+		"Refinery":          "refinery.png",
+		"Summit":            "summit.png",
+		"Summit Night":      "summit.png",
+		"Outskirts":         "outskirts.jpg",
+		"Outskirts Night":   "outskirts.jpg",
+		"Ministry":          "ministry.png",
+		"Ministry Night":    "ministry.png",
+		"Hillside":          "hillside.png",
+		"Hillside Night":    "hillside.png",
+		"Power Plant":       "power_plant.jpg",
+		"Power Plant Night": "power_plant.jpg",
+		// Alternative names that might appear in logs
+		"Sinjar":      "hillside.png", // Classic name for Hillside
+		"Town":        "hillside.png", // Alternative
+		"Oilfield":    "refinery.png", // Alternative
+		"District":    "precinct.png", // Alternative
+		"Marketplace": "hideout.png",  // Alternative
+	}
+
+	if filename, ok := mapLookup[mapName]; ok {
+		return filename
+	}
+	// Debug: log unknown map names to console
+	fmt.Printf("[DEBUG] Unknown map title: %q\n", mapName)
+	// Default fallback - return empty string for unknown maps
+	return ""
+}
+
 // Register registers all HTTP routes for the web UI
 func Register(app AppInterface, e *core.ServeEvent) {
 	registry := template.NewRegistry()
@@ -202,6 +243,8 @@ func Register(app AppInterface, e *core.ServeEvent) {
 		// Format match data
 		type MatchInfo struct {
 			Map       string
+			Title     string
+			MapImage  string
 			Mode      string
 			Scenario  string
 			StartTime string
@@ -215,8 +258,11 @@ func Register(app AppInterface, e *core.ServeEvent) {
 				endTime = match.GetDateTime("end_time").Time().Format("2006-01-02 15:04")
 			}
 
+			title := match.GetString("title")
 			matchInfos[i] = MatchInfo{
 				Map:       match.GetString("map"),
+				Title:     title,
+				MapImage:  getMapImageFilename(title),
 				Mode:      match.GetString("mode"),
 				Scenario:  match.GetString("scenario"),
 				StartTime: match.GetDateTime("start_time").Time().Format("2006-01-02 15:04"),
@@ -258,6 +304,7 @@ func Register(app AppInterface, e *core.ServeEvent) {
 		type MatchInfo struct {
 			ServerName string
 			Map        string
+			MapImage   string
 			Mode       string
 			StartTime  string
 			EndTime    string
@@ -277,9 +324,11 @@ func Register(app AppInterface, e *core.ServeEvent) {
 				endTime = match.GetDateTime("end_time").Time().Format("2006-01-02 15:04")
 			}
 
+			title := match.GetString("title")
 			matchInfos[i] = MatchInfo{
 				ServerName: serverName,
 				Map:        match.GetString("map"),
+				MapImage:   getMapImageFilename(title),
 				Mode:       match.GetString("mode"),
 				StartTime:  match.GetDateTime("start_time").Time().Format("2006-01-02 15:04"),
 				EndTime:    endTime,
@@ -780,6 +829,7 @@ func Register(app AppInterface, e *core.ServeEvent) {
 		type MatchData struct {
 			MatchId         string
 			Map             string
+			MapImage        string
 			Title           string
 			Mode            string
 			Duration        string
@@ -804,10 +854,12 @@ func Register(app AppInterface, e *core.ServeEvent) {
 				lighting = "Day"
 			}
 
+			title := match.GetString("title")
 			md := MatchData{
 				MatchId:  match.Id,
 				Map:      match.GetString("map"),
-				Title:    match.GetString("title"),
+				MapImage: getMapImageFilename(title),
+				Title:    title,
 				Mode:     match.GetString("mode"),
 				Duration: fmt.Sprintf("%dh %dm", int(duration.Hours()), int(duration.Minutes())%60),
 				EndTime:  endTime.Format("2006-01-02 15:04"),
