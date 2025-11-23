@@ -27,20 +27,20 @@ func BindRecordMiddlewares(app *pocketbase.PocketBase) {
 
 	app.OnRecordAfterUpdateSuccess("matches").BindFunc(func(e *core.RecordEvent) error {
 		status := e.Record.GetString("status")
-		
+
 		// Only process status changes that affect player stats
 		if status != "crashed" && status != "finished" {
 			return e.Next()
 		}
 
 		matchID := e.Record.Id
-		
+
 		// Fetch all match_player_stats for this match in a single query
 		matchPlayerStats, err := e.App.FindRecordsByFilter(
-			"match_player_stats", 
-			"match = {:matchId}", 
+			"match_player_stats",
+			"match = {:matchId}",
 			"", // No sorting needed since we're updating all
-			-1, 0, 
+			-1, 0,
 			map[string]any{"matchId": matchID},
 		)
 		if err != nil {
@@ -81,6 +81,6 @@ func BindRecordMiddlewares(app *pocketbase.PocketBase) {
 		}
 
 		return e.Next()
-})
+	})
 
 }

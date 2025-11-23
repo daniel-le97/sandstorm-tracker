@@ -149,7 +149,6 @@ func (p *plugin) CheckForUpdate(ctx context.Context) (string, error) {
 		return "", nil // already on latest version
 	}
 
-
 	p.app.Logger().Info("New version available: " + latest.Tag)
 
 	return latest.Tag, nil

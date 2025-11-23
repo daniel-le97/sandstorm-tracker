@@ -588,11 +588,12 @@ func (h *GameEventHandlers) handleMatchEnd(e *core.RecordEvent) error {
 
 				// Convert player_team string to int for comparison
 				var playerTeam int
-				if playerTeamStr == "Security" {
+				switch playerTeamStr {
+				case "Security":
 					playerTeam = 0
-				} else if playerTeamStr == "Insurgents" {
+				case "Insurgents":
 					playerTeam = 1
-				} else {
+				default:
 					playerTeam = -1
 				}
 
