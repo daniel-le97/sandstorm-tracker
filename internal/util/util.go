@@ -100,3 +100,28 @@ func ExtractGameMode(scenario string) string {
 		return "Unknown"
 	}
 }
+
+// ExtractMapTitle extracts the map title from a scenario string
+// Examples:
+//
+//	"Scenario_Hideout_Checkpoint_Security" -> "Hideout"
+//	"Scenario_Ministry_Push_Insurgents" -> "Ministry"
+//	"Scenario_Town_Skirmish" -> "Town"
+//	"Hideout" -> "Hideout"
+func ExtractMapTitle(scenario string) string {
+	if scenario == "" {
+		return "Unknown"
+	}
+
+	// Remove "Scenario_" prefix if present
+	scenario, _ = strings.CutPrefix(scenario, "Scenario_")
+
+	// Split by underscore
+	parts := strings.Split(scenario, "_")
+	if len(parts) < 1 {
+		return "Unknown"
+	}
+
+	// The first part is the map name
+	return parts[0]
+}

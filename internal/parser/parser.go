@@ -95,9 +95,11 @@ func NewLogPatterns() *logPatterns {
 		GameOver: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\s*\d+\]LogSession: Display: AINSGameSession::HandleMatchHasEnded`),
 
 		// Map and server events
-		MapLoad: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\s*\d+\]LogLoad: LoadMap: /Game/Maps/([^/]+)/[^?]+\?.*Scenario=([^?&]+).*MaxPlayers=(\d+).*Lighting=([^?&]+)`),
+		// Handles both cases: with Game= parameter and without
+		// Capture groups: 1=timestamp, 2=mapName, 3=scenario, 4=maxPlayers, 5=game (optional), 6=lighting
+		MapLoad: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\s*\d+\]LogLoad: LoadMap: /Game/Maps/([^/]+)/[^?]+\?.*Scenario=([^?&]+).*MaxPlayers=(\d+)(?:.*Game=([^?&]*))?.*Lighting=([^?&]+)`),
 		// ProcessServerTravel events when the map changes during runtime
-		// Example: [2025.10.21-20.12.42:785][454]LogGameMode: ProcessServerTravel: Town?Scenario=Scenario_Hideout_Skirmish?Game=?
+		// Example: [2025.10.21-20.12.42:785][454]LogGameMode: ProcessServerTravel: Town?Scenario=Scenario_Hideout_Skirmish?Game=CheckpointHardcore
 		MapTravel: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\s*\d+\]LogGameMode: ProcessServerTravel: ([^?]+)\?Scenario=([^?]+)\?Game=([^\s]*)`),
 
 		// DifficultyChange: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\s*\d+\]LogAI: Warning: AI difficulty set to ([0-9.]+)`), // Not currently used
@@ -133,34 +135,65 @@ func extractPlayerTeam(scenario string) string {
 	return ""
 }
 
+// extractMapTitle extracts a friendly map title from scenario name
+// Example: Scenario_Hideout_Checkpoint_Security -> Hideout
+func extractMapTitle(scenario string) string {
+	// Remove "Scenario_" prefix if present
+	title := strings.TrimPrefix(scenario, "Scenario_")
+
+	// Remove trailing game mode suffix (_Security, _Insurgents)
+	title = strings.TrimSuffix(title, "_Security")
+	title = strings.TrimSuffix(title, "_Insurgents")
+
+	// Split by underscore and take the first part (the map name)
+	parts := strings.Split(title, "_")
+	if len(parts) > 0 {
+		return parts[0]
+	}
+
+	return title
+}
+
 // tryProcessMapTravel handles in-game map transitions (ProcessServerTravel)
 // This occurs when the server changes maps during runtime (after the initial map load)
 func (p *LogParser) tryProcessMapTravel(ctx context.Context, line string, timestamp time.Time, serverID string) bool {
 	matches := p.patterns.MapTravel.FindStringSubmatch(line)
-	if len(matches) < 4 {
+	if len(matches) < 5 {
 		return false
 	}
 
 	mapName := strings.TrimSpace(matches[2])
 	scenario := strings.TrimSpace(matches[3])
-	// gameParam := strings.TrimSpace(matches[4]) // currently unused
+	gameMode := strings.TrimSpace(matches[4])
 
-	p.logger.Debug("Map travel detected", "map", mapName, "scenario", scenario, "serverID", serverID)
+	// Extract player team from scenario
+	playerTeam := extractPlayerTeam(scenario)
+	var playerTeamPtr *string
+	if playerTeam != "" {
+		playerTeamPtr = &playerTeam
+	}
+
+	// Extract title from scenario
+	title := extractMapTitle(scenario)
+
+	p.logger.Debug("Map travel detected", "map", mapName, "scenario", scenario, "gameMode", gameMode, "serverID", serverID)
 
 	// Track this map travel time so we can ignore immediate disconnects/reconnects
 	p.lastMapTravelTimes[serverID] = timestamp
 
-	// Emit map travel event for handler to process match transition
 	if p.eventCreator != nil {
 		err := p.eventCreator.CreateEvent(events.TypeMapTravel, serverID, map[string]interface{}{
-			"map":        mapName,
-			"scenario":   scenario,
-			"timestamp":  timestamp,
-			"is_catchup": isCatchupMode(ctx),
+			"map":         mapName,
+			"scenario":    scenario,
+			"player_team": playerTeamPtr,
+			"game":        gameMode,
+			"title":       title,
+			"timestamp":   timestamp,
+			"is_catchup":  isCatchupMode(ctx),
 		})
 		if err != nil {
 			p.logger.Error("Failed to create map travel event",
-				"map", mapName, "scenario", scenario, "error", err.Error())
+				"map", mapName, "scenario", scenario, "gameMode", gameMode, "error", err.Error())
 		}
 	}
 
@@ -614,12 +647,13 @@ func (p *LogParser) tryProcessGameOver(ctx context.Context, line string, timesta
 // This occurs when the server first starts and loads the initial map
 func (p *LogParser) tryProcessMapLoad(ctx context.Context, line string, timestamp time.Time, serverID string) bool {
 	matches := p.patterns.MapLoad.FindStringSubmatch(line)
-	if len(matches) < 5 {
+	if len(matches) < 6 {
 		return false
 	}
 
 	mapName := strings.TrimSpace(matches[2])
 	scenario := strings.TrimSpace(matches[3])
+	gameMode := strings.TrimSpace(matches[5])
 
 	// Extract player team from scenario
 	playerTeam := extractPlayerTeam(scenario)
@@ -628,6 +662,9 @@ func (p *LogParser) tryProcessMapLoad(ctx context.Context, line string, timestam
 		playerTeamPtr = &playerTeam
 	}
 
+	// Extract title from scenario
+	title := extractMapTitle(scenario)
+
 	if p.eventCreator != nil {
 		// Emit map load event - handler will create new match and start event
 		err := p.eventCreator.CreateEvent(events.TypeMapLoad, serverID, map[string]interface{}{
@@ -635,11 +672,13 @@ func (p *LogParser) tryProcessMapLoad(ctx context.Context, line string, timestam
 			"scenario":    scenario,
 			"timestamp":   timestamp,
 			"player_team": playerTeamPtr,
+			"game":        gameMode,
+			"title":       title,
 			"is_catchup":  isCatchupMode(ctx),
 		})
 		if err != nil {
 			p.logger.Error("Failed to create map load event",
-				"map", mapName, "scenario", scenario, "error", err.Error())
+				"map", mapName, "scenario", scenario, "gameMode", gameMode, "error", err.Error())
 		}
 	}
 

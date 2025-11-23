@@ -144,6 +144,20 @@ func init() {
 				{
 					"autogeneratePattern": "",
 					"hidden": false,
+					"id": "text724990059",
+					"max": 0,
+					"min": 0,
+					"name": "title",
+					"pattern": "",
+					"presentable": false,
+					"primaryKey": false,
+					"required": false,
+					"system": false,
+					"type": "text"
+				},
+				{
+					"autogeneratePattern": "",
+					"hidden": false,
 					"id": "text1727723052",
 					"max": 0,
 					"min": 0,

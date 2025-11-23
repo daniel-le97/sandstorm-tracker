@@ -237,6 +237,61 @@ func TestExtractGameMode(t *testing.T) {
 	}
 }
 
+func TestExtractMapTitle(t *testing.T) {
+	tests := []struct {
+		name     string
+		scenario string
+		want     string
+	}{
+		// Full scenario strings with Scenario_ prefix
+		{
+			name:     "Ministry Checkpoint Security",
+			scenario: "Scenario_Ministry_Checkpoint_Security",
+			want:     "Ministry",
+		},
+		{
+			name:     "Refinery Push Insurgents",
+			scenario: "Scenario_Refinery_Push_Insurgents",
+			want:     "Refinery",
+		},
+		{
+			name:     "Town Skirmish",
+			scenario: "Scenario_Town_Skirmish",
+			want:     "Town",
+		},
+		{
+			name:     "Hideout Checkpoint Security",
+			scenario: "Scenario_Hideout_Checkpoint_Security",
+			want:     "Hideout",
+		},
+		{
+			name:     "Oilfield Push Insurgents",
+			scenario: "Scenario_Oilfield_Push_Insurgents",
+			want:     "Oilfield",
+		},
+		// Simple map name strings (already extracted)
+		{
+			name:     "Ministry",
+			scenario: "Ministry",
+			want:     "Ministry",
+		},
+		{
+			name:     "Empty string",
+			scenario: "",
+			want:     "Unknown",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := ExtractMapTitle(tt.scenario)
+			if got != tt.want {
+				t.Errorf("ExtractMapTitle(%q) = %q, want %q", tt.scenario, got, tt.want)
+			}
+		})
+	}
+}
+
 func containsString(str, substr string) bool {
 	return len(str) >= len(substr) && (str == substr || len(substr) == 0 ||
 		(len(str) > 0 && len(substr) > 0 && findSubstring(str, substr)))

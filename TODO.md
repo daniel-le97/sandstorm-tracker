@@ -109,12 +109,22 @@ COMPLETED:
 - after this the event the next one that would be hit is a mapload event
 - in either of these handlers we need to ensure there is not already an active match for the server, if there is we need to end it -->
 
- ## weapon types
+ <!--## weapon types
 adding a weapon type to match_weapon_stats when creating a record
 - BP_Projectile_F1_C_2147479037 -> Projectile
 - BP_Firearm_M16A4_C_2147478730 -> Firearm -->
-- currently weapon type is being saved as the same as weapon_name
+<!--- currently weapon type is being saved as the same as weapon_name-->
 
+## MAP_LOAD and MAP_TRAVEL
+ - these events look like:
+    - [2025.10.04-21.18.15:445][  0]LogLoad: LoadMap: /Game/Maps/Town/Town?Name=Player?Scenario=Scenario_Hideout_Checkpoint_Security?MaxPlayers=10?Game=CheckpointHardcore?Lighting=Day
+
+on these events we to extract Game=CheckpointHardcore when it is available.
+ -  on the data field for these events, the data.game field should be set to CheckpointHardcore ( as an example )
+
+Additionally i would like to add a title field to matches collection
+ - this field will be based off the scenenario being played
+ - in the above example the scenario is Scenario_Hideout_Checkpoint_Security, and the title would be Hideout
 
 
 

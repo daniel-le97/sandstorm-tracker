@@ -709,7 +709,7 @@ func Register(app AppInterface, e *core.ServeEvent) {
 			filterParams["serverId"] = selectedServer
 		}
 		if selectedMap != "" {
-			filters = append(filters, "map = {:mapName}")
+			filters = append(filters, "title = {:mapName}")
 			filterParams["mapName"] = selectedMap
 		}
 		if selectedMode != "" {
@@ -722,20 +722,20 @@ func Register(app AppInterface, e *core.ServeEvent) {
 		// Get all servers for filter dropdown
 		servers, _ := re.App.FindAllRecords("servers")
 
-		// Get unique maps and modes
+		// Get unique titles and modes
 		allMatches, _ := re.App.FindAllRecords("matches")
-		mapSet := make(map[string]bool)
+		titleSet := make(map[string]bool)
 		modeSet := make(map[string]bool)
 		for _, m := range allMatches {
-			mapSet[m.GetString("map")] = true
+			titleSet[m.GetString("title")] = true
 			modeSet[m.GetString("mode")] = true
 		}
 
-		maps := make([]string, 0, len(mapSet))
+		titles := make([]string, 0, len(titleSet))
 		modes := make([]string, 0, len(modeSet))
-		for k := range mapSet {
+		for k := range titleSet {
 			if k != "" {
-				maps = append(maps, k)
+				titles = append(titles, k)
 			}
 		}
 		for k := range modeSet {
@@ -772,6 +772,7 @@ func Register(app AppInterface, e *core.ServeEvent) {
 		type MatchData struct {
 			MatchId         string
 			Map             string
+			Title           string
 			Mode            string
 			Duration        string
 			EndTime         string
@@ -791,6 +792,7 @@ func Register(app AppInterface, e *core.ServeEvent) {
 			md := MatchData{
 				MatchId:  match.Id,
 				Map:      match.GetString("map"),
+				Title:    match.GetString("title"),
 				Mode:     match.GetString("mode"),
 				Duration: fmt.Sprintf("%dh %dm", int(duration.Hours()), int(duration.Minutes())%60),
 				EndTime:  endTime.Format("2006-01-02 15:04"),
@@ -857,7 +859,7 @@ func Register(app AppInterface, e *core.ServeEvent) {
 			"ActivePage":     "match-history",
 			"Matches":        matchData,
 			"Servers":        servers,
-			"Maps":           maps,
+			"Maps":           titles,
 			"Modes":          modes,
 			"SelectedServer": selectedServer,
 			"SelectedMap":    selectedMap,

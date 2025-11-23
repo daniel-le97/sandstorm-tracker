@@ -137,6 +137,13 @@ func CreateMatch(ctx context.Context, pbApp core.App, serverID string, mapName, 
 	}
 	record.Set("mode", gameMode)
 
+	// Extract map title from scenario string
+	title := "Unknown"
+	if mode != nil {
+		title = util.ExtractMapTitle(*mode)
+	}
+	record.Set("title", title)
+
 	if startTime != nil {
 		record.Set("start_time", startTime.Format(time.RFC3339))
 	}
