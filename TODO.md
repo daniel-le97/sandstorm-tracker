@@ -119,12 +119,10 @@ adding a weapon type to match_weapon_stats when creating a record
  - these events look like:
     - [2025.10.04-21.18.15:445][  0]LogLoad: LoadMap: /Game/Maps/Town/Town?Name=Player?Scenario=Scenario_Hideout_Checkpoint_Security?MaxPlayers=10?Game=CheckpointHardcore?Lighting=Day
 
-on these events we to extract Game=CheckpointHardcore when it is available.
- -  on the data field for these events, the data.game field should be set to CheckpointHardcore ( as an example )
+on these events we to also extract Lighting=Day when it is available.
+the migration has been added to our matches collection to have a select field, this allows either "Day" or "Night"
 
-Additionally i would like to add a title field to matches collection
- - this field will be based off the scenenario being played
- - in the above example the scenario is Scenario_Hideout_Checkpoint_Security, and the title would be Hideout
+
 
 
 

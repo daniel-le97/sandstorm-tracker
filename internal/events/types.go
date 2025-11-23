@@ -100,6 +100,7 @@ type MapLoadData struct {
 	Scenario   string    `json:"scenario"`
 	Timestamp  time.Time `json:"timestamp"`
 	PlayerTeam *string   `json:"player_team"`
+	Lighting   *string   `json:"lighting"`
 	IsCatchup  bool      `json:"is_catchup"`
 }
 
@@ -109,6 +110,7 @@ type MapTravelData struct {
 	Scenario   string    `json:"scenario"`
 	Timestamp  time.Time `json:"timestamp"`
 	PlayerTeam *string   `json:"player_team"`
+	Lighting   *string   `json:"lighting"`
 	IsCatchup  bool      `json:"is_catchup"`
 }
 

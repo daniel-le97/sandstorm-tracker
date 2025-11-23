@@ -96,11 +96,12 @@ func NewLogPatterns() *logPatterns {
 
 		// Map and server events
 		// Handles both cases: with Game= parameter and without
-		// Capture groups: 1=timestamp, 2=mapName, 3=scenario, 4=maxPlayers, 5=game (optional), 6=lighting
-		MapLoad: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\s*\d+\]LogLoad: LoadMap: /Game/Maps/([^/]+)/[^?]+\?.*Scenario=([^?&]+).*MaxPlayers=(\d+)(?:.*Game=([^?&]*))?.*Lighting=([^?&]+)`),
+		// Capture groups: 1=timestamp, 2=mapName, 3=scenario, 4=maxPlayers, 5=game (optional), 6=lighting (optional)
+		MapLoad: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\s*\d+\]LogLoad: LoadMap: /Game/Maps/([^/]+)/[^?]+\?.*Scenario=([^?&]+).*MaxPlayers=(\d+)(?:.*Game=([^?&]*))?(?:.*Lighting=([^?&]+))?`),
 		// ProcessServerTravel events when the map changes during runtime
-		// Example: [2025.10.21-20.12.42:785][454]LogGameMode: ProcessServerTravel: Town?Scenario=Scenario_Hideout_Skirmish?Game=CheckpointHardcore
-		MapTravel: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\s*\d+\]LogGameMode: ProcessServerTravel: ([^?]+)\?Scenario=([^?]+)\?Game=([^\s]*)`),
+		// Example: [2025.10.21-20.12.42:785][454]LogGameMode: ProcessServerTravel: Town?Scenario=Scenario_Hideout_Skirmish?Game=CheckpointHardcore?Lighting=Day
+		// Capture groups: 1=timestamp, 2=mapName, 3=scenario, 4=game (optional), 5=lighting (optional)
+		MapTravel: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\s*\d+\]LogGameMode: ProcessServerTravel: ([^?]+)\?Scenario=([^?]+)\?Game=([^?&]*)(?:.*Lighting=([^?&\s]+))?`),
 
 		// DifficultyChange: regexp.MustCompile(`\[(\d{4}\.\d{2}\.\d{2}-\d{2}\.\d{2}\.\d{2}:\d{1,3})\]\[\s*\d+\]LogAI: Warning: AI difficulty set to ([0-9.]+)`), // Not currently used
 
@@ -158,13 +159,17 @@ func extractMapTitle(scenario string) string {
 // This occurs when the server changes maps during runtime (after the initial map load)
 func (p *LogParser) tryProcessMapTravel(ctx context.Context, line string, timestamp time.Time, serverID string) bool {
 	matches := p.patterns.MapTravel.FindStringSubmatch(line)
-	if len(matches) < 5 {
+	if len(matches) < 4 {
 		return false
 	}
 
 	mapName := strings.TrimSpace(matches[2])
 	scenario := strings.TrimSpace(matches[3])
 	gameMode := strings.TrimSpace(matches[4])
+	lighting := ""
+	if len(matches) > 5 {
+		lighting = strings.TrimSpace(matches[5])
+	}
 
 	// Extract player team from scenario
 	playerTeam := extractPlayerTeam(scenario)
@@ -173,10 +178,16 @@ func (p *LogParser) tryProcessMapTravel(ctx context.Context, line string, timest
 		playerTeamPtr = &playerTeam
 	}
 
+	// Extract lighting parameter if available
+	var lightingPtr *string
+	if lighting != "" {
+		lightingPtr = &lighting
+	}
+
 	// Extract title from scenario
 	title := extractMapTitle(scenario)
 
-	p.logger.Debug("Map travel detected", "map", mapName, "scenario", scenario, "gameMode", gameMode, "serverID", serverID)
+	p.logger.Debug("Map travel detected", "map", mapName, "scenario", scenario, "gameMode", gameMode, "lighting", lighting, "serverID", serverID)
 
 	// Track this map travel time so we can ignore immediate disconnects/reconnects
 	p.lastMapTravelTimes[serverID] = timestamp
@@ -186,6 +197,7 @@ func (p *LogParser) tryProcessMapTravel(ctx context.Context, line string, timest
 			"map":         mapName,
 			"scenario":    scenario,
 			"player_team": playerTeamPtr,
+			"lighting":    lightingPtr,
 			"game":        gameMode,
 			"title":       title,
 			"timestamp":   timestamp,
@@ -647,19 +659,29 @@ func (p *LogParser) tryProcessGameOver(ctx context.Context, line string, timesta
 // This occurs when the server first starts and loads the initial map
 func (p *LogParser) tryProcessMapLoad(ctx context.Context, line string, timestamp time.Time, serverID string) bool {
 	matches := p.patterns.MapLoad.FindStringSubmatch(line)
-	if len(matches) < 6 {
+	if len(matches) < 5 {
 		return false
 	}
 
 	mapName := strings.TrimSpace(matches[2])
 	scenario := strings.TrimSpace(matches[3])
 	gameMode := strings.TrimSpace(matches[5])
+	lighting := ""
+	if len(matches) > 6 && matches[6] != "" {
+		lighting = strings.TrimSpace(matches[6])
+	}
 
 	// Extract player team from scenario
 	playerTeam := extractPlayerTeam(scenario)
 	var playerTeamPtr *string
 	if playerTeam != "" {
 		playerTeamPtr = &playerTeam
+	}
+
+	// Extract lighting parameter if available
+	var lightingPtr *string
+	if lighting != "" {
+		lightingPtr = &lighting
 	}
 
 	// Extract title from scenario
@@ -672,6 +694,7 @@ func (p *LogParser) tryProcessMapLoad(ctx context.Context, line string, timestam
 			"scenario":    scenario,
 			"timestamp":   timestamp,
 			"player_team": playerTeamPtr,
+			"lighting":    lightingPtr,
 			"game":        gameMode,
 			"title":       title,
 			"is_catchup":  isCatchupMode(ctx),

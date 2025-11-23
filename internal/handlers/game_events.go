@@ -502,7 +502,6 @@ func (h *GameEventHandlers) handleRoundEnd(e *core.RecordEvent) error {
 		log.Debug("Failed to increment round for match", "match", activeMatch.ID, "error", err)
 	}
 
-
 	// Trigger immediate score update after round end - skip during catchup
 	if h.scoreDebouncer != nil {
 		if !data.IsCatchup {
@@ -782,7 +781,7 @@ func (h *GameEventHandlers) handleMapLoad(e *core.RecordEvent) error {
 
 	// End any active match and create a new one
 	// EndActiveMatchAndCreateNew expects serverID (external_id), not the record ID
-	if err := database.EndActiveMatchAndCreateNew(ctx, e.App, serverID, data.Map, data.Scenario, data.Timestamp, data.PlayerTeam); err != nil {
+	if err := database.EndActiveMatchAndCreateNew(ctx, e.App, serverID, data.Map, data.Scenario, data.Timestamp, data.PlayerTeam, data.Lighting); err != nil {
 		log.Debug("Failed to end/create match for map load", "error", err)
 		return e.Next()
 	}
@@ -846,7 +845,7 @@ func (h *GameEventHandlers) handleMapTravel(e *core.RecordEvent) error {
 
 	// End any active match and create a new one
 	// EndActiveMatchAndCreateNew expects serverID (external_id), not the record ID
-	if err := database.EndActiveMatchAndCreateNew(ctx, e.App, serverID, data.Map, data.Scenario, data.Timestamp, data.PlayerTeam); err != nil {
+	if err := database.EndActiveMatchAndCreateNew(ctx, e.App, serverID, data.Map, data.Scenario, data.Timestamp, data.PlayerTeam, data.Lighting); err != nil {
 		log.Debug("Failed to end/create match for map travel", "error", err)
 		return e.Next()
 	}

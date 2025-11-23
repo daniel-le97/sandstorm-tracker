@@ -71,6 +71,20 @@ func init() {
 				},
 				{
 					"hidden": false,
+					"id": "select3406304627",
+					"maxSelect": 1,
+					"name": "lighting",
+					"presentable": false,
+					"required": false,
+					"system": false,
+					"type": "select",
+					"values": [
+						"Day",
+						"Night"
+					]		
+				},
+				{
+					"hidden": false,
 					"id": "number3320769076",
 					"max": null,
 					"min": null,

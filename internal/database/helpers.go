@@ -106,7 +106,7 @@ func GetActiveMatch(ctx context.Context, pbApp core.App, serverID string) (*Matc
 }
 
 // CreateMatch creates a new match record
-func CreateMatch(ctx context.Context, pbApp core.App, serverID string, mapName, mode *string, startTime *time.Time, playerTeam ...*string) (*Match, error) {
+func CreateMatch(ctx context.Context, pbApp core.App, serverID string, mapName, mode *string, startTime *time.Time, optionalParams ...*string) (*Match, error) {
 	log := getLogger(pbApp)
 	// Find server record
 	serverRecord, err := pbApp.FindFirstRecordByFilter(
@@ -147,8 +147,11 @@ func CreateMatch(ctx context.Context, pbApp core.App, serverID string, mapName, 
 	if startTime != nil {
 		record.Set("start_time", startTime.Format(time.RFC3339))
 	}
-	if len(playerTeam) > 0 && playerTeam[0] != nil {
-		record.Set("player_team", *playerTeam[0])
+	if len(optionalParams) > 0 && optionalParams[0] != nil {
+		record.Set("player_team", *optionalParams[0])
+	}
+	if len(optionalParams) > 1 && optionalParams[1] != nil {
+		record.Set("lighting", *optionalParams[1])
 	}
 
 	if err := pbApp.Save(record); err != nil {
@@ -169,8 +172,8 @@ func CreateMatch(ctx context.Context, pbApp core.App, serverID string, mapName, 
 	if startTime != nil {
 		match.StartTime = startTime
 	}
-	if len(playerTeam) > 0 && playerTeam[0] != nil {
-		match.PlayerTeam = playerTeam[0]
+	if len(optionalParams) > 0 && optionalParams[0] != nil {
+		match.PlayerTeam = optionalParams[0]
 	}
 
 	return match, nil
@@ -766,7 +769,7 @@ func ResetMatchRoundObjective(ctx context.Context, pbApp core.App, matchID strin
 // - Disconnecting all players from the ended match
 // - Deleting empty matches
 // - Creating the new match record
-func EndActiveMatchAndCreateNew(ctx context.Context, pbApp core.App, serverID string, mapName, scenario string, timestamp time.Time, playerTeam *string) error {
+func EndActiveMatchAndCreateNew(ctx context.Context, pbApp core.App, serverID string, mapName, scenario string, timestamp time.Time, playerTeam, lighting *string) error {
 	log := getLogger(pbApp)
 	// If there's an active match, force-end it first
 	activeMatch, err := GetActiveMatch(ctx, pbApp, serverID)
@@ -806,7 +809,7 @@ func EndActiveMatchAndCreateNew(ctx context.Context, pbApp core.App, serverID st
 	}
 
 	// Create the new match
-	_, err = CreateMatch(ctx, pbApp, serverID, &mapName, &scenario, &timestamp, playerTeam)
+	_, err = CreateMatch(ctx, pbApp, serverID, &mapName, &scenario, &timestamp, playerTeam, lighting)
 	if err != nil {
 		return fmt.Errorf("failed to create match for map %s on server %s: %w", mapName, serverID, err)
 	}
