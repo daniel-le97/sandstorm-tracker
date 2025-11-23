@@ -121,6 +121,13 @@ func NewWithVersion(version, commit, date string) (*App, error) {
 
 // setupPlugins configures PocketBase plugins
 func (app *App) setupPlugins() {
+	// Set the version on RootCmd so it's available to plugins
+	// Format: "v0.1.2" for ghupdate compatibility
+	if app.Version != "" && app.Version != "dev" {
+		app.RootCmd.Version = "v" + app.Version
+	} else {
+		app.RootCmd.Version = "v0.0.0"
+	}
 
 	// Auto-migrate database
 	migratecmd.MustRegister(app.PocketBase, app.RootCmd, migratecmd.Config{
