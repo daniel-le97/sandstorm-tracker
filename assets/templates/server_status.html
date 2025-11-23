@@ -37,6 +37,12 @@
                 <span class="value">{{.Mode}}</span>
             </div>
             <div class="info-row">
+                <span class="label">Lighting:</span>
+                <span class="value lighting-badge" data-lighting="{{.Lighting}}"
+                    >{{.Lighting}}</span
+                >
+            </div>
+            <div class="info-row">
                 <span class="label">Round:</span>
                 <span class="value">{{.Round}}</span>
             </div>
@@ -213,6 +219,26 @@
         letter-spacing: 1px;
     }
 
+    .lighting-badge {
+        padding: 0.3rem 0.6rem;
+        border-radius: 4px;
+        font-size: 0.9rem;
+        font-weight: bold;
+        display: inline-block;
+    }
+
+    .lighting-badge.day {
+        background-color: rgba(255, 193, 7, 0.2);
+        color: #ffc107;
+        border: 1px solid #ffc107;
+    }
+
+    .lighting-badge.night {
+        background-color: rgba(63, 81, 181, 0.2);
+        color: #7986cb;
+        border: 1px solid #7986cb;
+    }
+
     .progress-bar {
         width: 100%;
         height: 8px;
@@ -303,6 +329,16 @@
         });
     }
 
+    // Apply lighting badge classes based on data attribute
+    function applyLightingBadgeClasses() {
+        document.querySelectorAll(".lighting-badge").forEach(function (badge) {
+            const lighting = badge.getAttribute("data-lighting");
+            if (lighting) {
+                badge.classList.add(lighting.toLowerCase());
+            }
+        });
+    }
+
     // Find server card element for a given match's server
     function findServerCardForMatch(matchId) {
         // Get match to find its server
@@ -364,6 +400,7 @@
 
     document.addEventListener("DOMContentLoaded", function () {
         updateProgressBars();
+        applyLightingBadgeClasses();
 
         // Subscribe to real-time match updates with smart DOM updates
         pb.collection("matches").subscribe("*", function (e) {

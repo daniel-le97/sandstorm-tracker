@@ -51,6 +51,7 @@ func Register(app AppInterface, e *core.ServeEvent) {
 			ObjectivePercent   int    // Calculated percentage for progress bar
 			CurrentObjective   string // Current objective letter (A, B, C, etc.)
 			TotalObjectivesStr string // Total objectives as letters (e.g., "A-F" for 6 objectives)
+			Lighting           string // Map lighting (Day, Night, or default "Day")
 			CurrentPlayers     []PlayerInfo
 			PlayerCount        int
 			IsActive           bool
@@ -83,6 +84,13 @@ func Register(app AppInterface, e *core.ServeEvent) {
 				status.Round = match.GetInt("round")
 				status.RoundObjective = match.GetInt("round_objective")
 				status.NumObjectives = match.GetInt("num_objectives")
+
+				// Get lighting if available, default to "Day"
+				lighting := match.GetString("lighting")
+				if lighting == "" {
+					lighting = "Day"
+				}
+				status.Lighting = lighting
 
 				// Calculate objective percentage
 				if status.NumObjectives > 0 {
@@ -776,6 +784,7 @@ func Register(app AppInterface, e *core.ServeEvent) {
 			Mode            string
 			Duration        string
 			EndTime         string
+			Lighting        string // Map lighting (Day, Night, or default "Day")
 			SecurityKills   int
 			SecurityDeaths  int
 			InsurgentKills  int
@@ -789,6 +798,12 @@ func Register(app AppInterface, e *core.ServeEvent) {
 			endTime := match.GetDateTime("end_time").Time()
 			duration := endTime.Sub(startTime)
 
+			// Get lighting if available, default to "Day"
+			lighting := match.GetString("lighting")
+			if lighting == "" {
+				lighting = "Day"
+			}
+
 			md := MatchData{
 				MatchId:  match.Id,
 				Map:      match.GetString("map"),
@@ -796,6 +811,7 @@ func Register(app AppInterface, e *core.ServeEvent) {
 				Mode:     match.GetString("mode"),
 				Duration: fmt.Sprintf("%dh %dm", int(duration.Hours()), int(duration.Minutes())%60),
 				EndTime:  endTime.Format("2006-01-02 15:04"),
+				Lighting: lighting,
 			}
 
 			// Get player stats for this match
