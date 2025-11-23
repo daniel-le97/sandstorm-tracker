@@ -249,26 +249,7 @@ func (app *App) onServe(e *core.ServeEvent) error {
 	gameEventHandlers.RegisterHooks()
 	app.Logger().Info("Registered game event handlers", "component", "APP")
 
-	// Register hooks to restrict player metadata field access to superusers only
-	app.OnRecordsListRequest("players").BindFunc(func(e *core.RecordsListRequestEvent) error {
-		// If not authenticated as superuser admin, hide metadata from all records
-		if !e.HasSuperuserAuth() {
-			for _, record := range e.Records {
-				record.Hide("metadata")
-			}
-		}
-		return e.Next()
-	})
-
-	app.OnRecordViewRequest("players").BindFunc(func(e *core.RecordRequestEvent) error {
-		// If not authenticated as superuser admin, hide metadata from record
-		if !e.HasSuperuserAuth() {
-			e.Record.Hide("metadata")
-		}
-		return e.Next()
-	})
-
-	app.Logger().Info("Registered player metadata access control hooks", "component", "APP")
+	BindRecordMiddlewares(app.PocketBase)
 
 	// Start file watcher
 	for _, serverCfg := range app.Config.Servers {

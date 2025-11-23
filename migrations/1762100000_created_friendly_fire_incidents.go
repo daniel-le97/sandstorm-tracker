@@ -259,12 +259,12 @@ func init() {
 				"CREATE INDEX IF NOT EXISTS ` + "`" + `idx_ff_timestamp` + "`" + ` ON ` + "`" + `friendly_fire_incidents` + "`" + ` (` + "`" + `timestamp` + "`" + `)",
 				"CREATE INDEX IF NOT EXISTS ` + "`" + `idx_ff_classification` + "`" + ` ON ` + "`" + `friendly_fire_incidents` + "`" + ` (` + "`" + `accident_classification` + "`" + `)"
 			],
-			"listRule": null,
+			"listRule": "",
 			"name": "friendly_fire_incidents",
 			"system": false,
 			"type": "base",
 			"updateRule": null,
-			"viewRule": null
+			"viewRule": ""
 		}`
 
 		collection := &core.Collection{}

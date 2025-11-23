@@ -224,12 +224,12 @@ func init() {
 				"CREATE INDEX ` + "`" + `idx_match_player_stats_connected` + "`" + ` ON ` + "`" + `match_player_stats` + "`" + ` (` + "`" + `is_currently_connected` + "`" + `)",
 				"CREATE INDEX ` + "`" + `idx_match_player_stats_match_connected` + "`" + ` ON ` + "`" + `match_player_stats` + "`" + ` (\n  ` + "`" + `match` + "`" + `,\n  ` + "`" + `is_currently_connected` + "`" + `\n)"
 			],
-			"listRule": null,
+			"listRule": "",
 			"name": "match_player_stats",
 			"system": false,
 			"type": "base",
 			"updateRule": null,
-			"viewRule": null
+			"viewRule": ""
 		}`
 
 		collection := &core.Collection{}

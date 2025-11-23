@@ -92,12 +92,12 @@ func init() {
 				"CREATE INDEX ` + "`" + `idx_events_created` + "`" + ` ON ` + "`" + `events` + "`" + ` (` + "`" + `created` + "`" + `)",
 				"CREATE INDEX ` + "`" + `idx_events_server_type` + "`" + ` ON ` + "`" + `events` + "`" + ` (\n  ` + "`" + `server` + "`" + `,\n  ` + "`" + `type` + "`" + `\n)"
 			],
-			"listRule": null,
+			"listRule": "",
 			"name": "events",
 			"system": false,
 			"type": "base",
 			"updateRule": null,
-			"viewRule": null
+			"viewRule": ""
 		}`
 
 		collection := &core.Collection{}

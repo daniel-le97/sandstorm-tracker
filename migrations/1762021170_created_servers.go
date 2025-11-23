@@ -115,6 +115,20 @@ func init() {
 				},
 				{
 					"hidden": false,
+					"id": "file4035954268",
+					"maxSelect": 99,
+					"maxSize": 0,
+					"mimeTypes": [],
+					"name": "logs",
+					"presentable": false,
+					"protected": false,
+					"required": false,
+					"system": false,
+					"thumbs": [],
+					"type": "file"
+				},
+				{
+					"hidden": false,
 					"id": "autodate2990389176",
 					"name": "created",
 					"onCreate": true,
@@ -136,12 +150,12 @@ func init() {
 			],
 			"id": "pbc_3738798621",
 			"indexes": [],
-			"listRule": null,
+			"listRule": "",
 			"name": "servers",
 			"system": false,
 			"type": "base",
 			"updateRule": null,
-			"viewRule": null
+			"viewRule": ""
 		}`
 
 		collection := &core.Collection{}

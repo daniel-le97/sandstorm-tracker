@@ -103,13 +103,13 @@ func init() {
 			],
 			"id": "pbc_1972907995",
 			"indexes": [],
-			"listRule": null,
+			"listRule": "",
 			"name": "player_total_stats",
 			"system": false,
 			"type": "view",
 			"updateRule": null,
 			"viewQuery": "SELECT \n  player as id,\n  player,\n  COALESCE(SUM(kills), 0) as total_kills,\n  COALESCE(SUM(deaths), 0) as total_deaths,\n  COALESCE(SUM(score), 0) as total_score,\n  COALESCE(SUM(total_play_time), 0) as total_duration_seconds,\n  COALESCE(SUM(assists), 0) as total_assists,\n  COALESCE(SUM(friendly_fire_kills), 0) as total_ff_kills\nFROM match_player_stats\nGROUP BY player;",
-			"viewRule": null
+			"viewRule": ""
 		}`
 
 		collection := &core.Collection{}

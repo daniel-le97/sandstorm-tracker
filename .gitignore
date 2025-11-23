@@ -73,3 +73,5 @@ sandstorm-admin-wrapper/
 *.exe
 *.old
 *.pid
+
+.backup/

@@ -67,13 +67,13 @@ func init() {
 			],
 			"id": "pbc_1972907997",
 			"indexes": [],
-			"listRule": null,
+			"listRule": "",
 			"name": "player_weapon_stats",
 			"system": false,
 			"type": "view",
 			"updateRule": null,
 			"viewQuery": "SELECT \n  (player || '_' || weapon_name) as id,\n  player,\n  weapon_name,\n  SUM(kills) as total_kills\nFROM match_weapon_stats\nGROUP BY player, weapon_name;",
-			"viewRule": null
+			"viewRule": ""
 		}`
 
 		collection := &core.Collection{}

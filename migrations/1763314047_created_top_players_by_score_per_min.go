@@ -91,13 +91,13 @@ func init() {
 			],
 			"id": "pbc_1972907996",
 			"indexes": [],
-			"listRule": null,
+			"listRule": "",
 			"name": "top_players_by_score_per_min",
 			"system": false,
 			"type": "view",
 			"updateRule": null,
 			"viewQuery": "SELECT p.id, p.id as player, p.name, (CAST(stats.total_score AS REAL) / (CAST(stats.total_duration_seconds AS REAL) / 60.0)) as scorePerMin, stats.total_score as totalScore, stats.total_duration_seconds as totalDurationSeconds FROM players p INNER JOIN player_total_stats stats ON p.id = stats.id WHERE stats.total_duration_seconds >= 60 ORDER BY scorePerMin DESC;",
-			"viewRule": null
+			"viewRule": ""
 		}`
 
 		collection := &core.Collection{}

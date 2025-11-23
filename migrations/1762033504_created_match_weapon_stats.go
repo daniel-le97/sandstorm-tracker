@@ -121,12 +121,12 @@ func init() {
 				"CREATE INDEX ` + "`" + `idx_match_weapon_stats_weapon` + "`" + ` ON ` + "`" + `match_weapon_stats` + "`" + ` (` + "`" + `weapon_name` + "`" + `)",
 				"CREATE INDEX ` + "`" + `idx_match_weapon_stats_player_weapon` + "`" + ` ON ` + "`" + `match_weapon_stats` + "`" + ` (\n  ` + "`" + `player` + "`" + `,\n  ` + "`" + `weapon_name` + "`" + `\n)"
 			],
-			"listRule": null,
+			"listRule": "",
 			"name": "match_weapon_stats",
 			"system": false,
 			"type": "base",
 			"updateRule": null,
-			"viewRule": null
+			"viewRule": ""
 		}`
 
 		collection := &core.Collection{}

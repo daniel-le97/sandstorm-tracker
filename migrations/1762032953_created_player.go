@@ -101,12 +101,12 @@ func init() {
 			],
 			"id": "pbc_2936669995",
 			"indexes": [],
-			"listRule": null,
+			"listRule": "",
 			"name": "players",
 			"system": false,
 			"type": "base",
 			"updateRule": null,
-			"viewRule": null
+			"viewRule": ""
 		}`
 
 		collection := &core.Collection{}
