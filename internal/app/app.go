@@ -245,6 +245,9 @@ func (app *App) onServe(e *core.ServeEvent) error {
 	// Register web routes
 	handlers.Register(app, e)
 
+	// Register Preact SPA UI routes
+	handlers.RegisterPreactUI(e)
+
 	// Create score debouncer for event-driven score updates
 	// Scores update 10 seconds after any kill/objective/round event
 	scoreDebouncer := jobs.NewScoreDebouncer(app, app.Config, 10*time.Second, 30*time.Second)

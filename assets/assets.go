@@ -7,11 +7,14 @@ import (
 	"path/filepath"
 )
 
-//go:embed templates/*.html configs/* static/*
+//go:embed templates/*.html configs/* static/* ui/*
 var webFS embed.FS
 
 //go:embed static/*
 var staticFS embed.FS
+
+//go:embed ui/*
+var uiFS embed.FS
 
 // WebAssets holds the embedded web UI files
 type WebAssets struct {
@@ -74,6 +77,15 @@ func (w *WebAssets) WriteExampleConfig(path string, format string) error {
 // StaticFS returns the embedded static filesystem
 func StaticFS() fs.FS {
 	sub, err := fs.Sub(staticFS, "static")
+	if err != nil {
+		panic(err)
+	}
+	return sub
+}
+
+// UIFS returns the embedded Preact UI filesystem
+func UIFS() fs.FS {
+	sub, err := fs.Sub(uiFS, "ui")
 	if err != nil {
 		panic(err)
 	}

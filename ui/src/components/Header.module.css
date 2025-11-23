@@ -1,0 +1,79 @@
+.header {
+  background: #1a1a1a;
+  border-bottom: 1px solid #444;
+  padding: 1rem 0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.nav {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.navLinks {
+  display: flex;
+  gap: 2rem;
+}
+
+.navLinks a {
+  color: #bbb;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.navLinks a:hover {
+  color: #e0e0e0;
+}
+
+.navLinks a.active {
+  color: #ff6b35;
+  border-bottom: 2px solid #ff6b35;
+  padding-bottom: 0.5rem;
+}
+
+.authSection {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.adminEmail {
+  color: #999;
+  font-size: 0.9rem;
+}
+
+.loginBtn {
+  background-color: #ff6b35;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  text-decoration: none;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.loginBtn:hover {
+  background-color: #e55a24;
+}
+
+.logoutBtn {
+  background-color: #666;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.logoutBtn:hover {
+  background-color: #777;
+}
