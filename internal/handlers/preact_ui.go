@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"io"
-	"net/http"
+	"io/fs"
 
 	"sandstorm-tracker/assets"
 
@@ -13,15 +13,23 @@ import (
 // RegisterPreactUI registers routes for the Preact SPA UI
 // This serves the Preact SPA as the primary UI, while keeping legacy template routes intact
 func RegisterPreactUI(e *core.ServeEvent) {
-	// Serve Preact UI assets (built files in /assets subdirectory)
-	e.Router.GET("/ui/assets/{path...}", apis.Static(assets.UIFS(), false))
+	// Get the UI filesystem (points to /ui directory in embedded files)
+	uiFS := assets.UIFS()
 
-	// Serve map images from the public folder (copied to /maps in Vite build output)
-	e.Router.GET("/maps/{path...}", apis.Static(assets.UIFS(), false))
+	// Serve Preact UI assets (built files in /assets subdirectory of UI)
+	// We need to get the sub-filesystem for assets
+	assetsFS, _ := fs.Sub(uiFS, "assets")
+	e.Router.GET("/ui/assets/{path...}", apis.Static(assetsFS, false))
+
+	// Serve map images from the /maps folder
+	mapsFS, _ := fs.Sub(uiFS, "maps")
+	e.Router.GET("/ui/maps/{path...}", apis.Static(mapsFS, false))
+
+	// Also serve maps at /maps for backward compatibility
+	e.Router.GET("/maps/{path...}", apis.Static(mapsFS, false))
 
 	// Serve Preact UI with SPA routing (fallback to index.html for client-side routing)
 	// This must be registered AFTER other specific routes so they take precedence
-	uiFS := assets.UIFS()
 
 	e.Router.GET("/ui", func(re *core.RequestEvent) error {
 		file, err := uiFS.Open("index.html")
@@ -30,7 +38,7 @@ func RegisterPreactUI(e *core.ServeEvent) {
 		}
 		defer file.Close()
 		data, _ := io.ReadAll(file)
-		return re.HTML(http.StatusOK, string(data))
+		return re.HTML(200, string(data))
 	})
 
 	e.Router.GET("/ui/{path...}", func(re *core.RequestEvent) error {
@@ -62,6 +70,6 @@ func RegisterPreactUI(e *core.ServeEvent) {
 		}
 
 		data, _ := io.ReadAll(file)
-		return re.HTML(http.StatusOK, string(data))
+		return re.HTML(200, string(data))
 	})
 }

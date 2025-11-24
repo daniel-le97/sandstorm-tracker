@@ -1,29 +1,8 @@
 import { useLocation } from 'preact-iso';
-import { usePB } from '../hooks/usePB';
-import { useState, useEffect } from 'preact/hooks';
 import styles from './Header.module.css';
 
 export function Header () {
 	const { url } = useLocation();
-	const pb = usePB();
-	const [ isAuthenticated, setIsAuthenticated ] = useState( false );
-	const [ adminEmail, setAdminEmail ] = useState( '' );
-
-	useEffect( () => {
-		// Check if admin is authenticated
-		const admin = pb.authStore.model;
-		if ( admin )
-		{
-			setIsAuthenticated( true );
-			setAdminEmail( admin.email || '' );
-		}
-	}, [] );
-
-	const handleLogout = () => {
-		pb.authStore.clear();
-		setIsAuthenticated( false );
-		window.location.href = '/login';
-	};
 
 	return (
 		<header class={ styles.header }>
@@ -47,18 +26,9 @@ export function Header () {
 				</div>
 
 				<div class={ styles.authSection }>
-					{ isAuthenticated ? (
-						<>
-							<span class={ styles.adminEmail }>{ adminEmail }</span>
-							<button class={ styles.logoutBtn } onClick={ handleLogout }>
-								Logout
-							</button>
-						</>
-					) : (
-						<a href="/login" class={ styles.loginBtn }>
-							Login
-						</a>
-					) }
+					<a href="http://localhost:8090/_/" class={ styles.adminDashboardBtn } target="_blank">
+						Admin Dashboard
+					</a>
 				</div>
 			</nav>
 		</header>
